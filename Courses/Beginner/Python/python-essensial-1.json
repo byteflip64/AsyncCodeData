@@ -1,0 +1,447 @@
+{
+  "id": "python-basics-101",
+  "course": {
+    "title": "Python Programming Essentials",
+    "description": "A comprehensive 10-part guide to mastering Python fundamentals from scratch."
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: Introduction & Variables",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Welcome to Python!"
+        },
+        {
+          "type": "paragraph",
+          "value": "Python is a **high-level**, interpreted language known for its *readability* and simple syntax. In Python, variables are created the moment you assign a value to them using the `=` operator."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# Creating variables in Python\nname = \"Alice\"\nage = 25\nis_student = True\n\nprint(f\"User: {name}, Age: {age}, Student: {is_student}\")",
+          "output": "User: Alice, Age: 25, Student: True"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which character is used to assign a value to a variable in Python?",
+          "options": [
+            "==",
+            "=",
+            "->",
+            ":="
+          ],
+          "correctAnswer": "=",
+          "explanation": "The `=` assignment operator assigns the value on the right to the variable on the left."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What function is used to display output on the screen in Python?",
+          "correctAnswer": "print",
+          "explanation": "The `print()` function outputs text or variable values to the console."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Data Types & Casting",
+      "badge": "Data Types",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Core Data Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "Python automatically detects data types. Common built-in types include:\n• `int`: Whole numbers\n• `float`: Decimal numbers\n• `str`: Text strings\n• `bool`: True or False values"
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# Type conversion (Casting)\nx = 5.7\ny = int(x)\nz = str(y)\n\nprint(f\"x type: {type(x)}, y value: {y}, z type: {type(z)}\")",
+          "output": "x type: , y value: 5, z type: "
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens when you cast `float(5)` in Python?",
+          "options": [
+            "5",
+            "5.0",
+            "\"5\"",
+            "Error"
+          ],
+          "correctAnswer": "5.0",
+          "explanation": "Casting an integer to a float converts it to a decimal representation (5.0)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all **numeric** data types in Python:",
+          "options": [
+            "int",
+            "str",
+            "float",
+            "bool"
+          ],
+          "correctAnswers": [
+            "float",
+            "int"
+          ],
+          "explanation": "Both `int` and `float` represent numerical data."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Basic Operators",
+      "badge": "Operators",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Arithmetic & Logical Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "Python supports standard mathematical operations like `+`, `-`, `*`, and `/`. Special operators include `//` for *floor division*, `%` for *modulus* (remainder), and `**` for *exponentiation*."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# Special Python Operators\na = 10\nb = 3\n\nprint(\"Floor Division:\", a // b)\nprint(\"Modulus:\", a % b)\nprint(\"Exponentiation:\", b ** 3)",
+          "output": "Floor Division: 3\nModulus: 1\nExponentiation: 27"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the output of `10 % 4`?",
+          "options": [
+            "2.5",
+            "2",
+            "0",
+            "4"
+          ],
+          "correctAnswer": "2",
+          "explanation": "`10 % 4` returns the remainder of 10 divided by 4, which is 2."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator symbol is used for exponentiation (power) in Python?",
+          "correctAnswer": "**",
+          "explanation": "The `**` operator raises the left operand to the power of the right operand."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: Control Flow (If-Else)",
+      "badge": "Logic",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Conditional Statements"
+        },
+        {
+          "type": "paragraph",
+          "value": "Conditional logic allows your program to make decisions. Python uses `if`, `elif`, and `else` blocks with **indentation** to define scope."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "score = 85\n\nif score >= 90:\n print(\"Grade: A\")\nelif score >= 80:\n print(\"Grade: B\")\nelse:\n print(\"Grade: C\")",
+          "output": "Grade: B"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How does Python determine code blocks inside an `if` statement?",
+          "options": [
+            "Curly braces `{}`",
+            "Parentheses `()`",
+            "Indentation (Spaces/Tabs)",
+            "End keywords"
+          ],
+          "correctAnswer": "Indentation (Spaces/Tabs)",
+          "explanation": "Python relies strictly on indentation to specify the scope of code blocks."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword is used in Python as a shorthand for 'else if'?",
+          "correctAnswer": "elif",
+          "explanation": "`elif` stands for 'else if' in Python conditional statements."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: Lists & Tuples",
+      "badge": "Collections",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Ordered Data Collections"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Lists** are mutable (changeable) sequences written with `[]`. **Tuples** are immutable (unchangeable) sequences written with `()`."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# Lists vs Tuples\nfruits = [\"apple\", \"banana\", \"cherry\"]\ncoordinates = (10.0, 20.0)\n\nfruits.append(\"orange\")\nprint(\"Updated List:\", fruits)\nprint(\"First Coordinate:\", coordinates[0])",
+          "output": "Updated List: ['apple', 'banana', 'cherry', 'orange']\nFirst Coordinate: 10.0"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of the following data structures is **immutable**?",
+          "options": [
+            "List",
+            "Tuple",
+            "Dictionary",
+            "Set"
+          ],
+          "correctAnswer": "Tuple",
+          "explanation": "Tuples cannot be altered once created."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method is used to add an item to the end of a list?",
+          "correctAnswer": "append",
+          "explanation": "The `.append()` method adds a new element to the end of a list."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 6: Dictionaries & Sets",
+      "badge": "Collections",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Key-Value Pairs & Unique Sets"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Dictionaries** store key-value pairs written as `{key: value}`. **Sets** store unique unordered items using `{}`."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# Dictionaries and Sets\nuser = {\"name\": \"Bob\", \"role\": \"Admin\"}\nunique_numbers = {1, 2, 2, 3, 4}\n\nprint(\"User Name:\", user[\"name\"])\nprint(\"Unique Set:\", unique_numbers)",
+          "output": "User Name: Bob\nUnique Set: {1, 2, 3, 4}"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens when you add a duplicate item to a Python `set`?",
+          "options": [
+            "An error is raised",
+            "The item is ignored",
+            "The set turns into a list",
+            "The duplicate replaces the original"
+          ],
+          "correctAnswer": "The item is ignored",
+          "explanation": "Sets automatically filter out duplicate values."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all statements that are **true** about Dictionaries:",
+          "options": [
+            "Keys must be unique",
+            "Values are accessed via index numbers",
+            "They store key-value pairs",
+            "They use square brackets `[]` for definition"
+          ],
+          "correctAnswers": [
+            "Keys must be unique",
+            "They store key-value pairs"
+          ],
+          "explanation": "Dictionaries use unique keys to look up values and are defined using curly braces `{}`."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: Loops (For & While)",
+      "badge": "Iteration",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Iterating through Data"
+        },
+        {
+          "type": "paragraph",
+          "value": "`for` loops iterate over sequences (like lists or range objects). `while` loops repeat as long as a specified condition remains `True`."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "# For loop with range\nprint(\"For Loop Output:\")\nfor i in range(3):\n print(i)\n\n# While loop\nprint(\"While Loop Output:\")\ncount = 2\nwhile count > 0:\n print(count)\n count -= 1",
+          "output": "For Loop Output:\n0\n1\n2\nWhile Loop Output:\n2\n1"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What numbers will `range(3)` generate?",
+          "options": [
+            "1, 2, 3",
+            "0, 1, 2, 3",
+            "0, 1, 2",
+            "1, 2"
+          ],
+          "correctAnswer": "0, 1, 2",
+          "explanation": "`range(n)` starts at 0 and stops before reaching `n`."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword is used to exit a loop immediately?",
+          "correctAnswer": "break",
+          "explanation": "The `break` statement terminates the current loop execution."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: Functions",
+      "badge": "Functions",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Defining & Calling Functions"
+        },
+        {
+          "type": "paragraph",
+          "value": "Functions are reusable blocks of code defined using the `def` keyword. They can accept **parameters** and return values using `return`."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "def add_numbers(a, b=5):\n return a + b\n\nres1 = add_numbers(10)\nres2 = add_numbers(10, 20)\n\nprint(f\"Result 1: {res1}, Result 2: {res2}\")",
+          "output": "Result 1: 15, Result 2: 30"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which keyword is used to define a function in Python?",
+          "options": [
+            "func",
+            "function",
+            "def",
+            "define"
+          ],
+          "correctAnswer": "def",
+          "explanation": "`def` is short for 'define' and starts a function definition."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword sends a result back from a function to its caller?",
+          "correctAnswer": "return",
+          "explanation": "The `return` statement exits a function and sends back an optional value."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Error & Exception Handling",
+      "badge": "Robustness",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Try and Except Blocks"
+        },
+        {
+          "type": "paragraph",
+          "value": "To prevent your application from crashing when errors occur, wrap unsafe code inside a `try` block and catch exceptions with `except`."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "try:\n num = int(\"abc\")\nexcept ValueError:\n print(\"Handled: Invalid conversion!\")\nfinally:\n print(\"Execution finished.\")",
+          "output": "Handled: Invalid conversion!\nExecution finished."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which block of code always runs regardless of whether an exception occurred?",
+          "options": [
+            "try",
+            "except",
+            "finally",
+            "else"
+          ],
+          "correctAnswer": "finally",
+          "explanation": "The `finally` block executes under all circumstances after `try` and `except` finish."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Which keywords are part of Python's exception handling?",
+          "options": [
+            "try",
+            "catch",
+            "except",
+            "finally"
+          ],
+          "correctAnswers": [
+            "except",
+            "finally",
+            "try"
+          ],
+          "explanation": "Python uses `try`, `except`, and `finally` (unlike languages like Java/JS which use `catch`)."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: Modules & File I/O",
+      "badge": "Advanced Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Imports & File Operations"
+        },
+        {
+          "type": "paragraph",
+          "value": "You can expand Python's capabilities by importing modules with `import`. You can also read and write files using the `open()` function or `with open()` statement."
+        },
+        {
+          "type": "code",
+          "language": "python",
+          "value": "import math\n\nprint(\"Square root of 16:\", math.sqrt(16))\nprint(\"Value of Pi:\", round(math.pi, 2))",
+          "output": "Square root of 16: 4.0\nValue of Pi: 3.14"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the primary advantage of using `with open('file.txt') as f:` to handle files?",
+          "options": [
+            "It automatically closes the file after reading",
+            "It runs faster than `open()`",
+            "It encrypts the file automatically",
+            "It deletes the file when finished"
+          ],
+          "correctAnswer": "It automatically closes the file after reading",
+          "explanation": "Context managers (`with` statements) guarantee that file resources are safely released automatically."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword is used to bring an external module into your Python script?",
+          "correctAnswer": "import",
+          "explanation": "The `import` statement grants access to functions and classes defined in other modules."
+        }
+      ]
+    }
+  ]
+}
