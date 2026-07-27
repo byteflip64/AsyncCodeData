@@ -1,8 +1,11 @@
 {
   "id": "csharp-beginner-zero-to-hero",
   "course": {
-    "title": "C# Fundamentals: From First Line to Object-Oriented Thinking",
-    "description": "A complete beginner's journey into C# and .NET. Covers syntax, data types, control flow, object-oriented programming, exception handling, and file I/O. Designed for absolute beginners who want to build a solid foundation in modern C# development."
+        "title": "C# Fundamentals: From First Line to Object-Oriented Thinking",
+        "description": "A complete beginner's journey into C# and .NET. Covers syntax, data types, control flow, object-oriented programming, exception handling, and file I/O. Designed for absolute beginners who want to build a solid foundation in modern C# development.",
+        "category": "C#",
+        "level": "Beginner",
+        "tags": ["C#", "OOP", "Logic"]
   },
   "parts": [
     {
