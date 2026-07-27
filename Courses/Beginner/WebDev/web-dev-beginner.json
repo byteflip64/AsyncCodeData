@@ -1,8 +1,11 @@
 {
   "id": "web-dev-beginner-zero-to-hero",
   "course": {
-    "title": "Web Development: The Beginner's Journey",
-    "description": "A perfectly structured 27-part beginner course covering HTML fundamentals, CSS styling & layouts, and browser JavaScript for interactive web pages. No prior experience required. Build real skills block by block."
+        "title": "Web Development: The Beginner's Journey",
+        "description": "A perfectly structured 27-part beginner course covering HTML fundamentals, CSS styling & layouts, and browser JavaScript for interactive web pages. No prior experience required. Build real skills block by block.",
+        "category": "Web Dev",
+        "level": "Beginner",
+        "tags": ["WebDev", "HTML", "CSS", "JS"]
   },
   "parts": [
     {
