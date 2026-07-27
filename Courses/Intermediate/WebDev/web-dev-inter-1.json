@@ -1,8 +1,11 @@
 {
   "id": "web-dev-intermediate-mastery",
   "course": {
-    "title": "Intermediate Web Development",
-    "description": "A comprehensive 30-part intermediate course for developers ready to move beyond basics. Covers advanced HTML5 APIs, CSS architecture & modern layout systems, deep JavaScript internals, asynchronous patterns, browser APIs, performance optimization, web security, TypeScript, tooling, and Progressive Web Apps. Assumes solid HTML/CSS/JS fundamentals."
+        "title": "Intermediate Web Development",
+        "description": "A comprehensive 30-part intermediate course for developers ready to move beyond basics. Covers advanced HTML5 APIs, CSS architecture & modern layout systems, deep JavaScript internals, asynchronous patterns, browser APIs, performance optimization, web security, TypeScript, tooling, and Progressive Web Apps. Assumes solid HTML/CSS/JS fundamentals.",
+        "category": "Web Dev",
+        "level": "Intermediate",
+        "tags": ["WebDev", "HTML", "CSS", "JS"]
   },
   "parts": [
     {
