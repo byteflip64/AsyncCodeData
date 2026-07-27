@@ -1,8 +1,11 @@
 {
   "id": "prompt-engineering-mastery",
   "course": {
-    "title": "Prompt Engineering Mastery: From First Prompt to Production AI Systems",
-    "description": "A comprehensive 40-part course on the art and science of communicating with Large Language Models. Covers zero-shot reasoning, chain-of-thought, ReAct agents, RAG, structured outputs, prompt security, multimodal prompting, and production-grade prompt systems. No prior AI background required."
+        "title": "Prompt Engineering Mastery: From First Prompt to Production AI Systems",
+        "description": "A comprehensive 40-part course on the art and science of communicating with Large Language Models. Covers zero-shot reasoning, chain-of-thought, ReAct agents, RAG, structured outputs, prompt security, multimodal prompting, and production-grade prompt systems. No prior AI background required.",
+        "category": "Prompt Engineering",
+        "level": "Intermediate",
+        "tags": ["Prompt", "AI"]
   },
   "parts": [
     {
