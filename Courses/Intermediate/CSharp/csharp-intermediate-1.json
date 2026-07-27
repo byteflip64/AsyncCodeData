@@ -1,8 +1,11 @@
 {
   "id": "csharp-mastery-pro",
   "course": {
-    "title": "C# Mastery: Professional Codes",
-    "description": "An intensive, code-heavy journey through modern C# and .NET. Covers advanced OOP, LINQ, asynchronous programming, memory optimization, reflection, metaprogramming, and production-grade architectural patterns. Designed for developers who want to write elegant, high-performance C# code."
+        "title": "C# Mastery: Professional Codes",
+        "description": "An intensive, code-heavy journey through modern C# and .NET. Covers advanced OOP, LINQ, asynchronous programming, memory optimization, reflection, metaprogramming, and production-grade architectural patterns. Designed for developers who want to write elegant, high-performance C# code.",
+        "category": "C#",
+        "level": "Intermediate",
+        "tags": ["C#", "Programming", "OOP"]
   },
   "parts": [
     {
