@@ -1,8 +1,11 @@
 {
   "id": "python-beginner-mastery",
   "course": {
-    "title": "Python Beginner Mastery",
-    "description": "A comprehensive 18-part beginner course taking you from absolute zero to confident Python programmer. Covers variables, data types, operators, strings, input, conditionals, loops, collections, functions, and a capstone project."
+        "title": "Python Beginner Mastery",
+        "description": "A comprehensive 18-part beginner course taking you from absolute zero to confident Python programmer. Covers variables, data types, operators, strings, input, conditionals, loops, collections, functions, and a capstone project.",
+        "category": "Python",
+        "level": "Beginner",
+        "tags": ["Python", "Programming", "OOP"]
   },
   "parts": [
     {
