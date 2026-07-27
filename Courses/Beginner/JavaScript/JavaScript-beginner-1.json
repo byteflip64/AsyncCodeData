@@ -4,6 +4,13 @@
     "title": "JavaScript Programming Essentials",
     "description": "A deep-dive, 10-part guide to mastering core JavaScript fundamentals, DOM manipulation, asynchronous programming, and modern ES6+ features."
   },
+  "course": {
+        "title": "JavaScript Programming Essentials",
+        "description": "A deep-dive, 10-part guide to mastering core JavaScript fundamentals, DOM manipulation, asynchronous programming, and modern ES6+ features.",
+        "category": "JavaScript",
+        "level": "Beginner",
+        "tags": ["JavaScript", "Programming", "WebDev"]
+  },
   "parts": [
     {
       "partTitle": "Part 1: Introduction & Variable Declarations",
