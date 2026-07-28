@@ -1,8 +1,11 @@
 {
   "id": "python-professional-mastery",
   "course": {
-    "title": "Python Professional Mastery",
-    "description": "An 18-part advanced course for experienced developers seeking production-grade Python expertise. Covers internals, type systems, metaclasses, concurrency, asyncio, design patterns, testing, FastAPI, SQLAlchemy, Docker, and a production microservice capstone."
+        "title": "Python Professional Mastery",
+        "description": "An 18-part advanced course for experienced developers seeking production-grade Python expertise. Covers internals, type systems, metaclasses, concurrency, asyncio, design patterns, testing, FastAPI, SQLAlchemy, Docker, and a production microservice capstone.",
+        "category": "Python",
+        "level": "Professional",
+        "tags": ["Python", "AI", "OOP"]
   },
   "parts": [
     {
