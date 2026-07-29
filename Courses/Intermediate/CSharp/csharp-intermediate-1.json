@@ -1,11 +1,11 @@
 {
-  "id": "csharp-mastery-pro",
+  "id": "csharp-mastery-intermediate",
   "course": {
-        "title": "C# Mastery: Professional Codes",
-        "description": "An intensive, code-heavy journey through modern C# and .NET. Covers advanced OOP, LINQ, asynchronous programming, memory optimization, reflection, metaprogramming, and production-grade architectural patterns. Designed for developers who want to write elegant, high-performance C# code.",
-        "category": "C#",
-        "level": "Intermediate",
-        "tags": ["C#", "Programming", "OOP"]
+    "title": "C# Mastery: Intermediate",
+    "description": "A comprehensive, code-heavy journey through modern C# fundamentals. Covers memory semantics, advanced OOP, generics, LINQ, functional patterns, async/await, modern language features (records, pattern matching), Entity Framework Core, and unit testing. Everything a working C# developer needs to write clean, effective code.",
+    "category": "C#",
+    "level": "Intermediate",
+    "tags": ["C#", ".NET", "OOP", "LINQ", "Async", "EF Core", "Testing"]
   },
   "parts": [
     {
@@ -19,7 +19,11 @@
         },
         {
           "type": "paragraph",
-          "value": "Understanding C# memory semantics is non-negotiable for professional development. Value types (structs, primitives) live on the stack (or inline in objects), while reference types (classes, interfaces, delegates) are allocated on the managed heap. The **CLR (Common Language Runtime)** handles garbage collection, but high-performance code demands manual control via `stackalloc`, `Span<T>`, and `Memory<T>` to eliminate allocations entirely."
+          "value": "Before writing high-quality C#, you must understand where your data lives. Value types (structs, primitives) live on the stack or inline inside objects, while reference types (classes, interfaces, delegates) are allocated on the managed heap. The CLR handles garbage collection automatically, but knowing how to use `stackalloc`, `Span<T>`, and `Memory<T>` gives you precise control over allocations."
+        },
+        {
+          "type": "paragraph",
+          "value": "This foundation is critical because allocation patterns directly impact application performance, especially in hot loops or high-throughput services."
         },
         {
           "type": "code",
@@ -59,12 +63,16 @@
         },
         {
           "type": "paragraph",
-          "value": "C# supports classical OOP with single inheritance and multiple interface implementation. Modern C# favors **interface default implementations** (C# 8+) for mixin-like behavior. Abstract classes provide shared implementation, while interfaces define contracts. Understanding when to use each is critical for clean architecture."
+          "value": "C# supports classical OOP with single inheritance and multiple interface implementation. Modern C# favors interface default implementations (C# 8+) for mixin-like behavior. Abstract classes provide shared implementation, while interfaces define contracts. Choosing correctly between them is essential for maintainable architecture."
+        },
+        {
+          "type": "paragraph",
+          "value": "Sealing classes when inheritance is not intended also allows the JIT compiler to optimize virtual calls into direct calls, improving runtime performance."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "// INTERFACE with default implementation (C# 8.0+)\npublic interface ILogger\n{\n    void Log(string message);\n    \n    // Default implementation — no breaking change for existing implementers\n    void LogWarning(string message) => Log($\"[WARN] {message}\");\n}\n\n// ABSTRACT CLASS: Shared state + behavior\npublic abstract class Entity\n{\n    public Guid Id { get; protected set; } = Guid.NewGuid();\n    public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;\n    \n    public abstract void Validate(); // Must override\n    \n    public virtual string GetSummary() => $\"{Id} created at {CreatedAt}\"; // Can override\n}\n\npublic class Product : Entity, ILogger\n{\n    public string Name { get; set; } = string.Empty;\n    public decimal Price { get; set; }\n    \n    public override void Validate()\n    {\n        if (string.IsNullOrWhiteSpace(Name))\n            throw new ValidationException(\"Product name is required\");\n    }\n    \n    public void Log(string message) => Console.WriteLine($\"[Product] {message}\");\n}",
+          "value": "// INTERFACE with default implementation (C# 8.0+)\npublic interface ILogger\n{\n    void Log(string message);\n    \n    // Default implementation — no breaking change for existing implementers\n    void LogWarning(string message) => Log($\"[WARN] {message}\");\n}\n\n// ABSTRACT CLASS: Shared state + behavior\npublic abstract class Entity\n{\n    public Guid Id { get; protected set; } = Guid.NewGuid();\n    public DateTime CreatedAt { get; protected set; } = DateTime.UtcNow;\n    \n    public abstract void Validate(); // Must override\n    \n    public virtual string GetSummary() => $\"{Id} created at {CreatedAt}\"; // Can override\n}\n\npublic class Product : Entity, ILogger\n{\n    public string Name { get; set; } = string.Empty;\n    public decimal Price { get; set; }\n    \n    public override void Validate()\n    {\n        if (string.IsNullOrWhiteSpace(Name))\n            throw new ArgumentException(\"Product name is required\");\n    }\n    \n    public void Log(string message) => Console.WriteLine($\"[Product] {message}\");\n}",
           "output": "Demonstrates interface default implementations, abstract classes with template method pattern, and multiple interface inheritance."
         },
         {
@@ -99,7 +107,7 @@
         },
         {
           "type": "paragraph",
-          "value": "Generics eliminate boxing/unboxing overhead and provide compile-time type safety. Advanced constraints (`where T : struct`, `where T : notnull`, `where T : INumber<T>`) let you write algorithms that work across numeric types without duplication. C# 11+ introduces **generic math** via static virtual interface members."
+          "value": "Generics eliminate boxing/unboxing overhead and provide compile-time type safety. Advanced constraints (`where T : struct`, `where T : notnull`, `where T : INumber<T>`) let you write algorithms that work across numeric types without duplication. C# 11+ introduces generic math via static virtual interface members."
         },
         {
           "type": "code",
@@ -133,7 +141,7 @@
         },
         {
           "type": "paragraph",
-          "value": "Delegates are type-safe function pointers. Events build on delegates to provide publish-subscribe patterns. Modern C# uses `Action<T>`, `Func<T,TResult>`, and lambda expressions extensively. Understanding delegate covariance, contravariance, and closure capture semantics is essential for avoiding memory leaks."
+          "value": "Delegates are type-safe function pointers. Events build on delegates to provide publish-subscribe patterns. Modern C# uses `Action<T>`, `Func<T,TResult>`, and lambda expressions extensively. Understanding closure capture semantics is essential for avoiding subtle bugs and memory leaks."
         },
         {
           "type": "code",
@@ -173,7 +181,11 @@
         },
         {
           "type": "paragraph",
-          "value": "LINQ (Language Integrated Query) provides a unified syntax for querying objects, databases, XML, and more. Understanding **deferred execution** (lazy evaluation) versus **immediate execution** (`ToList()`, `Count()`) is critical. For performance, prefer streaming operators and avoid multiple enumerations of the same query."
+          "value": "LINQ provides a unified syntax for querying objects, databases, XML, and more. Understanding deferred execution (lazy evaluation) versus immediate execution (`ToList()`, `Count()`) is critical. For performance, prefer streaming operators and avoid multiple enumerations of the same query."
+        },
+        {
+          "type": "paragraph",
+          "value": "Streaming operators process one element at a time through the entire pipeline, while greedy operators materialize the full result set into memory. Choosing the right operator for the scenario prevents unnecessary memory pressure."
         },
         {
           "type": "code",
@@ -213,7 +225,11 @@
         },
         {
           "type": "paragraph",
-          "value": "C# 9+ introduces **records** for immutable reference types with value-based equality. **Pattern matching** in switch expressions and property patterns enables expressive, declarative code. **Nullable reference types** (C# 8+) shift null safety from runtime exceptions to compile-time warnings."
+          "value": "C# 9+ introduces records for immutable reference types with value-based equality. Pattern matching in switch expressions and property patterns enables expressive, declarative code. Nullable reference types (C# 8+) shift null safety from runtime exceptions to compile-time warnings."
+        },
+        {
+          "type": "paragraph",
+          "value": "Together, these features reduce boilerplate and entire classes of bugs, making your codebase more robust and easier to reason about."
         },
         {
           "type": "code",
@@ -224,7 +240,7 @@
         {
           "type": "code",
           "language": "csharp",
-          "value": "#nullable enable\n\n// PATTERN MATCHING: Powerful switch expressions\npublic decimal CalculateDiscount(Order order) => order switch\n{\n    // Property pattern with nested checks\n    { Customer.IsVip: true, Total: > 1000m } => 0.20m,      // 20% for VIP big orders\n    { Customer.IsVip: true } => 0.10m,                      // 10% for VIP\n    { Total: > 500m, Items.Length: >= 5 } => 0.05m,        // 5% bulk discount\n    { Total: <= 0m } => throw new ArgumentException(\"Invalid total\"),\n    _ => 0.0m                                               // Default\n};\n\n// Type and relational patterns\npublic string Describe(object value) => value switch\n{\n    int n when n < 0 => \"Negative integer\",\n    int n and (> 0 and < 100) => \"Small positive integer\",\n    string { Length: > 50 } s => $\"Long string: {s[..20]}...\",\n    null => \"Nothing\", // Null pattern\n    _ => \"Something else\"\n};\n\n// NULLABLE REFERENCE TYPES: Compile-time null safety\npublic class UserService\n{\n    public User? FindUser(string id) // ? means may return null\n    {\n        // ...\n        return null;\n    }\n    \n    public void Process(string id)\n    {\n        var user = FindUser(id);\n        Console.WriteLine(user.Name); // WARNING: Possible null reference!\n        Console.WriteLine(user!.Name); // ! suppresses warning (use carefully)\n        \n        if (user is not null)\n            Console.WriteLine(user.Name); // No warning — null checked\n    }\n}",
+          "value": "#nullable enable\n\n// Supporting types for pattern matching demo\npublic record CustomerProfile(bool IsVip);\npublic record Order(CustomerProfile Customer, decimal Total, string[] Items);\n\n// PATTERN MATCHING: Powerful switch expressions\npublic decimal CalculateDiscount(Order order) => order switch\n{\n    // Property pattern with nested checks\n    { Customer.IsVip: true, Total: > 1000m } => 0.20m,      // 20% for VIP big orders\n    { Customer.IsVip: true } => 0.10m,                      // 10% for VIP\n    { Total: > 500m, Items.Length: >= 5 } => 0.05m,        // 5% bulk discount\n    { Total: <= 0m } => throw new ArgumentException(\"Invalid total\"),\n    _ => 0.0m                                               // Default\n};\n\n// Type and relational patterns\npublic string Describe(object value) => value switch\n{\n    int n when n < 0 => \"Negative integer\",\n    int n and (> 0 and < 100) => \"Small positive integer\",\n    string { Length: > 50 } s => $\"Long string: {s[..20]}...\",\n    null => \"Nothing\", // Null pattern\n    _ => \"Something else\"\n};\n\n// NULLABLE REFERENCE TYPES: Compile-time null safety\npublic class UserService\n{\n    public User? FindUser(string id) // ? means may return null\n    {\n        // ...\n        return null;\n    }\n    \n    public void Process(string id)\n    {\n        var user = FindUser(id);\n        Console.WriteLine(user.Name); // WARNING: Possible null reference!\n        Console.WriteLine(user!.Name); // ! suppresses warning (use carefully)\n        \n        if (user is not null)\n            Console.WriteLine(user.Name); // No warning — null checked\n    }\n}\n\npublic class User { public string Name { get; set; } = string.Empty; }",
           "output": "Pattern matching provides declarative conditional logic; nullable reference types prevent NullReferenceExceptions at compile time."
         },
         {
@@ -258,13 +274,13 @@
         {
           "type": "code",
           "language": "csharp",
-          "value": "using System.Runtime.CompilerServices;\n\npublic class AsyncPatterns\n{\n    // ValueTask<T>: Use when the result is often available synchronously\n    // Reduces Task allocation overhead for cached/fast paths\n    private readonly Dictionary<int, User> _cache = new();\n    \n    public ValueTask<User> GetUserAsync(int id)\n    {\n        if (_cache.TryGetValue(id, out var user))\n            return new ValueTask<User>(user); // Zero allocation\n        \n        return new ValueTask<User>(FetchFromDbAsync(id));\n    }\n    \n    private async Task<User> FetchFromDbAsync(int id)\n    {\n        await Task.Delay(100); // Simulate DB call\n        return new User(id, \"Alice\");\n    }\n    \n    // IAsyncEnumerable<T>: Streaming async sequences\n    public async IAsyncEnumerable<int> GetLargeDatasetAsync(\n        [EnumeratorCancellation] CancellationToken ct = default)\n    {\n        for (int i = 0; i < 1000; i++)\n        {\n            await Task.Delay(10, ct); // Async yield\n            yield return i;\n        }\n    }\n}",
+          "value": "using System.Runtime.CompilerServices;\n\npublic class AsyncPatterns\n{\n    // ValueTask<T>: Use when the result is often available synchronously\n    // Reduces Task allocation overhead for cached/fast paths\n    private readonly Dictionary<int, User> _cache = new();\n    \n    public ValueTask<User> GetUserAsync(int id)\n    {\n        if (_cache.TryGetValue(id, out var user))\n            return new ValueTask<User>(user); // Zero allocation\n        \n        return new ValueTask<User>(FetchFromDbAsync(id));\n    }\n    \n    private async Task<User> FetchFromDbAsync(int id)\n    {\n        await Task.Delay(100); // Simulate DB call\n        return new User(id, \"Alice\");\n    }\n    \n    // IAsyncEnumerable<T>: Streaming async sequences\n    public async IAsyncEnumerable<int> GetLargeDatasetAsync(\n        [EnumeratorCancellation] CancellationToken ct = default)\n    {\n        for (int i = 0; i < 1000; i++)\n        {\n            await Task.Delay(10, ct); // Async yield\n            yield return i;\n        }\n    }\n}\n\npublic class User\n{\n    public int Id { get; }\n    public string Name { get; }\n    public User(int id, string name) { Id = id; Name = name; }\n}",
           "output": "ValueTask<T> optimizes synchronous hot paths; IAsyncEnumerable<T> enables async streaming without buffering entire collections."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "// PROPER PATTERNS: Avoid async void, use CancellationToken, handle exceptions\npublic class AsyncBestPractices\n{\n    // BAD: async void — exceptions crash the process, cannot be awaited\n    // public async void BadMethod() { }\n    \n    // GOOD: Return Task, accept CancellationToken\n    public async Task ProcessBatchAsync(\n        IEnumerable<Item> items, \n        CancellationToken ct = default)\n    {\n        // ConfigureAwait(false) in libraries — don't capture SynchronizationContext\n        var data = await FetchDataAsync().ConfigureAwait(false);\n        \n        // Parallel async with constrained concurrency\n        var semaphore = new SemaphoreSlim(10);\n        var tasks = items.Select(async item =>\n        {\n            await semaphore.WaitAsync(ct);\n            try { await ProcessItemAsync(item, ct); }\n            finally { semaphore.Release(); }\n        });\n        \n        await Task.WhenAll(tasks);\n    }\n    \n    // Fire-and-forget with proper exception handling\n    public void TriggerBackgroundWork()\n    {\n        _ = BackgroundWorkAsync().ContinueWith(t =>\n        {\n            if (t.IsFaulted)\n                _logger.LogError(t.Exception, \"Background work failed\");\n        }, TaskScheduler.Default);\n    }\n}",
+          "value": "// PROPER PATTERNS: Avoid async void, use CancellationToken, handle exceptions\npublic class AsyncBestPractices\n{\n    // BAD: async void — exceptions crash the process, cannot be awaited\n    // public async void BadMethod() { }\n    \n    // GOOD: Return Task, accept CancellationToken\n    public async Task ProcessBatchAsync(\n        IEnumerable<Item> items, \n        CancellationToken ct = default)\n    {\n        // ConfigureAwait(false) in libraries — don't capture SynchronizationContext\n        var data = await FetchDataAsync().ConfigureAwait(false);\n        \n        // Parallel async with constrained concurrency\n        var semaphore = new SemaphoreSlim(10);\n        var tasks = items.Select(async item =>\n        {\n            await semaphore.WaitAsync(ct);\n            try { await ProcessItemAsync(item, ct); }\n            finally { semaphore.Release(); }\n        });\n        \n        await Task.WhenAll(tasks);\n    }\n    \n    // Fire-and-forget with proper exception handling\n    public void TriggerBackgroundWork()\n    {\n        _ = BackgroundWorkAsync().ContinueWith(t =>\n        {\n            if (t.IsFaulted)\n                _logger.LogError(t.Exception, \"Background work failed\");\n        }, TaskScheduler.Default);\n    }\n}\n\npublic class Item { }",
           "output": "Demonstrates semaphore-based throttling, ConfigureAwait(false), and safe fire-and-forget patterns."
         },
         {
@@ -283,121 +299,7 @@
       ]
     },
     {
-      "partTitle": "Part 8: Reflection, Attributes & Source Generators",
-      "badge": "Metaprogramming",
-      "blocks": [
-        {
-          "type": "heading",
-          "level": "h2",
-          "value": "Runtime Introspection, Metadata-Driven Logic, and AOT-Friendly Code Generation"
-        },
-        {
-          "type": "paragraph",
-          "value": "Reflection allows runtime inspection of types, but it's slow and incompatible with AOT compilation. **Attributes** annotate code with metadata. Modern C# favors **Source Generators** that run at compile-time to generate code, eliminating runtime reflection overhead entirely."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "// CUSTOM ATTRIBUTE\n[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]\npublic class AuditAttribute : Attribute\n{\n    public string Action { get; }\n    public AuditAttribute(string action) => Action = action;\n}\n\n// APPLYING METADATA\n[Audit(\"UserCreation\")]\npublic class UserService\n{\n    [Audit(\"PasswordChange\")]\n    public void ChangePassword(Guid userId, string newPassword) { }\n}\n\n// RUNTIME REFLECTION (slow, avoid in hot paths)\npublic static class ReflectionHelper\n{\n    public static void ScanForAudits(Type type)\n    {\n        var classAudit = type.GetCustomAttribute<AuditAttribute>();\n        Console.WriteLine($\"Class audit: {classAudit?.Action}\");\n        \n        foreach (var method in type.GetMethods())\n        {\n            var methodAudit = method.GetCustomAttribute<AuditAttribute>();\n            if (methodAudit != null)\n                Console.WriteLine($\"  Method {method.Name}: {methodAudit.Action}\");\n        }\n    }\n}",
-          "output": "Custom attributes store metadata that can be inspected via reflection for cross-cutting concerns like logging, validation, or authorization."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "// SOURCE GENERATOR APPROACH (Compile-time, AOT-compatible)\n// Instead of reflection, generate code at compile time\n\n// Usage with a source generator package like System.Text.Json\n// The generator creates serialization code at build time:\n\n[JsonSerializable(typeof(User))]\n[JsonSerializable(typeof(Order))]\npublic partial class AppJsonContext : JsonSerializerContext { }\n\n// Usage — zero reflection, extremely fast, trim/AOT safe:\nvar user = JsonSerializer.Deserialize(json, AppJsonContext.Default.User);\nvar json = JsonSerializer.Serialize(user, AppJsonContext.Default.User);",
-          "output": "Source generators move work from runtime to compile-time, enabling high performance and Native AOT compatibility."
-        },
-        {
-          "type": "quiz",
-          "quizType": "input",
-          "question": "Which C# feature generates code at compile-time to replace slow runtime reflection?",
-          "correctAnswer": "Source Generators",
-          "explanation": "Source Generators analyze code during compilation and generate additional C# files that are compiled alongside your code, eliminating runtime reflection overhead."
-        }
-      ]
-    },
-    {
-      "partTitle": "Part 9: Exception Handling, Logging & Resilience",
-      "badge": "Production",
-      "blocks": [
-        {
-          "type": "heading",
-          "level": "h2",
-          "value": "Structured Exceptions, Polly Policies, and Observability"
-        },
-        {
-          "type": "paragraph",
-          "value": "Production C# code requires robust error handling beyond try/catch. Use **custom exception hierarchies**, **Polly** for resilience patterns (retry, circuit breaker, timeout), and **ILogger<T>** for structured logging. Never catch `Exception` unless logging and re-throwing or handling a truly fatal scenario gracefully."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "// CUSTOM EXCEPTION HIERARCHY\npublic abstract class DomainException : Exception\n{\n    protected DomainException(string message) : base(message) { }\n    public abstract int StatusCode { get; }\n}\n\npublic class NotFoundException : DomainException\n{\n    public NotFoundException(string entity, object id) \n        : base($\"{entity} with id {id} was not found.\") { }\n    public override int StatusCode => 404;\n}\n\npublic class ValidationException : DomainException\n{\n    public IReadOnlyList<string> Errors { get; }\n    public ValidationException(IEnumerable<string> errors) : base(\"Validation failed\")\n        => Errors = errors.ToList().AsReadOnly();\n    public override int StatusCode => 400;\n}",
-          "output": "Domain-specific exceptions enable differentiated handling in middleware and APIs."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "using Polly;\nusing Polly.Retry;\nusing Microsoft.Extensions.Logging;\n\npublic class ResilientApiClient\n{\n    private readonly HttpClient _httpClient;\n    private readonly ILogger<ResilientApiClient> _logger;\n    private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;\n    \n    public ResilientApiClient(HttpClient client, ILogger<ResilientApiClient> logger)\n    {\n        _httpClient = client;\n        _logger = logger;\n        \n        _retryPolicy = Policy\n            .HandleResult<HttpResponseMessage>(r => \n                (int)r.StatusCode >= 500 || r.StatusCode == HttpStatusCode.RequestTimeout)\n            .WaitAndRetryAsync(\n                retryCount: 3,\n                sleepDurationProvider: retryAttempt => \n                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential backoff\n                onRetry: (outcome, timeSpan, retryCount, context) =>\n                {\n                    _logger.LogWarning(\n                        \"Retry {RetryCount} after {Delay}s due to {StatusCode}\",\n                        retryCount, timeSpan.TotalSeconds, outcome.Result?.StatusCode);\n                });\n    }\n    \n    public async Task<string> GetDataAsync(string url, CancellationToken ct)\n    {\n        var response = await _retryPolicy.ExecuteAsync(\n            () => _httpClient.GetAsync(url, ct));\n        \n        response.EnsureSuccessStatusCode();\n        return await response.Content.ReadAsStringAsync(ct);\n    }\n}",
-          "output": "Polly enables declarative resilience policies with exponential backoff and structured logging."
-        },
-        {
-          "type": "quiz",
-          "quizType": "mcq",
-          "question": "Which pattern spaces out retry attempts increasingly further apart to avoid overwhelming a recovering service?",
-          "options": [
-            "Circuit Breaker",
-            "Exponential Backoff",
-            "Bulkhead Isolation",
-            "Fail-Fast"
-          ],
-          "correctAnswer": "Exponential Backoff",
-          "explanation": "Exponential backoff increases the delay between retries (e.g., 2s, 4s, 8s) to give the downstream service time to recover without being flooded with requests."
-        }
-      ]
-    },
-    {
-      "partTitle": "Part 10: Dependency Injection, Configuration & Middleware",
-      "badge": "Architecture",
-      "blocks": [
-        {
-          "type": "heading",
-          "level": "h2",
-          "value": "Inversion of Control, Service Lifetimes, and Pipeline Patterns"
-        },
-        {
-          "type": "paragraph",
-          "value": "Modern .NET applications rely heavily on the built-in DI container. Understanding service lifetimes (**Transient**, **Scoped**, **Singleton**) prevents memory leaks and captive dependencies. The Options pattern provides strongly-typed configuration, and middleware pipelines enable cross-cutting concerns."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "// SERVICE LIFETIMES\npublic interface IReportGenerator { string Generate(); }\n\n// Transient: New instance per request (stateless, lightweight)\npublic class PdfReportGenerator : IReportGenerator\n{\n    public string Generate() => \"PDF Report\";\n}\n\n// Singleton: One instance for the application lifetime (thread-safe required)\npublic class MetricsCollector\n{\n    private long _requestCount = 0;\n    public void RecordRequest() => Interlocked.Increment(ref _requestCount);\n    public long GetCount() => Interlocked.Read(ref _requestCount);\n}\n\n// Scoped: One instance per HTTP request / scope (DbContext pattern)\npublic class OrderRepository\n{\n    private readonly AppDbContext _db;\n    public OrderRepository(AppDbContext db) => _db = db; // Scoped dependency\n}",
-          "output": "Correct lifetime selection prevents memory leaks (captive dependencies) and threading issues."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "// STRONGLY-TYPED CONFIGURATION (Options Pattern)\npublic class EmailSettings\n{\n    public string SmtpServer { get; set; } = string.Empty;\n    public int Port { get; set; }\n    public bool EnableSsl { get; set; }\n}\n\n// Registration\nbuilder.Services.Configure<EmailSettings>(\n    builder.Configuration.GetSection(\"Email\"));\n\n// Consumption\npublic class EmailService\n{\n    private readonly EmailSettings _settings;\n    public EmailService(IOptions<EmailSettings> options) // or IOptionsSnapshot for reload\n        => _settings = options.Value;\n}\n\n// CUSTOM MIDDLEWARE\npublic class RequestTimingMiddleware(RequestDelegate next, ILogger<RequestTimingMiddleware> logger)\n{\n    public async Task InvokeAsync(HttpContext context)\n    {\n        var stopwatch = Stopwatch.StartNew();\n        logger.LogInformation(\"Request {Method} {Path} started\", \n            context.Request.Method, \n            context.Request.Path);\n        \n        await next(context);\n        \n        stopwatch.Stop();\n        logger.LogInformation(\"Request {Method} {Path} completed in {ElapsedMs}ms — Status {StatusCode}\",\n            context.Request.Method,\n            context.Request.Path,\n            stopwatch.ElapsedMilliseconds,\n            context.Response.StatusCode);\n    }\n}",
-          "output": "Options pattern provides type-safe configuration; middleware enables cross-cutting concerns like logging, auth, and exception handling."
-        },
-        {
-          "type": "quiz",
-          "quizType": "mcq",
-          "question": "Which DI lifetime creates a new instance every time the service is requested from the container?",
-          "options": [
-            "Singleton",
-            "Scoped",
-            "Transient",
-            "PerThread"
-          ],
-          "correctAnswer": "Transient",
-          "explanation": "Transient services are instantiated anew every time they are resolved from the service provider. Scoped services live for the duration of a request scope, and Singleton services live for the application's lifetime."
-        }
-      ]
-    },
-    {
-      "partTitle": "Part 11: Entity Framework Core & Data Access Patterns",
+      "partTitle": "Part 8: Entity Framework Core & Data Access Patterns",
       "badge": "Data",
       "blocks": [
         {
@@ -407,18 +309,22 @@
         },
         {
           "type": "paragraph",
-          "value": "EF Core is the dominant ORM in .NET. Mastering **Eager Loading** (`Include`), **Projection** (`Select`), **Split Queries**, and **Compiled Queries** is essential. For high-performance scenarios, use `AsNoTracking()`, raw SQL with `SqlQuery`, or Dapper for micro-ORM speed."
+          "value": "EF Core is the dominant ORM in .NET. Mastering Eager Loading (`Include`), Projection (`Select`), Split Queries, and Compiled Queries is essential. For high-performance scenarios, use `AsNoTracking()`, raw SQL with `SqlQuery`, or Dapper for micro-ORM speed."
+        },
+        {
+          "type": "paragraph",
+          "value": "Understanding the difference between client-side and server-side evaluation prevents performance disasters in production."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "public class AppDbContext : DbContext\n{\n    public DbSet<Customer> Customers => Set<Customer>();\n    public DbSet<Order> Orders => Set<Order>();\n    \n    protected override void OnModelCreating(ModelBuilder modelBuilder)\n    {\n        // Fluent API for complex mappings\n        modelBuilder.Entity<Customer>(entity =>\n        {\n            entity.HasKey(c => c.Id);\n            entity.Property(c => c.Email).IsRequired().HasMaxLength(255);\n            entity.HasIndex(c => c.Email).IsUnique();\n            \n            entity.HasMany(c => c.Orders)\n                  .WithOne(o => o.Customer)\n                  .HasForeignKey(o => o.CustomerId)\n                  .OnDelete(DeleteBehavior.Cascade);\n        });\n    }\n}",
+          "value": "public class AppDbContext : DbContext\n{\n    public DbSet<Customer> Customers => Set<Customer>();\n    public DbSet<Order> Orders => Set<Order>();\n    \n    protected override void OnModelCreating(ModelBuilder modelBuilder)\n    {\n        // Fluent API for complex mappings\n        modelBuilder.Entity<Customer>(entity =>\n        {\n            entity.HasKey(c => c.Id);\n            entity.Property(c => c.Email).IsRequired().HasMaxLength(255);\n            entity.HasIndex(c => c.Email).IsUnique();\n            \n            entity.HasMany(c => c.Orders)\n                  .WithOne(o => o.Customer)\n                  .HasForeignKey(o => o.CustomerId)\n                  .OnDelete(DeleteBehavior.Cascade);\n        });\n    }\n}\n\npublic class Customer\n{\n    public Guid Id { get; set; }\n    public string Email { get; set; } = string.Empty;\n    public List<Order> Orders { get; set; } = new();\n}\n\npublic class Order\n{\n    public Guid Id { get; set; }\n    public Guid CustomerId { get; set; }\n    public Customer Customer { get; set; } = null!;\n}",
           "output": "Fluent API provides centralized, type-safe configuration for database schema and relationships."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "public class OrderRepository\n{\n    private readonly AppDbContext _db;\n    public OrderRepository(AppDbContext db) => _db = db;\n    \n    public async Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId)\n    {\n        // EAGER LOADING + PROJECTION: Fetch only needed columns, reduce network traffic\n        return await _db.Orders\n            .AsNoTracking() // Skip change tracking for read-only scenarios\n            .Where(o => o.CustomerId == customerId)\n            .Include(o => o.OrderItems)\n            .Select(o => new OrderDto\n            {\n                Id = o.Id,\n                Total = o.OrderItems.Sum(i => i.Quantity * i.UnitPrice),\n                ItemCount = o.OrderItems.Count\n            })\n            .ToListAsync();\n    }\n    \n    // COMPILED QUERY: Pre-compiled LINQ for hot paths (EF Core 6+)\n    private static readonly Func<AppDbContext, Guid, Task<Order?>> GetOrderByIdQuery =\n        EF.CompileAsyncQuery((AppDbContext db, Guid id) =>\n            db.Orders.AsNoTracking().FirstOrDefault(o => o.Id == id));\n    \n    public Task<Order?> GetOrderFastAsync(Guid id) => GetOrderByIdQuery(_db, id);\n    \n    // RAW SQL for complex reports\n    public async Task<List<MonthlyReport>> GetMonthlyReportAsync(int year)\n    {\n        var yearParam = new SqlParameter(\"@year\", year);\n        return await _db.Database\n            .SqlQueryRaw<MonthlyReport>(\n                \"SELECT Month, SUM(Total) as Revenue FROM Orders WHERE Year = @year GROUP BY Month\",\n                yearParam)\n            .ToListAsync();\n    }\n}",
+          "value": "public class OrderRepository\n{\n    private readonly AppDbContext _db;\n    public OrderRepository(AppDbContext db) => _db = db;\n    \n    public record OrderDto(Guid Id, decimal Total, int ItemCount);\n    public record MonthlyReport(int Month, decimal Revenue);\n    \n    public async Task<List<OrderDto>> GetCustomerOrdersAsync(Guid customerId)\n    {\n        // EAGER LOADING + PROJECTION: Fetch only needed columns, reduce network traffic\n        return await _db.Orders\n            .AsNoTracking() // Skip change tracking for read-only scenarios\n            .Where(o => o.CustomerId == customerId)\n            .Include(o => o.OrderItems)\n            .Select(o => new OrderDto\n            (\n                o.Id,\n                o.OrderItems.Sum(i => i.Quantity * i.UnitPrice),\n                o.OrderItems.Count\n            ))\n            .ToListAsync();\n    }\n    \n    // COMPILED QUERY: Pre-compiled LINQ for hot paths (EF Core 6+)\n    private static readonly Func<AppDbContext, Guid, Task<Order?>> GetOrderByIdQuery =\n        EF.CompileAsyncQuery((AppDbContext db, Guid id) =>\n            db.Orders.AsNoTracking().FirstOrDefault(o => o.Id == id));\n    \n    public Task<Order?> GetOrderFastAsync(Guid id) => GetOrderByIdQuery(_db, id);\n    \n    // RAW SQL for complex reports\n    public async Task<List<MonthlyReport>> GetMonthlyReportAsync(int year)\n    {\n        var yearParam = new SqlParameter(\"@year\", year);\n        return await _db.Database\n            .SqlQueryRaw<MonthlyReport>(\n                \"SELECT Month, SUM(Total) as Revenue FROM Orders WHERE Year = @year GROUP BY Month\",\n                yearParam)\n            .ToListAsync();\n    }\n}\n\npublic class OrderItem\n{\n    public int Quantity { get; set; }\n    public decimal UnitPrice { get; set; }\n}",
           "output": "Combines eager loading, projection, compiled queries, and raw SQL for optimal data access performance."
         },
         {
@@ -437,7 +343,165 @@
       ]
     },
     {
-      "partTitle": "Part 12: Multithreading, Parallelism & Concurrent Collections",
+      "partTitle": "Part 9: Unit Testing, TDD & Mocking with xUnit",
+      "badge": "Testing",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "xUnit, FluentAssertions, Moq, and Test Patterns"
+        },
+        {
+          "type": "paragraph",
+          "value": "Professional C# development demands comprehensive testing. xUnit is the modern standard. Combine it with Moq for mocking dependencies and FluentAssertions for readable assertions. Use the Arrange-Act-Assert pattern and test both happy paths and edge cases."
+        },
+        {
+          "type": "paragraph",
+          "value": "Data-driven tests using [Theory] allow you to verify behavior across multiple inputs with a single test method, keeping your test suite DRY and maintainable."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Xunit;\nusing Moq;\nusing FluentAssertions;\n\npublic class OrderServiceTests\n{\n    [Fact]\n    public async Task PlaceOrder_WithValidItems_CalculatesTotalCorrectly()\n    {\n        // ARRANGE\n        var mockRepo = new Mock<IOrderRepository>();\n        var mockPayment = new Mock<IPaymentGateway>();\n        \n        mockPayment.Setup(x => x.ChargeAsync(\n                It.IsAny<decimal>(), \n                It.IsAny<string>(), \n                It.IsAny<CancellationToken>()))\n            .ReturnsAsync(new PaymentResult { Success = true, TransactionId = \"TX-123\" });\n        \n        var service = new OrderService(mockRepo.Object, mockPayment.Object);\n        var items = new[] {\n            new OrderItem { ProductId = 1, Quantity = 2, UnitPrice = 10.00m },\n            new OrderItem { ProductId = 2, Quantity = 1, UnitPrice = 25.50m }\n        };\n        \n        // ACT\n        var result = await service.PlaceOrderAsync(\n            customerId: Guid.NewGuid(), \n            items: items);\n        \n        // ASSERT\n        result.Total.Should().Be(45.50m);\n        result.Status.Should().Be(OrderStatus.Confirmed);\n        mockRepo.Verify(x => x.SaveAsync(It.Is<Order>(o => o.Total == 45.50m)), Times.Once);\n    }\n    \n    [Theory]\n    [InlineData(-1, typeof(ArgumentException))]\n    [InlineData(0, typeof(ArgumentException))]\n    [InlineData(10001, typeof(ArgumentOutOfRangeException))]\n    public void CreateDiscount_InvalidPercentage_ThrowsException(int percentage, Type expectedException)\n    {\n        Action act = () => new Discount(percentage);\n        act.Should().Throw<Exception>().Which.Should().BeOfType(expectedException);\n    }\n}\n\npublic interface IOrderRepository { Task SaveAsync(Order order); }\npublic interface IPaymentGateway { Task<PaymentResult> ChargeAsync(decimal amount, string token, CancellationToken ct); }\npublic class PaymentResult { public bool Success { get; set; } public string TransactionId { get; set; } = string.Empty; }\npublic class Order { public decimal Total { get; set; } public OrderStatus Status { get; set; } }\npublic class OrderItem { public int ProductId { get; set; } public int Quantity { get; set; } public decimal UnitPrice { get; set; } }\npublic enum OrderStatus { Confirmed }\npublic class Discount { public Discount(int percentage) { if (percentage <= 0) throw new ArgumentException(); if (percentage > 10000) throw new ArgumentOutOfRangeException(); } }\npublic class OrderService\n{\n    private readonly IOrderRepository _repo;\n    private readonly IPaymentGateway _payment;\n    public OrderService(IOrderRepository repo, IPaymentGateway payment) { _repo = repo; _payment = payment; }\n    public async Task<Order> PlaceOrderAsync(Guid customerId, OrderItem[] items)\n    {\n        var order = new Order { Total = items.Sum(i => i.Quantity * i.UnitPrice), Status = OrderStatus.Confirmed };\n        await _payment.ChargeAsync(order.Total, \"token\", default);\n        await _repo.SaveAsync(order);\n        return order;\n    }\n}",
+          "output": "xUnit with Moq and FluentAssertions provides a powerful, readable testing stack for C#."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which xUnit attribute allows running the same test method with multiple different input values?",
+          "correctAnswer": "Theory",
+          "explanation": "[Theory] in xUnit is used for data-driven tests. It must be paired with data attributes like [InlineData], [ClassData], or [MemberData] to provide test inputs."
+        }
+      ]
+    },
+     {
+      "partTitle": "Part 10: Reflection, Attributes & Source Generators",
+      "badge": "Metaprogramming",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Runtime Introspection, Metadata-Driven Logic, and AOT-Friendly Code Generation"
+        },
+        {
+          "type": "paragraph",
+          "value": "Reflection allows runtime inspection of types, but it's slow and incompatible with AOT compilation. Attributes annotate code with metadata. Modern C# favors Source Generators that run at compile-time to generate code, eliminating runtime reflection overhead entirely."
+        },
+        {
+          "type": "paragraph",
+          "value": "When building libraries or frameworks, prefer source generators over reflection. They produce trim-safe, Native AOT-compatible assemblies with zero runtime overhead."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// CUSTOM ATTRIBUTE\n[AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]\npublic class AuditAttribute : Attribute\n{\n    public string Action { get; }\n    public AuditAttribute(string action) => Action = action;\n}\n\n// APPLYING METADATA\n[Audit(\"UserCreation\")]\npublic class UserService\n{\n    [Audit(\"PasswordChange\")]\n    public void ChangePassword(Guid userId, string newPassword) { }\n}\n\n// RUNTIME REFLECTION (slow, avoid in hot paths)\npublic static class ReflectionHelper\n{\n    public static void ScanForAudits(Type type)\n    {\n        var classAudit = type.GetCustomAttribute<AuditAttribute>();\n        Console.WriteLine($\"Class audit: {classAudit?.Action}\");\n        \n        foreach (var method in type.GetMethods())\n        {\n            var methodAudit = method.GetCustomAttribute<AuditAttribute>();\n            if (methodAudit != null)\n                Console.WriteLine($\"  Method {method.Name}: {methodAudit.Action}\");\n        }\n    }\n}",
+          "output": "Custom attributes store metadata that can be inspected via reflection for cross-cutting concerns like logging, validation, or authorization."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// SOURCE GENERATOR APPROACH (Compile-time, AOT-compatible)\n// Instead of reflection, generate code at compile time\n\n// Minimal domain models for the serializer context\npublic class User { public Guid Id { get; set; } public string Name { get; set; } = string.Empty; }\npublic class Order { public Guid Id { get; set; } public decimal Total { get; set; } }\n\n// Usage with a source generator package like System.Text.Json\n// The generator creates serialization code at build time:\n\n[JsonSerializable(typeof(User))]\n[JsonSerializable(typeof(Order))]\npublic partial class AppJsonContext : JsonSerializerContext { }\n\n// Usage — zero reflection, extremely fast, trim/AOT safe:\n// var user = JsonSerializer.Deserialize(json, AppJsonContext.Default.User);\n// var json = JsonSerializer.Serialize(user, AppJsonContext.Default.User);",
+          "output": "Source generators move work from runtime to compile-time, enabling high performance and Native AOT compatibility."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which C# feature generates code at compile-time to replace slow runtime reflection?",
+          "correctAnswer": "Source Generators",
+          "explanation": "Source Generators analyze code during compilation and generate additional C# files that are compiled alongside your code, eliminating runtime reflection overhead."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 11: Exception Handling, Logging & Resilience",
+      "badge": "Production",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Structured Exceptions, Polly Policies, and Observability"
+        },
+        {
+          "type": "paragraph",
+          "value": "Production C# code requires robust error handling beyond try/catch. Use custom exception hierarchies, Polly for resilience patterns (retry, circuit breaker, timeout), and ILogger<T> for structured logging. Never catch Exception unless logging and re-throwing or handling a truly fatal scenario gracefully."
+        },
+        {
+          "type": "paragraph",
+          "value": "Differentiated exception types let middleware return precise HTTP status codes and help operators diagnose issues quickly without parsing message strings."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// CUSTOM EXCEPTION HIERARCHY\npublic abstract class DomainException : Exception\n{\n    protected DomainException(string message) : base(message) { }\n    public abstract int StatusCode { get; }\n}\n\npublic class NotFoundException : DomainException\n{\n    public NotFoundException(string entity, object id) \n        : base($\"{entity} with id {id} was not found.\") { }\n    public override int StatusCode => 404;\n}\n\npublic class ValidationException : DomainException\n{\n    public IReadOnlyList<string> Errors { get; }\n    public ValidationException(IEnumerable<string> errors) : base(\"Validation failed\")\n        => Errors = errors.ToList().AsReadOnly();\n    public override int StatusCode => 400;\n}",
+          "output": "Domain-specific exceptions enable differentiated handling in middleware and APIs."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System.Net;\nusing Polly;\nusing Polly.Retry;\nusing Microsoft.Extensions.Logging;\n\npublic class ResilientApiClient\n{\n    private readonly HttpClient _httpClient;\n    private readonly ILogger<ResilientApiClient> _logger;\n    private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;\n    \n    public ResilientApiClient(HttpClient client, ILogger<ResilientApiClient> logger)\n    {\n        _httpClient = client;\n        _logger = logger;\n        \n        _retryPolicy = Policy\n            .HandleResult<HttpResponseMessage>(r => \n                (int)r.StatusCode >= 500 || r.StatusCode == HttpStatusCode.RequestTimeout)\n            .WaitAndRetryAsync(\n                retryCount: 3,\n                sleepDurationProvider: retryAttempt => \n                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), // Exponential backoff\n                onRetry: (outcome, timeSpan, retryCount, context) =>\n                {\n                    _logger.LogWarning(\n                        \"Retry {RetryCount} after {Delay}s due to {StatusCode}\",\n                        retryCount, timeSpan.TotalSeconds, outcome.Result?.StatusCode);\n                });\n    }\n    \n    public async Task<string> GetDataAsync(string url, CancellationToken ct)\n    {\n        var response = await _retryPolicy.ExecuteAsync(\n            () => _httpClient.GetAsync(url, ct));\n        \n        response.EnsureSuccessStatusCode();\n        return await response.Content.ReadAsStringAsync(ct);\n    }\n}",
+          "output": "Polly enables declarative resilience policies with exponential backoff and structured logging."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which pattern spaces out retry attempts increasingly further apart to avoid overwhelming a recovering service?",
+          "options": [
+            "Circuit Breaker",
+            "Exponential Backoff",
+            "Bulkhead Isolation",
+            "Fail-Fast"
+          ],
+          "correctAnswer": "Exponential Backoff",
+          "explanation": "Exponential backoff increases the delay between retries (e.g., 2s, 4s, 8s) to give the downstream service time to recover without being flooded with requests."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Dependency Injection, Configuration & Middleware",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Inversion of Control, Service Lifetimes, and Pipeline Patterns"
+        },
+        {
+          "type": "paragraph",
+          "value": "Modern .NET applications rely heavily on the built-in DI container. Understanding service lifetimes (Transient, Scoped, Singleton) prevents memory leaks and captive dependencies. The Options pattern provides strongly-typed configuration, and middleware pipelines enable cross-cutting concerns."
+        },
+        {
+          "type": "paragraph",
+          "value": "Choosing the wrong lifetime is a common source of production bugs: captive dependencies occur when a Singleton holds a reference to a Scoped service, causing stale data or memory leaks."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// SERVICE LIFETIMES\npublic interface IReportGenerator { string Generate(); }\n\n// Transient: New instance per request (stateless, lightweight)\npublic class PdfReportGenerator : IReportGenerator\n{\n    public string Generate() => \"PDF Report\";\n}\n\n// Singleton: One instance for the application lifetime (thread-safe required)\npublic class MetricsCollector\n{\n    private long _requestCount = 0;\n    public void RecordRequest() => Interlocked.Increment(ref _requestCount);\n    public long GetCount() => Interlocked.Read(ref _requestCount);\n}\n\n// Scoped: One instance per HTTP request / scope (DbContext pattern)\n// AppDbContext is assumed to be an EF Core DbContext in real projects\npublic class AppDbContext { }\n\npublic class OrderRepository\n{\n    private readonly AppDbContext _db;\n    public OrderRepository(AppDbContext db) => _db = db; // Scoped dependency\n}",
+          "output": "Correct lifetime selection prevents memory leaks (captive dependencies) and threading issues."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System.Diagnostics;\n\n// STRONGLY-TYPED CONFIGURATION (Options Pattern)\npublic class EmailSettings\n{\n    public string SmtpServer { get; set; } = string.Empty;\n    public int Port { get; set; }\n    public bool EnableSsl { get; set; }\n}\n\n// Registration\n// builder.Services.Configure<EmailSettings>(\n//     builder.Configuration.GetSection(\"Email\"));\n\n// Consumption\npublic class EmailService\n{\n    private readonly EmailSettings _settings;\n    public EmailService(IOptions<EmailSettings> options) // or IOptionsSnapshot for reload\n        => _settings = options.Value;\n}\n\n// CUSTOM MIDDLEWARE\npublic class RequestTimingMiddleware(RequestDelegate next, ILogger<RequestTimingMiddleware> logger)\n{\n    public async Task InvokeAsync(HttpContext context)\n    {\n        var stopwatch = Stopwatch.StartNew();\n        logger.LogInformation(\"Request {Method} {Path} started\", \n            context.Request.Method, \n            context.Request.Path);\n        \n        await next(context);\n        \n        stopwatch.Stop();\n        logger.LogInformation(\"Request {Method} {Path} completed in {ElapsedMs}ms — Status {StatusCode}\",\n            context.Request.Method,\n            context.Request.Path,\n            stopwatch.ElapsedMilliseconds,\n            context.Response.StatusCode);\n    }\n}",
+          "output": "Options pattern provides type-safe configuration; middleware enables cross-cutting concerns like logging, auth, and exception handling."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which DI lifetime creates a new instance every time the service is requested from the container?",
+          "options": [
+            "Singleton",
+            "Scoped",
+            "Transient",
+            "PerThread"
+          ],
+          "correctAnswer": "Transient",
+          "explanation": "Transient services are instantiated anew every time they are resolved from the service provider. Scoped services live for the duration of a request scope, and Singleton services live for the application's lifetime."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: Multithreading, Parallelism & Concurrent Collections",
       "badge": "Concurrency",
       "blocks": [
         {
@@ -447,12 +511,16 @@
         },
         {
           "type": "paragraph",
-          "value": "CPU-bound work benefits from parallelization via `Parallel.ForEach` and **PLINQ**. For thread-safe collections, use `ConcurrentDictionary`, `ConcurrentQueue`, and `BlockingCollection`. Understand `lock`, `Monitor`, `SemaphoreSlim`, and `Interlocked` for synchronization primitives."
+          "value": "CPU-bound work benefits from parallelization via Parallel.ForEach and PLINQ. For thread-safe collections, use ConcurrentDictionary, ConcurrentQueue, and BlockingCollection. Understand lock, Monitor, SemaphoreSlim, and Interlocked for synchronization primitives."
+        },
+        {
+          "type": "paragraph",
+          "value": "Always measure before parallelizing: overhead from context switching can make parallel execution slower than sequential for small workloads."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "using System.Collections.Concurrent;\n\npublic class ConcurrentProcessor\n{\n    // ConcurrentDictionary: Thread-safe reads and writes\n    private readonly ConcurrentDictionary<int, string> _cache = new();\n    \n    // BlockingCollection: Producer-consumer pattern with backpressure\n    private readonly BlockingCollection<WorkItem> _workQueue = new(boundedCapacity: 1000);\n    \n    public string GetOrCompute(int key, Func<int, string> factory)\n    {\n        return _cache.GetOrAdd(key, factory);\n    }\n    \n    public void RunConsumer(CancellationToken ct)\n    {\n        // Multiple consumers can call this in parallel\n        foreach (var item in _workQueue.GetConsumingEnumerable(ct))\n        {\n            Process(item);\n        }\n    }\n    \n    private void Process(WorkItem item) { /* ... */ }\n}\n\n// PLINQ: Parallel LINQ for CPU-bound operations\npublic class PlinqDemo\n{\n    public double[] ProcessInParallel(double[] data)\n    {\n        return data\n            .AsParallel()           // Enable parallelization\n            .AsOrdered()            // Preserve input order (has overhead)\n            .WithDegreeOfParallelism(Environment.ProcessorCount)\n            .Select(HeavyComputation)\n            .ToArray();\n    }\n    \n    private double HeavyComputation(double input) => Math.Sin(input) * Math.Cos(input);\n}",
+          "value": "using System.Collections.Concurrent;\n\npublic record WorkItem(int Id);\n\npublic class ConcurrentProcessor\n{\n    // ConcurrentDictionary: Thread-safe reads and writes\n    private readonly ConcurrentDictionary<int, string> _cache = new();\n    \n    // BlockingCollection: Producer-consumer pattern with backpressure\n    private readonly BlockingCollection<WorkItem> _workQueue = new(boundedCapacity: 1000);\n    \n    public string GetOrCompute(int key, Func<int, string> factory)\n    {\n        return _cache.GetOrAdd(key, factory);\n    }\n    \n    public void RunConsumer(CancellationToken ct)\n    {\n        // Multiple consumers can call this in parallel\n        foreach (var item in _workQueue.GetConsumingEnumerable(ct))\n        {\n            Process(item);\n        }\n    }\n    \n    private void Process(WorkItem item) { /* ... */ }\n}\n\n// PLINQ: Parallel LINQ for CPU-bound operations\npublic class PlinqDemo\n{\n    public double[] ProcessInParallel(double[] data)\n    {\n        return data\n            .AsParallel()           // Enable parallelization\n            .AsOrdered()            // Preserve input order (has overhead)\n            .WithDegreeOfParallelism(Environment.ProcessorCount)\n            .Select(HeavyComputation)\n            .ToArray();\n    }\n    \n    private double HeavyComputation(double input) => Math.Sin(input) * Math.Cos(input);\n}",
           "output": "Concurrent collections enable lock-free or fine-grained locking; PLINQ parallelizes CPU-intensive LINQ queries."
         },
         {
@@ -477,34 +545,6 @@
       ]
     },
     {
-      "partTitle": "Part 13: Unit Testing, TDD & Mocking with xUnit",
-      "badge": "Testing",
-      "blocks": [
-        {
-          "type": "heading",
-          "level": "h2",
-          "value": "xUnit, FluentAssertions, Moq, and Test Patterns"
-        },
-        {
-          "type": "paragraph",
-          "value": "Professional C# development demands comprehensive testing. **xUnit** is the modern standard. Combine it with **Moq** for mocking dependencies and **FluentAssertions** for readable assertions. Use the **Arrange-Act-Assert** pattern and test both happy paths and edge cases."
-        },
-        {
-          "type": "code",
-          "language": "csharp",
-          "value": "using Xunit;\nusing Moq;\nusing FluentAssertions;\n\npublic class OrderServiceTests\n{\n    [Fact]\n    public async Task PlaceOrder_WithValidItems_CalculatesTotalCorrectly()\n    {\n        // ARRANGE\n        var mockRepo = new Mock<IOrderRepository>();\n        var mockPayment = new Mock<IPaymentGateway>();\n        \n        mockPayment.Setup(x => x.ChargeAsync(\n                It.IsAny<decimal>(), \n                It.IsAny<string>(), \n                It.IsAny<CancellationToken>()))\n            .ReturnsAsync(new PaymentResult { Success = true, TransactionId = \"TX-123\" });\n        \n        var service = new OrderService(mockRepo.Object, mockPayment.Object);\n        var items = new[] {\n            new OrderItem { ProductId = 1, Quantity = 2, UnitPrice = 10.00m },\n            new OrderItem { ProductId = 2, Quantity = 1, UnitPrice = 25.50m }\n        };\n        \n        // ACT\n        var result = await service.PlaceOrderAsync(\n            customerId: Guid.NewGuid(), \n            items: items);\n        \n        // ASSERT\n        result.Total.Should().Be(45.50m);\n        result.Status.Should().Be(OrderStatus.Confirmed);\n        mockRepo.Verify(x => x.SaveAsync(It.Is<Order>(o => o.Total == 45.50m)), Times.Once);\n    }\n    \n    [Theory]\n    [InlineData(-1, typeof(ArgumentException))]\n    [InlineData(0, typeof(ArgumentException))]\n    [InlineData(10001, typeof(ArgumentOutOfRangeException))]\n    public void CreateDiscount_InvalidPercentage_ThrowsException(int percentage, Type expectedException)\n    {\n        Action act = () => new Discount(percentage);\n        act.Should().Throw<Exception>().Which.Should().BeOfType(expectedException);\n    }\n}",
-          "output": "xUnit with Moq and FluentAssertions provides a powerful, readable testing stack for C#."
-        },
-        {
-          "type": "quiz",
-          "quizType": "input",
-          "question": "Which xUnit attribute allows running the same test method with multiple different input values?",
-          "correctAnswer": "Theory",
-          "explanation": "[Theory] in xUnit is used for data-driven tests. It must be paired with data attributes like [InlineData], [ClassData], or [MemberData] to provide test inputs."
-        }
-      ]
-    },
-    {
       "partTitle": "Part 14: Performance Optimization & Benchmarking",
       "badge": "Performance",
       "blocks": [
@@ -515,12 +555,16 @@
         },
         {
           "type": "paragraph",
-          "value": "Never optimize without measuring. **BenchmarkDotNet** provides statistically rigorous performance measurements. Use `MemoryDiagnoser` to track allocations. Techniques like object pooling (`ArrayPool<T>`), `StringBuilder` reuse, and struct-based enumerators dramatically reduce GC pressure."
+          "value": "Never optimize without measuring. BenchmarkDotNet provides statistically rigorous performance measurements. Use MemoryDiagnoser to track allocations. Techniques like object pooling (ArrayPool<T>), StringBuilder reuse, and struct-based enumerators dramatically reduce GC pressure."
+        },
+        {
+          "type": "paragraph",
+          "value": "In high-throughput scenarios, every allocation matters. Temporary buffers, string concatenation in loops, and unnecessary boxing are the most common culprits in otherwise well-written C#."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "using BenchmarkDotNet.Attributes;\nusing BenchmarkDotNet.Running;\nusing System.Buffers;\n\n[MemoryDiagnoser] // Tracks allocations\npublic class StringConcatBenchmarks\n{\n    private readonly string[] _words = Enumerable.Range(0, 100)\n        .Select(i => $\"word{i}\")\n        .ToArray();\n    \n    [Benchmark(Baseline = true)]\n    public string StringConcat()\n    {\n        var result = \"\";\n        foreach (var word in _words)\n            result += word; // Creates new string every iteration — O(n²) allocations\n        return result;\n    }\n    \n    [Benchmark]\n    public string StringBuilder()\n    {\n        var sb = new StringBuilder();\n        foreach (var word in _words)\n            sb.Append(word);\n        return sb.ToString();\n    }\n    \n    [Benchmark]\n    public string StringBuilderPooled()\n    {\n        var sb = new StringBuilder(); // In real apps, use StringBuilderPool\n        foreach (var word in _words)\n            sb.Append(word);\n        return sb.ToString();\n    }\n}\n\n// ARRAY POOLING: Reuse arrays instead of allocating\npublic class PooledBufferExample\n{\n    public void ProcessLargeData(int size)\n    {\n        byte[] buffer = ArrayPool<byte>.Shared.Rent(size);\n        try\n        {\n            // Use buffer...\n            ReadData(buffer.AsSpan(0, size));\n        }\n        finally\n        {\n            ArrayPool<byte>.Shared.Return(buffer, clearArray: true); // Return to pool\n        }\n    }\n}",
+          "value": "using BenchmarkDotNet.Attributes;\nusing BenchmarkDotNet.Running;\nusing System.Buffers;\n\n[MemoryDiagnoser] // Tracks allocations\npublic class StringConcatBenchmarks\n{\n    private readonly string[] _words = Enumerable.Range(0, 100)\n        .Select(i => $\"word{i}\")\n        .ToArray();\n    \n    [Benchmark(Baseline = true)]\n    public string StringConcat()\n    {\n        var result = \"\";\n        foreach (var word in _words)\n            result += word; // Creates new string every iteration — O(n²) allocations\n        return result;\n    }\n    \n    [Benchmark]\n    public string StringBuilder()\n    {\n        var sb = new StringBuilder();\n        foreach (var word in _words)\n            sb.Append(word);\n        return sb.ToString();\n    }\n    \n    [Benchmark]\n    public string StringBuilderPooled()\n    {\n        var sb = new StringBuilder(); // In real apps, use StringBuilderPool\n        foreach (var word in _words)\n            sb.Append(word);\n        return sb.ToString();\n    }\n}\n\n// ARRAY POOLING: Reuse arrays instead of allocating\npublic class PooledBufferExample\n{\n    public void ProcessLargeData(int size)\n    {\n        byte[] buffer = ArrayPool<byte>.Shared.Rent(size);\n        try\n        {\n            // Use buffer for I/O or computation...\n            Span<byte> span = buffer.AsSpan(0, size);\n            span.Fill(0xAA);\n        }\n        finally\n        {\n            ArrayPool<byte>.Shared.Return(buffer, clearArray: true); // Return to pool\n        }\n    }\n}",
           "output": "BenchmarkDotNet provides precise measurements; ArrayPool<T> eliminates allocations for temporary buffers."
         },
         {
@@ -549,18 +593,22 @@
         },
         {
           "type": "paragraph",
-          "value": ".NET 6+ introduced **Minimal APIs** for low-ceremony HTTP endpoints. **gRPC** provides high-performance contract-first RPC using Protocol Buffers. For large applications, **Vertical Slice Architecture** groups code by feature rather than technical concern, improving cohesion."
+          "value": ".NET 6+ introduced Minimal APIs for low-ceremony HTTP endpoints. gRPC provides high-performance contract-first RPC using Protocol Buffers. For large applications, Vertical Slice Architecture groups code by feature rather than technical concern, improving cohesion."
+        },
+        {
+          "type": "paragraph",
+          "value": "Minimal APIs are ideal for microservices and serverless functions where a full MVC pipeline is unnecessary overhead. gRPC shines in service-to-service communication where low latency and strong contracts matter."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "// MINIMAL API (.NET 6+): Concise endpoint definition\nvar builder = WebApplication.CreateBuilder(args);\nvar app = builder.Build();\n\n// GET /users/123\napp.MapGet(\"/users/{id:guid}\", async (Guid id, IUserService service) =>\n{\n    var user = await service.GetByIdAsync(id);\n    return user is null ? Results.NotFound() : Results.Ok(user);\n})\n.WithName(\"GetUser\")\n.WithOpenApi();\n\n// POST /orders with validation filter\napp.MapPost(\"/orders\", async (CreateOrderRequest request, IOrderService service) =>\n{\n    var orderId = await service.CreateAsync(request);\n    return Results.Created($\"/orders/{orderId}\", new { Id = orderId });\n})\n.AddEndpointFilter<ValidationFilter<CreateOrderRequest>>();\n\napp.Run();",
+          "value": "// MINIMAL API (.NET 6+): Concise endpoint definition\n// Supporting stubs for a self-contained example\npublic interface IUserService { Task<User?> GetByIdAsync(Guid id); }\npublic interface IOrderService { Task<Guid> CreateAsync(CreateOrderRequest request); }\npublic record CreateOrderRequest(string ProductName, int Quantity);\npublic record User(Guid Id, string Name);\npublic class ValidationFilter<T> : IEndpointFilter\n{\n    public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext ctx, EndpointFilterDelegate next)\n        => await next(ctx);\n}\n\n// var builder = WebApplication.CreateBuilder(args);\n// var app = builder.Build();\n\n// GET /users/123\n// app.MapGet(\"/users/{id:guid}\", async (Guid id, IUserService service) =>\n// {\n//     var user = await service.GetByIdAsync(id);\n//     return user is null ? Results.NotFound() : Results.Ok(user);\n// })\n// .WithName(\"GetUser\")\n// .WithOpenApi();\n\n// POST /orders with validation filter\n// app.MapPost(\"/orders\", async (CreateOrderRequest request, IOrderService service) =>\n// {\n//     var orderId = await service.CreateAsync(request);\n//     return Results.Created($\"/orders/{orderId}\", new { Id = orderId });\n// })\n// .AddEndpointFilter<ValidationFilter<CreateOrderRequest>>();\n\n// app.Run();",
           "output": "Minimal APIs reduce boilerplate while maintaining full access to the DI container and middleware pipeline."
         },
         {
           "type": "code",
           "language": "csharp",
-          "value": "// gRPC SERVICE (Contract-first high-performance RPC)\n[ProtoContract]\npublic class GetUserRequest\n{\n    [ProtoMember(1)]\n    public Guid UserId { get; set; }\n}\n\n[ProtoContract]\npublic class UserResponse\n{\n    [ProtoMember(1)] public Guid Id { get; set; }\n    [ProtoMember(2)] public string Name { get; set; } = string.Empty;\n    [ProtoMember(3)] public string Email { get; set; } = string.Empty;\n}\n\npublic class UserGrpcService : UserService.UserServiceBase\n{\n    private readonly IUserRepository _repo;\n    public UserGrpcService(IUserRepository repo) => _repo = repo;\n    \n    public override async Task<UserResponse> GetUser(\n        GetUserRequest request, ServerCallContext context)\n    {\n        var user = await _repo.GetByIdAsync(request.UserId);\n        if (user is null)\n            throw new RpcException(new Status(StatusCode.NotFound, \"User not found\"));\n        \n        return new UserResponse \n        { \n            Id = user.Id, \n            Name = user.Name, \n            Email = user.Email \n        };\n    }\n}",
+          "value": "// gRPC SERVICE (Contract-first high-performance RPC)\n// Domain model and repository stub\npublic interface IUserRepository { Task<User?> GetByIdAsync(Guid id); }\npublic class User\n{\n    public Guid Id { get; set; }\n    public string Name { get; set; } = string.Empty;\n    public string Email { get; set; } = string.Empty;\n}\n\n// Protobuf contracts (normally generated from .proto files)\n[ProtoContract]\npublic class GetUserRequest\n{\n    [ProtoMember(1)]\n    public Guid UserId { get; set; }\n}\n\n[ProtoContract]\npublic class UserResponse\n{\n    [ProtoMember(1)] public Guid Id { get; set; }\n    [ProtoMember(2)] public string Name { get; set; } = string.Empty;\n    [ProtoMember(3)] public string Email { get; set; } = string.Empty;\n}\n\n// gRPC service implementation (base class generated from protobuf)\npublic class UserGrpcService : UserService.UserServiceBase\n{\n    private readonly IUserRepository _repo;\n    public UserGrpcService(IUserRepository repo) => _repo = repo;\n    \n    public override async Task<UserResponse> GetUser(\n        GetUserRequest request, ServerCallContext context)\n    {\n        var user = await _repo.GetByIdAsync(request.UserId);\n        if (user is null)\n            throw new RpcException(new Status(StatusCode.NotFound, \"User not found\"));\n        \n        return new UserResponse \n        { \n            Id = user.Id, \n            Name = user.Name, \n            Email = user.Email \n        };\n    }\n}",
           "output": "gRPC uses HTTP/2 and binary serialization (Protobuf) for significantly lower latency than JSON REST APIs."
         },
         {
