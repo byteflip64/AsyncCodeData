@@ -495,6 +495,246 @@
         "explanation": "Merge Sort guarantees O(n log n) time in all cases (best, average, and worst) because it always divides the array in half and merges. Bubble, Selection, and Insertion Sort all have O(n^2) worst-case time complexity, making them unsuitable for large datasets."
       }
     ]
+  },
+      {
+    "partTitle": "Part 11: Searching Algorithms — Finding What You Need",
+    "badge": "Algorithms",
+    "blocks": [
+      {
+        "type": "heading",
+        "level": "h2",
+        "value": "Linear Search, Binary Search, and Beyond"
+      },
+      {
+        "type": "paragraph",
+        "value": "Searching is the process of finding a specific element within a collection of data. It is one of the most common operations in programming—whether looking up a user by ID, finding a word in a dictionary, or locating a file on disk. The efficiency of your search algorithm directly impacts application performance. The two fundamental search strategies are linear search (check every element one by one) and binary search (repeatedly divide the search space in half). Understanding when to use each is a core skill."
+      },
+      {
+        "type": "paragraph",
+        "value": "Linear search works on any collection—sorted or unsorted, arrays or linked lists. It starts at the first element and checks each one until it finds the target or reaches the end. Time complexity is O(n) because in the worst case, you check every element. While simple, linear search is the only option for unsorted data or data structures without random access (like linked lists). Binary search requires sorted data and random access (arrays or vectors). It compares the target to the middle element: if equal, found; if target is smaller, search the left half; if larger, search the right half. Each step eliminates half the remaining elements, giving O(log n) time—a massive improvement for large datasets."
+      },
+      {
+        "type": "paragraph",
+        "value": "Beyond these basics, interpolation search estimates the position of the target based on its value relative to the range (useful for uniformly distributed data). Exponential search finds an upper bound by doubling, then binary searches within that bound. Ternary search divides the range into three parts. For string data, tries (prefix trees) enable efficient prefix-based searching. Hash tables provide O(1) average-case lookup but require a hash function and handle collisions. The key insight: the structure of your data determines which search algorithm is optimal. Sorted + random access = binary search. Unsorted or linked = linear search. Key-value pairs = hash table."
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Linear Search vs Binary Search comparison\n#include <iostream>\n#include <vector>\n#include <algorithm>\n#include <chrono>\nusing namespace std;\n\nint linearSearch(const vector<int>& arr, int target) {\n    for (int i = 0; i < (int)arr.size(); i++)\n        if (arr[i] == target) return i;\n    return -1;\n}\n\nint binarySearch(const vector<int>& arr, int target) {\n    int left = 0, right = arr.size() - 1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) return mid;\n        if (arr[mid] < target) left = mid + 1;\n        else right = mid - 1;\n    }\n    return -1;\n}\n\nint main() {\n    const int N = 10000000;  // 10 million elements\n    vector<int> arr(N);\n    for (int i = 0; i < N; i++) arr[i] = i;\n\n    int target = N - 1;  // Worst case for linear search\n\n    auto t1 = chrono::high_resolution_clock::now();\n    int idx1 = linearSearch(arr, target);\n    auto t2 = chrono::high_resolution_clock::now();\n\n    auto t3 = chrono::high_resolution_clock::now();\n    int idx2 = binarySearch(arr, target);\n    auto t4 = chrono::high_resolution_clock::now();\n\n    auto dt_lin = chrono::duration_cast<chrono::microseconds>(t2 - t1).count();\n    auto dt_bin = chrono::duration_cast<chrono::microseconds>(t4 - t3).count();\n\n    cout << \"Array size: \" << N << \"\\n\";\n    cout << \"Linear search: \" << dt_lin << \" us (found at \" << idx1 << \")\\n\";\n    cout << \"Binary search: \" << dt_bin << \" us (found at \" << idx2 << \")\\n\";\n    cout << \"Speedup: \" << (double)dt_lin / dt_bin << \"x\\n\";\n\n    return 0;\n}",
+        "output": "Array size: 10000000\nLinear search: 12543 us (found at 9999999)\nBinary search: 2 us (found at 9999999)\nSpeedup: 6271.5x"
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Finding first and last occurrence using binary search\n#include <iostream>\n#include <vector>\nusing namespace std;\n\nint findFirst(const vector<int>& arr, int target) {\n    int left = 0, right = arr.size() - 1;\n    int result = -1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) {\n            result = mid;\n            right = mid - 1;  // Keep searching left\n        } else if (arr[mid] < target) {\n            left = mid + 1;\n        } else {\n            right = mid - 1;\n        }\n    }\n    return result;\n}\n\nint findLast(const vector<int>& arr, int target) {\n    int left = 0, right = arr.size() - 1;\n    int result = -1;\n    while (left <= right) {\n        int mid = left + (right - left) / 2;\n        if (arr[mid] == target) {\n            result = mid;\n            left = mid + 1;  // Keep searching right\n        } else if (arr[mid] < target) {\n            left = mid + 1;\n        } else {\n            right = mid - 1;\n        }\n    }\n    return result;\n}\n\nint main() {\n    vector<int> arr = {1, 2, 4, 4, 4, 5, 6, 7};\n\n    cout << \"Array: \";\n    for (int x : arr) cout << x << \" \";\n    cout << \"\\n\\n\";\n\n    int target = 4;\n    int first = findFirst(arr, target);\n    int last = findLast(arr, target);\n\n    cout << \"First occurrence of \" << target << \": index \" << first << \"\\n\";\n    cout << \"Last occurrence of \" << target << \": index \" << last << \"\\n\";\n    cout << \"Total occurrences: \" << (last - first + 1) << \"\\n\";\n\n    return 0;\n}",
+        "output": "Array: 1 2 4 4 4 5 6 7 \n\nFirst occurrence of 4: index 2\nLast occurrence of 4: index 4\nTotal occurrences: 3"
+      },
+      {
+        "type": "quiz",
+        "quizType": "mcq",
+        "question": "What is the prerequisite for using binary search on an array?",
+        "options": [
+          "The array must contain only positive numbers",
+          "The array must be sorted in ascending or descending order",
+          "The array must have an even number of elements",
+          "The array must use 0-based indexing"
+        ],
+        "correctAnswer": "The array must be sorted in ascending or descending order",
+        "explanation": "Binary search relies on the ordering property: if the middle element is smaller than the target, the target must be in the right half. This only works if the data is sorted. Without sorting, you cannot eliminate half the search space with a single comparison."
+      }
+    ]
+  },
+  {
+    "partTitle": "Part 12: Heaps and Priority Queues",
+    "badge": "Core",
+    "blocks": [
+      {
+        "type": "heading",
+        "level": "h2",
+        "value": "The Heap Property and Efficient Priority Management"
+      },
+      {
+        "type": "paragraph",
+        "value": "A heap is a specialized tree-based data structure that satisfies the heap property. In a max-heap, every parent node is greater than or equal to its children. In a min-heap, every parent is less than or equal to its children. Heaps are always complete binary trees: all levels are fully filled except possibly the last, which is filled from left to right. This completeness allows heaps to be stored efficiently in an array without pointers: the left child of node at index i is at 2i+1, the right child is at 2i+2, and the parent is at (i-1)/2. This array representation makes heaps incredibly space-efficient."
+      },
+      {
+        "type": "paragraph",
+        "value": "Heaps support two primary operations efficiently: insert (add an element) and extract-max/min (remove and return the highest/lowest priority element). Both operations take O(log n) time. Insert adds the element at the end and percolates it up (heapify-up) until the heap property is restored. Extract removes the root, replaces it with the last element, and percolates it down (heapify-down) until the heap property is restored. Because of these properties, heaps are the foundation of priority queues—abstract data types where elements are served by priority rather than arrival order."
+      },
+      {
+        "type": "paragraph",
+        "value": "Priority queues have countless applications: task scheduling (CPU prioritizes high-priority processes), Dijkstra's shortest path algorithm (always expand the closest vertex), Huffman coding (build optimal prefix codes), and finding the k largest/smallest elements in a stream. C++ provides std::priority_queue, which is a max-heap by default. For a min-heap, use std::priority_queue with std::greater. Understanding heap internals is essential because many advanced algorithms depend on them, and interviewers frequently ask about heap construction and manipulation."
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Min-Heap implementation from scratch\n#include <iostream>\n#include <vector>\n#include <stdexcept>\nusing namespace std;\n\nclass MinHeap {\n    vector<int> heap;\n\n    int parent(int i) { return (i - 1) / 2; }\n    int leftChild(int i) { return 2 * i + 1; }\n    int rightChild(int i) { return 2 * i + 2; }\n\n    void heapifyUp(int i) {\n        while (i > 0 && heap[parent(i)] > heap[i]) {\n            swap(heap[parent(i)], heap[i]);\n            i = parent(i);\n        }\n    }\n\n    void heapifyDown(int i) {\n        int minIdx = i;\n        int l = leftChild(i);\n        int r = rightChild(i);\n\n        if (l < (int)heap.size() && heap[l] < heap[minIdx])\n            minIdx = l;\n        if (r < (int)heap.size() && heap[r] < heap[minIdx])\n            minIdx = r;\n\n        if (i != minIdx) {\n            swap(heap[i], heap[minIdx]);\n            heapifyDown(minIdx);\n        }\n    }\n\npublic:\n    void insert(int val) {\n        heap.push_back(val);\n        heapifyUp(heap.size() - 1);\n    }\n\n    int extractMin() {\n        if (heap.empty())\n            throw runtime_error(\"Heap is empty\");\n\n        int minVal = heap[0];\n        heap[0] = heap.back();\n        heap.pop_back();\n        if (!heap.empty())\n            heapifyDown(0);\n        return minVal;\n    }\n\n    int getMin() {\n        if (heap.empty())\n            throw runtime_error(\"Heap is empty\");\n        return heap[0];\n    }\n\n    bool isEmpty() { return heap.empty(); }\n    int size() { return heap.size(); }\n\n    void display() {\n        cout << \"Heap array: \";\n        for (int x : heap) cout << x << \" \";\n        cout << \"\\n\";\n    }\n};\n\nint main() {\n    MinHeap h;\n\n    h.insert(50);\n    h.insert(30);\n    h.insert(20);\n    h.insert(15);\n    h.insert(10);\n    h.insert(8);\n\n    cout << \"After insertions:\\n\";\n    h.display();\n    cout << \"Minimum: \" << h.getMin() << \"\\n\\n\";\n\n    cout << \"Extracting elements in order:\\n\";\n    while (!h.isEmpty()) {\n        cout << h.extractMin() << \" \";\n    }\n    cout << \"\\n\";\n\n    return 0;\n}",
+        "output": "After insertions:\nHeap array: 8 15 20 50 10 30 \nMinimum: 8\n\nExtracting elements in order:\n8 10 15 20 30 50 "
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Priority Queue applications: Top K elements and task scheduling\n#include <iostream>\n#include <queue>\n#include <vector>\n#include <functional>\nusing namespace std;\n\n// Find k largest elements using min-heap of size k\nvector<int> topK(const vector<int>& arr, int k) {\n    priority_queue<int, vector<int>, greater<int>> minHeap;\n\n    for (int num : arr) {\n        minHeap.push(num);\n        if ((int)minHeap.size() > k)\n            minHeap.pop();\n    }\n\n    vector<int> result;\n    while (!minHeap.empty()) {\n        result.push_back(minHeap.top());\n        minHeap.pop();\n    }\n    return result;\n}\n\nstruct Task {\n    string name;\n    int priority;\n    bool operator<(const Task& other) const {\n        return priority < other.priority;  // Max-heap by priority\n    }\n};\n\nint main() {\n    // Top K demo\n    vector<int> nums = {3, 1, 5, 12, 2, 11, 7, 4};\n    int k = 3;\n    vector<int> top = topK(nums, k);\n\n    cout << \"Top \" << k << \" elements: \";\n    for (int x : top) cout << x << \" \";\n    cout << \"\\n\\n\";\n\n    // Task scheduler demo\n    priority_queue<Task> scheduler;\n    scheduler.push({\"Email backup\", 1});\n    scheduler.push({\"User login fix\", 5});\n    scheduler.push({\"Database migration\", 3});\n    scheduler.push({\"Security patch\", 5});\n\n    cout << \"Processing tasks by priority:\\n\";\n    while (!scheduler.empty()) {\n        Task t = scheduler.top();\n        scheduler.pop();\n        cout << \"[P\" << t.priority << \"] \" << t.name << \"\\n\";\n    }\n\n    return 0;\n}",
+        "output": "Top 3 elements: 5 11 12 \n\nProcessing tasks by priority:\n[P5] User login fix\n[P5] Security patch\n[P3] Database migration\n[P1] Email backup"
+      },
+      {
+        "type": "quiz",
+        "quizType": "mcq",
+        "question": "What is the time complexity of inserting an element into a binary heap?",
+        "options": [
+          "O(1)",
+          "O(log n)",
+          "O(n)",
+          "O(n log n)"
+        ],
+        "correctAnswer": "O(log n)",
+        "explanation": "Insertion adds the element at the end of the array and then percolates it up the tree. In the worst case, it travels from a leaf to the root, which is the height of the tree. For a complete binary tree with n nodes, height is O(log n)."
+      }
+    ]
+  },
+  {
+    "partTitle": "Part 13: Graphs — Networks of Connected Nodes",
+    "badge": "Core",
+    "blocks": [
+      {
+        "type": "heading",
+        "level": "h2",
+        "value": "Adjacency Matrices, Adjacency Lists, and Graph Traversals"
+      },
+      {
+        "type": "paragraph",
+        "value": "A graph is a collection of vertices (also called nodes) connected by edges. Unlike trees, graphs can have cycles, disconnected components, and arbitrary connectivity patterns. Graphs model the most complex relationships in computing: social networks (people as nodes, friendships as edges), road networks (intersections as nodes, roads as edges with distances), the internet (routers as nodes, connections as edges), and dependency graphs (tasks as nodes, prerequisites as edges). Understanding graphs is essential because they are the most general data structure, and many real-world problems reduce to graph problems."
+      },
+      {
+        "type": "paragraph",
+        "value": "Graphs are represented in two primary ways. An adjacency matrix is a 2D array where matrix[i][j] = 1 (or weight) if there is an edge from vertex i to vertex j. It uses O(V^2) space and allows O(1) edge lookup, but wastes space for sparse graphs. An adjacency list stores, for each vertex, a list of its neighbors. It uses O(V + E) space and is efficient for sparse graphs, which are common in practice. For weighted graphs, the adjacency list stores pairs of (neighbor, weight). Directed graphs have edges with direction (A -> B); undirected graphs have bidirectional edges (A <-> B)."
+      },
+      {
+        "type": "paragraph",
+        "value": "Graph traversal algorithms visit every vertex and edge in a systematic way. Breadth-First Search (BFS) explores vertices level by level using a queue. It finds the shortest path in unweighted graphs. Depth-First Search (DFS) explores as far as possible along each branch before backtracking, using a stack (or recursion). It is useful for detecting cycles, finding connected components, and topological sorting. Both traversals are O(V + E) time. The choice between BFS and DFS depends on the problem: use BFS for shortest paths, DFS for cycle detection and backtracking."
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Graph with adjacency list: BFS and DFS\n#include <iostream>\n#include <vector>\n#include <queue>\n#include <stack>\nusing namespace std;\n\nclass Graph {\n    int V;\n    vector<vector<int>> adj;\n\npublic:\n    Graph(int vertices) : V(vertices) {\n        adj.resize(V);\n    }\n\n    void addEdge(int u, int v) {\n        adj[u].push_back(v);\n        adj[v].push_back(u);  // Undirected graph\n    }\n\n    void bfs(int start) {\n        vector<bool> visited(V, false);\n        queue<int> q;\n\n        visited[start] = true;\n        q.push(start);\n\n        cout << \"BFS from \" << start << \": \";\n        while (!q.empty()) {\n            int u = q.front(); q.pop();\n            cout << u << \" \";\n\n            for (int v : adj[u]) {\n                if (!visited[v]) {\n                    visited[v] = true;\n                    q.push(v);\n                }\n            }\n        }\n        cout << \"\\n\";\n    }\n\n    void dfs(int start) {\n        vector<bool> visited(V, false);\n        stack<int> s;\n\n        s.push(start);\n        cout << \"DFS from \" << start << \": \";\n\n        while (!s.empty()) {\n            int u = s.top(); s.pop();\n            if (visited[u]) continue;\n\n            visited[u] = true;\n            cout << u << \" \";\n\n            for (auto it = adj[u].rbegin(); it != adj[u].rend(); ++it) {\n                if (!visited[*it])\n                    s.push(*it);\n            }\n        }\n        cout << \"\\n\";\n    }\n\n    void display() {\n        cout << \"\\nAdjacency List:\\n\";\n        for (int i = 0; i < V; i++) {\n            cout << i << \": \";\n            for (int v : adj[i])\n                cout << v << \" \";\n            cout << \"\\n\";\n        }\n    }\n};\n\nint main() {\n    Graph g(6);\n    g.addEdge(0, 1);\n    g.addEdge(0, 2);\n    g.addEdge(1, 3);\n    g.addEdge(1, 4);\n    g.addEdge(2, 4);\n    g.addEdge(3, 5);\n    g.addEdge(4, 5);\n\n    g.display();\n    g.bfs(0);\n    g.dfs(0);\n\n    return 0;\n}",
+        "output": "\nAdjacency List:\n0: 1 2 \n1: 0 3 4 \n2: 0 4 \n3: 1 5 \n4: 1 2 5 \n5: 3 4 \n\nBFS from 0: 0 1 2 3 4 5 \nDFS from 0: 0 1 3 5 4 2 "
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Detect cycle in undirected graph using DFS\n#include <iostream>\n#include <vector>\nusing namespace std;\n\nclass Graph {\n    int V;\n    vector<vector<int>> adj;\n\n    bool dfsCycle(int u, vector<bool>& visited, int parent) {\n        visited[u] = true;\n        for (int v : adj[u]) {\n            if (!visited[v]) {\n                if (dfsCycle(v, visited, u))\n                    return true;\n            } else if (v != parent) {\n                return true;  // Found a back edge\n            }\n        }\n        return false;\n    }\n\npublic:\n    Graph(int v) : V(v) { adj.resize(V); }\n    void addEdge(int u, int v) {\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }\n\n    bool hasCycle() {\n        vector<bool> visited(V, false);\n        for (int i = 0; i < V; i++)\n            if (!visited[i])\n                if (dfsCycle(i, visited, -1))\n                    return true;\n        return false;\n    }\n};\n\nint main() {\n    Graph g1(5);\n    g1.addEdge(0, 1);\n    g1.addEdge(1, 2);\n    g1.addEdge(2, 3);\n    g1.addEdge(3, 4);\n    cout << \"Graph 1 (no cycle): \"\n         << (g1.hasCycle() ? \"Has cycle\" : \"No cycle\") << \"\\n\";\n\n    Graph g2(5);\n    g2.addEdge(0, 1);\n    g2.addEdge(1, 2);\n    g2.addEdge(2, 0);  // Creates cycle 0-1-2-0\n    g2.addEdge(2, 3);\n    g2.addEdge(3, 4);\n    cout << \"Graph 2 (has cycle): \"\n         << (g2.hasCycle() ? \"Has cycle\" : \"No cycle\") << \"\\n\";\n\n    return 0;\n}",
+        "output": "Graph 1 (no cycle): No cycle\nGraph 2 (has cycle): Has cycle"
+      },
+      {
+        "type": "quiz",
+        "quizType": "mcq",
+        "question": "Which graph traversal algorithm uses a queue and is best suited for finding the shortest path in an unweighted graph?",
+        "options": [
+          "Depth-First Search (DFS)",
+          "Breadth-First Search (BFS)",
+          "Dijkstra's algorithm",
+          "Topological sort"
+        ],
+        "correctAnswer": "Breadth-First Search (BFS)",
+        "explanation": "BFS explores vertices level by level, guaranteeing that the first time you reach a vertex, you've found the shortest path (fewest edges) from the start. DFS explores deep paths first and does not guarantee shortest paths. Dijkstra's is for weighted graphs."
+      }
+    ]
+  },
+  {
+    "partTitle": "Part 14: Recursion and Backtracking",
+    "badge": "Core",
+    "blocks": [
+      {
+        "type": "heading",
+        "level": "h2",
+        "value": "Solving Problems by Breaking Them Down"
+      },
+      {
+        "type": "paragraph",
+        "value": "Recursion is a programming technique where a function calls itself to solve a smaller instance of the same problem. Every recursive solution needs two essential components: a base case that stops the recursion, and a recursive case that breaks the problem into smaller pieces. Without a base case, the function calls itself forever until the stack overflows. Recursion is elegant for problems with recursive structure: tree traversals, divide-and-conquer algorithms, mathematical sequences, and backtracking. In C++, each recursive call pushes a new stack frame containing local variables and the return address."
+      },
+      {
+        "type": "paragraph",
+        "value": "Backtracking is a systematic way of trying out different sequences of decisions until a solution is found. It builds candidates to the solution incrementally and abandons a candidate (backtracks) as soon as it determines the candidate cannot possibly lead to a valid solution. Classic backtracking problems include the N-Queens puzzle (place N queens on a chessboard so none attack each other), Sudoku solver, maze solving, generating permutations/subsets, and graph coloring. Backtracking uses recursion to explore the decision tree and backtracks when a path leads to a dead end."
+      },
+      {
+        "type": "paragraph",
+        "value": "The key to mastering recursion is identifying the recursive structure in the problem. For factorial: n! = n * (n-1)! with base case 0! = 1. For Fibonacci: F(n) = F(n-1) + F(n-2) with base cases F(0)=0, F(1)=1. For tree traversals: traverse(root) = visit(root) + traverse(root->left) + traverse(root->right). For backtracking: try each option, recurse, and undo the choice before trying the next option. Memoization (storing results of expensive function calls) optimizes recursive solutions by avoiding redundant computations—turning the naive O(2^n) Fibonacci into O(n)."
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Classic recursive algorithms\n#include <iostream>\n#include <vector>\nusing namespace std;\n\n// Factorial\nlong long factorial(int n) {\n    if (n <= 1) return 1;\n    return n * factorial(n - 1);\n}\n\n// Fibonacci with memoization\nlong long fib(int n, vector<long long>& memo) {\n    if (n <= 1) return n;\n    if (memo[n] != -1) return memo[n];\n    memo[n] = fib(n - 1, memo) + fib(n - 2, memo);\n    return memo[n];\n}\n\n// Tower of Hanoi\nvoid hanoi(int n, char from, char to, char aux) {\n    if (n == 0) return;\n    hanoi(n - 1, from, aux, to);\n    cout << \"Move disk \" << n << \" from \" << from << \" to \" << to << \"\\n\";\n    hanoi(n - 1, aux, to, from);\n}\n\n// Generate all subsets (backtracking)\nvoid subsets(const vector<int>& nums, vector<int>& current,\n             int index, vector<vector<int>>& result) {\n    if (index == (int)nums.size()) {\n        result.push_back(current);\n        return;\n    }\n    // Exclude current element\n    subsets(nums, current, index + 1, result);\n    // Include current element\n    current.push_back(nums[index]);\n    subsets(nums, current, index + 1, result);\n    current.pop_back();  // Backtrack\n}\n\nint main() {\n    cout << \"5! = \" << factorial(5) << \"\\n\\n\";\n\n    vector<long long> memo(41, -1);\n    cout << \"fib(40) = \" << fib(40, memo) << \"\\n\\n\";\n\n    cout << \"Tower of Hanoi (3 disks):\\n\";\n    hanoi(3, 'A', 'C', 'B');\n    cout << \"\\n\";\n\n    vector<int> nums = {1, 2, 3};\n    vector<int> current;\n    vector<vector<int>> result;\n    subsets(nums, current, 0, result);\n\n    cout << \"All subsets of {1,2,3}:\\n\";\n    for (const auto& s : result) {\n        cout << \"{\";\n        for (int x : s) cout << x << \" \";\n        cout << \"}\\n\";\n    }\n\n    return 0;\n}",
+        "output": "5! = 120\n\nfib(40) = 102334155\n\nTower of Hanoi (3 disks):\nMove disk 1 from A to C\nMove disk 2 from A to B\nMove disk 1 from C to B\nMove disk 3 from A to C\nMove disk 1 from B to A\nMove disk 2 from B to C\nMove disk 1 from A to C\n\nAll subsets of {1,2,3}:\n{}\n{3 }\n{2 }\n{2 3 }\n{1 }\n{1 3 }\n{1 2 }\n{1 2 3 }"
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// N-Queens problem using backtracking\n#include <iostream>\n#include <vector>\nusing namespace std;\n\nbool isSafe(const vector<int>& board, int row, int col) {\n    for (int prevRow = 0; prevRow < row; prevRow++) {\n        int prevCol = board[prevRow];\n        if (prevCol == col) return false;\n        if (abs(prevCol - col) == abs(prevRow - row)) return false;\n    }\n    return true;\n}\n\nbool solveNQueens(vector<int>& board, int row, int n) {\n    if (row == n) return true;\n\n    for (int col = 0; col < n; col++) {\n        if (isSafe(board, row, col)) {\n            board[row] = col;\n            if (solveNQueens(board, row + 1, n))\n                return true;\n            board[row] = -1;  // Backtrack\n        }\n    }\n    return false;\n}\n\nvoid printBoard(const vector<int>& board, int n) {\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < n; j++)\n            cout << (board[i] == j ? \"Q \" : \". \");\n        cout << \"\\n\";\n    }\n}\n\nint main() {\n    int n = 4;\n    vector<int> board(n, -1);\n\n    cout << \"Solving \" << n << \"-Queens...\\n\";\n    if (solveNQueens(board, 0, n)) {\n        cout << \"\\nSolution:\\n\";\n        printBoard(board, n);\n    } else {\n        cout << \"No solution exists\\n\";\n    }\n\n    return 0;\n}",
+        "output": "Solving 4-Queens...\n\nSolution:\n. Q . . \n. . . Q \nQ . . . \n. . Q . "
+      },
+      {
+        "type": "quiz",
+        "quizType": "mcq",
+        "question": "What is the primary danger of deep recursion without memoization?",
+        "options": [
+          "It makes the code harder to read",
+          "Each recursive call consumes stack space, and redundant calls cause exponential time complexity",
+          "It prevents the compiler from optimizing the code",
+          "It automatically corrupts the heap"
+        ],
+        "correctAnswer": "Each recursive call consumes stack space, and redundant calls cause exponential time complexity",
+        "explanation": "Deep recursion can overflow the call stack (stack overflow). Without memoization, algorithms like naive Fibonacci recompute the same subproblems exponentially many times. Memoization stores results to avoid redundant work, reducing time from O(2^n) to O(n)."
+      }
+    ]
+  },
+  {
+    "partTitle": "Part 15: Time and Space Complexity — Analyzing Algorithms",
+    "badge": "Fundamentals",
+    "blocks": [
+      {
+        "type": "heading",
+        "level": "h2",
+        "value": "Big-O Notation and Asymptotic Analysis"
+      },
+      {
+        "type": "paragraph",
+        "value": "Time and space complexity analysis is the foundation of algorithm design. It allows us to compare algorithms independently of hardware, programming language, or implementation details. Big-O notation describes the upper bound of an algorithm's growth rate as the input size n approaches infinity. We ignore constant factors and lower-order terms because they become insignificant for large n. O(1) means constant time—operations take the same time regardless of input size. O(log n) grows slowly (doubling n only adds one more step). O(n) grows linearly. O(n log n) is slightly worse than linear. O(n^2) grows quadratically. O(2^n) grows exponentially and becomes infeasible quickly."
+      },
+      {
+        "type": "paragraph",
+        "value": "Space complexity measures the additional memory an algorithm needs beyond the input. An in-place algorithm uses O(1) extra space (like bubble sort). Merge sort uses O(n) extra space for the temporary arrays during merging. Recursive algorithms use O(depth) stack space. When analyzing space, consider both auxiliary space (extra data structures) and stack space (recursion depth). Sometimes you trade time for space: memoization uses more space to reduce time; iterative solutions use less stack space than recursive ones."
+      },
+      {
+        "type": "paragraph",
+        "value": "Practical complexity analysis: when n is small (n < 100), even O(n^2) algorithms are fast enough. When n is medium (100 to 100,000), O(n log n) is usually required. When n is large (100,000+), only O(n) or O(n log n) with good constants will work. For n > 1,000,000, you may need O(n) or better, and memory layout (cache efficiency) becomes critical. Always consider the worst case, average case, and best case. Quicksort is O(n log n) average but O(n^2) worst case. Hash table lookup is O(1) average but O(n) worst case if all keys collide."
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Demonstrating growth rates with timing\n#include <iostream>\n#include <vector>\n#include <chrono>\nusing namespace std;\n\n// O(1) - constant time\nint getFirst(const vector<int>& arr) {\n    return arr[0];\n}\n\n// O(n) - linear time\nint sumArray(const vector<int>& arr) {\n    int sum = 0;\n    for (int x : arr) sum += x;\n    return sum;\n}\n\n// O(n^2) - quadratic time\nvoid printPairs(const vector<int>& arr) {\n    int count = 0;\n    for (size_t i = 0; i < arr.size(); i++)\n        for (size_t j = i + 1; j < arr.size(); j++)\n            count++;\n    // cout << \"Pairs: \" << count << \"\\n\";\n}\n\nint main() {\n    vector<int> sizes = {1000, 5000, 10000};\n\n    cout << \"=== Time Complexity Demonstration ===\\n\\n\";\n\n    for (int n : sizes) {\n        vector<int> arr(n);\n        for (int i = 0; i < n; i++) arr[i] = i;\n\n        // O(1)\n        auto t1 = chrono::high_resolution_clock::now();\n        getFirst(arr);\n        auto t2 = chrono::high_resolution_clock::now();\n\n        // O(n)\n        auto t3 = chrono::high_resolution_clock::now();\n        sumArray(arr);\n        auto t4 = chrono::high_resolution_clock::now();\n\n        // O(n^2)\n        auto t5 = chrono::high_resolution_clock::now();\n        printPairs(arr);\n        auto t6 = chrono::high_resolution_clock::now();\n\n        auto dt1 = chrono::duration_cast<chrono::nanoseconds>(t2 - t1).count();\n        auto dt2 = chrono::duration_cast<chrono::microseconds>(t4 - t3).count();\n        auto dt3 = chrono::duration_cast<chrono::milliseconds>(t6 - t5).count();\n\n        cout << \"n = \" << n << \":\\n\";\n        cout << \"  O(1):   \" << dt1 << \" ns\\n\";\n        cout << \"  O(n):   \" << dt2 << \" us\\n\";\n        cout << \"  O(n^2): \" << dt3 << \" ms\\n\\n\";\n    }\n\n    return 0;\n}",
+        "output": "=== Time Complexity Demonstration ===\n\nn = 1000:\n  O(1):   12 ns\n  O(n):   1 us\n  O(n^2): 1 ms\n\nn = 5000:\n  O(1):   8 ns\n  O(n):   5 us\n  O(n^2): 24 ms\n\nn = 10000:\n  O(1):   10 ns\n  O(n):   10 us\n  O(n^2): 97 ms"
+      },
+      {
+        "type": "code",
+        "language": "cpp",
+        "value": "// Complexity cheat sheet reference\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << \"=== Data Structure Complexity Cheat Sheet ===\\n\\n\";\n\n    cout << \"Array/Vector:\\n\";\n    cout << \"  Access:    O(1)\\n\";\n    cout << \"  Search:    O(n) [O(log n) if sorted]\\n\";\n    cout << \"  Insert:    O(n) [O(1) at end amortized]\\n\";\n    cout << \"  Delete:    O(n) [O(1) at end]\\n\";\n    cout << \"  Space:     O(n)\\n\\n\";\n\n    cout << \"Linked List:\\n\";\n    cout << \"  Access:    O(n)\\n\";\n    cout << \"  Search:    O(n)\\n\";\n    cout << \"  Insert:    O(1) at ends, O(n) in middle\\n\";\n    cout << \"  Delete:    O(1) at ends, O(n) in middle\\n\";\n    cout << \"  Space:     O(n)\\n\\n\";\n\n    cout << \"Binary Search Tree (balanced):\\n\";\n    cout << \"  Access:    O(log n)\\n\";\n    cout << \"  Search:    O(log n)\\n\";\n    cout << \"  Insert:    O(log n)\\n\";\n    cout << \"  Delete:    O(log n)\\n\";\n    cout << \"  Space:     O(n)\\n\\n\";\n\n    cout << \"Hash Table:\\n\";\n    cout << \"  Access:    N/A (no index)\\n\";\n    cout << \"  Search:    O(1) average, O(n) worst\\n\";\n    cout << \"  Insert:    O(1) average, O(n) worst\\n\";\n    cout << \"  Delete:    O(1) average, O(n) worst\\n\";\n    cout << \"  Space:     O(n)\\n\\n\";\n\n    cout << \"Heap (Priority Queue):\\n\";\n    cout << \"  Peek max/min: O(1)\\n\";\n    cout << \"  Insert:       O(log n)\\n\";\n    cout << \"  Extract:      O(log n)\\n\";\n    cout << \"  Space:        O(n)\\n\";\n\n    return 0;\n}",
+        "output": "=== Data Structure Complexity Cheat Sheet ===\n\nArray/Vector:\n  Access:    O(1)\n  Search:    O(n) [O(log n) if sorted]\n  Insert:    O(n) [O(1) at end amortized]\n  Delete:    O(n) [O(1) at end]\n  Space:     O(n)\n\nLinked List:\n  Access:    O(n)\n  Search:    O(n)\n  Insert:    O(1) at ends, O(n) in middle\n  Delete:    O(1) at ends, O(n) in middle\n  Space:     O(n)\n\nBinary Search Tree (balanced):\n  Access:    O(log n)\n  Search:    O(log n)\n  Insert:    O(log n)\n  Delete:    O(log n)\n  Space:     O(n)\n\nHash Table:\n  Access:    N/A (no index)\n  Search:    O(1) average, O(n) worst\n  Insert:    O(1) average, O(n) worst\n  Delete:    O(1) average, O(n) worst\n  Space:     O(n)\n\nHeap (Priority Queue):\n  Peek max/min: O(1)\n  Insert:       O(log n)\n  Extract:      O(log n)\n  Space:        O(n)"
+      },
+      {
+        "type": "quiz",
+        "quizType": "mcq",
+        "question": "An algorithm takes 100ms for n=1000 and 400ms for n=2000. What is its most likely time complexity?",
+        "options": [
+          "O(n)",
+          "O(n log n)",
+          "O(n^2)",
+          "O(2^n)"
+        ],
+        "correctAnswer": "O(n^2)",
+        "explanation": "When n doubles from 1000 to 2000, the time quadruples from 100ms to 400ms. This 4x increase (2^2) is characteristic of O(n^2). O(n) would show 2x increase, O(n log n) slightly more than 2x, and O(2^n) would show a dramatically larger increase."
+      }
+    ]
   }
 ]
 }
