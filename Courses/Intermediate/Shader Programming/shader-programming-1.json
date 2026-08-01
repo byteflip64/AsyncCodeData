@@ -4,7 +4,7 @@
     "title": "Shader Programming Mastery: From Absolute Beginner to Advanced",
     "description": "A comprehensive journey through shader programming — from understanding the graphics pipeline and writing your first GLSL shader, to mastering vertex transformations, lighting models, textures, and mathematical foundations. Part 1 covers everything a beginner needs to write real, working shaders.",
     "category": "Shader Programming",
-    "level": "Beginner",
+    "level": "Intermediate",
     "tags": ["GLSL", "OpenGL", "Graphics", "Shaders", "GPU", "Real-Time Rendering"]
   },
   "parts": [
