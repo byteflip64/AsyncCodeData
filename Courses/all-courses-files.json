@@ -4,17 +4,17 @@
         "/Beginner/JavaScript/JavaScript-beginner-1.json",
         "/Beginner/WebDev/web-dev-beginner.json",
         "/Beginner/CSharp/csharp-beginner-1.json",
-        "/Beginner/C/c-lang-1.json",
-        "/Beginner/DSA/dsa-beginner-1.json",
-        "/Beginner/Assembly/assembly-beginner-1.json",
-        "/Beginner/Linux/linux-cmd-shell.json",
-        "/Beginner/Unity/unity-scripting-beginner.json",
         "/Intermediate/WebDev/web-dev-inter-1.json",
         "/Intermediate/CSharp/csharp-intermediate-1.json",
         "/Intermediate/PromptEngineering/prompt-eng-1.json",
         "/Intermediate/Python/python-intermediate-1.json",
+        "/Professional/python-professional-1.json",
+        "/Beginner/C/c-lang-1.json",
+        "/Beginner/DSA/dsa-beginner-1.json",
         "/Intermediate/Shader Programming/shader-programming-1.json",
+        "/Beginner/Assembly/assembly-beginner-1.json",
         "/Intermediate/Git/git-github-1-beginner.json",
-        "/Professional/python-professional-1.json"
+        "/Beginner/Linux/linux-cmd-shell.json",
+        "/Beginner/Unity/unity-scripting-beginner.json"
   ]
 }
