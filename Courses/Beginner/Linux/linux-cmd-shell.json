@@ -722,6 +722,232 @@
           "explanation": "Tmux creates persistent terminal sessions. You can start a long-running process (like a build, training a model, or monitoring logs), detach with Ctrl+B then D, disconnect your laptop, and hours later SSH back in and reattach with tmux attach to find everything still running exactly as you left it. This is essential for remote work on servers."
         }
       ]
+    },
+    {
+  "partTitle": "Part 10: Quick Reference and Final Exam",
+  "badge": "Reference",
+  "blocks": [
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "Essential Commands Cheat Sheet"
+    },
+    {
+      "type": "paragraph",
+      "value": "This comprehensive reference covers every command taught in this course. Print it, bookmark it, or tape it to your monitor until these commands become second nature. The commands are organized by category for quick lookup during real work."
+    },
+    {
+      "type": "code",
+      "language": "text",
+      "value": "NAVIGATION\n  pwd              Print working directory\n  cd <dir>         Change directory\n  cd ~             Go to home directory\n  cd ..            Go to parent directory\n  cd -             Go to previous directory\n  ls               List files\n  ls -la           List all files with details\n  ls -lh           List with human-readable sizes\n  ls -lt           List sorted by time\n  mkdir <dir>      Create directory\n  mkdir -p <path>  Create nested directories\n  rmdir <dir>      Remove empty directory\n  rm <file>        Remove file\n  rm -r <dir>      Remove directory recursively\n  cp <src> <dst>   Copy file\n  cp -r <src> <dst> Copy directory\n  mv <src> <dst>   Move/rename\n  touch <file>     Create empty file or update timestamp\n\nFILE VIEWING\n  cat <file>       Display file contents\n  less <file>      View page by page (q to quit)\n  head -n 20 <file> Show first 20 lines\n  tail -n 20 <file> Show last 20 lines\n  tail -f <file>   Watch file in real-time\n  wc -l <file>     Count lines\n\nPERMISSIONS\n  chmod 755 <file> Set permissions (rwxr-xr-x)\n  chmod +x <file>  Make executable\n  chown user:group <file> Change owner\n  sudo <cmd>       Run as superuser\n\nSEARCH\n  find . -name \"*.txt\"     Find files by name\n  find . -size +10M        Find large files\n  grep \"pattern\" <file>    Search in file\n  grep -r \"pattern\" dir/   Search recursively\n  grep -i \"pattern\"        Case-insensitive search\n  locate <file>            Fast file search (uses database)\n\nTEXT PROCESSING\n  cut -d',' -f1,3 file     Extract columns\n  sort file                Sort lines\n  sort -n file             Sort numerically\n  uniq -c                  Count duplicate lines\n  tr 'a-z' 'A-Z'           Translate characters\n  sed 's/old/new/g' file   Replace text\n  awk '{print $1}' file    Print first column\n  awk -F',' '{print $3}' file  Print 3rd CSV column\n\nCOMPRESSION\n  tar -czvf archive.tar.gz dir/   Create compressed archive\n  tar -xzvf archive.tar.gz        Extract archive\n  gzip file                       Compress file\n  gunzip file.gz                  Decompress file\n  zip -r archive.zip dir/         Create ZIP archive\n  unzip archive.zip               Extract ZIP\n\nPROCESSES\n  ps aux               List all processes\n  top                  Interactive process viewer\n  htop                 Enhanced process viewer\n  kill <pid>           Terminate process politely\n  kill -9 <pid>        Force kill process\n  killall <name>       Kill by name\n  nohup cmd &          Run immune to hangups\n  nice -n 10 cmd       Run with lower priority\n\nSYSTEM INFO\n  df -h                Disk space (human-readable)\n  du -sh dir/          Directory size\n  free -h              Memory usage\n  uptime               Load average\n  uname -a             System information\n  lscpu                CPU info\n  ss -tuln             Listening ports\n  dmesg | less         Boot messages\n\nNETWORKING\n  ping host            Test connectivity\n  curl -O url          Download file\n  wget url             Download file\n  ssh user@host        Remote login\n  scp file user@host:/path   Copy to remote\n  rsync -avz src/ dst/       Sync directories\n  netstat -tuln        Show connections\n\nSCRIPTING\n  #!/bin/bash          Shebang line\n  $1, $2, ...          Positional arguments\n  $@                   All arguments\n  $#                   Argument count\n  $?                   Exit status\n  $(cmd)               Command substitution\n  if [ condition ]; then ... fi\n  for i in list; do ... done\n  while [ condition ]; do ... done\n  function name() { ... }\n  set -euo pipefail    Strict mode\n\nSCHEDULING\n  crontab -e           Edit cron jobs\n  at 11:00 PM          Schedule one-time task\n  systemctl list-timers    List systemd timers\n\nMULTIPLEXERS\n  tmux new -s name     New tmux session\n  tmux attach -t name  Attach to session\n  tmux ls              List sessions\n  Ctrl+B, D            Detach from tmux\n  Ctrl+B, %            Split vertically\n  Ctrl+B, \"            Split horizontally",
+      "output": "Complete quick reference of all essential Linux commands covered in the course."
+    },
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "Bash Special Variables Quick Reference"
+    },
+    {
+      "type": "code",
+      "language": "text",
+      "value": "SPECIAL VARIABLES\n  $0       Name of the script\n  $1-$9    Positional arguments (1st through 9th)\n  ${10}    10th positional argument (must use braces)\n  $#       Total number of arguments\n  $@       All arguments as separate quoted strings\n  $*       All arguments as a single string\n  $?       Exit status of last command (0 = success)\n  $$       PID of current shell/script\n  $!       PID of last background process\n  $_       Last argument of previous command\n  $-       Current shell options flags\n\nSTRING MANIPULATION\n  ${#var}              Length of string\n  ${var:3}             Substring from index 3\n  ${var:3:5}           Substring 5 chars from index 3\n  ${var#pattern}       Remove shortest match from start\n  ${var##pattern}      Remove longest match from start\n  ${var%pattern}       Remove shortest match from end\n  ${var%%pattern}      Remove longest match from end\n  ${var/old/new}       Replace first occurrence\n  ${var//old/new}      Replace all occurrences\n  ${var^^}             Convert to uppercase\n  ${var,,}             Convert to lowercase\n  ${var:-default}      Use default if unset/empty\n  ${var:=default}      Set default if unset/empty\n  ${var:?error}        Error if unset/empty\n  ${var:+value}        Use value if set (else empty)",
+      "output": "Quick reference for Bash special variables and string manipulation syntax."
+    },
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "File Permission Numeric Values"
+    },
+    {
+      "type": "code",
+      "language": "text",
+      "value": "PERMISSION BITS\n  4 = read (r)\n  2 = write (w)\n  1 = execute (x)\n\n  7 = rwx (4+2+1) — full control\n  6 = rw- (4+2)   — read and write\n  5 = r-x (4+1)   — read and execute\n  4 = r-- (4)     — read only\n  0 = --- (0)     — no permissions\n\nCOMMON PERMISSIONS\n  755  rwxr-xr-x  — Executable scripts, directories\n  644  rw-r--r--  — Regular files\n  700  rwx------  — Private files (SSH keys, passwords)\n  777  rwxrwxrwx  — DANGEROUS: everyone has full access\n\nSPECIAL BITS\n  4755  rwsr-xr-x  — setuid (run as file owner)\n  2755  rwxr-sr-x  — setgid (run as file group)\n  1755  rwxr-xr-t  — sticky bit (only owner can delete)",
+      "output": "Numeric permission values and common permission patterns."
+    },
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "Regular Expressions Cheat Sheet"
+    },
+    {
+      "type": "code",
+      "language": "text",
+      "value": "BASIC METACHARACTERS\n  .        Any single character except newline\n  *        Zero or more of preceding\n  +        One or more of preceding (extended regex)\n  ?        Zero or one of preceding (extended regex)\n  ^        Start of line/string\n  $        End of line/string\n  []       Character class [abc] matches a, b, or c\n  [^]      Negated class [^abc] matches anything except a, b, c\n  [a-z]    Character range\n  |        Alternation (OR)\n  ()       Grouping\n  \\       Escape special character\n\nESCAPE SEQUENCES (extended regex)\n  \\b      Word boundary\n  \\d      Digit [0-9]\n  \\w      Word character [a-zA-Z0-9_]\n  \\s      Whitespace\n  \\D      Non-digit\n  \\W      Non-word character\n  \\S      Non-whitespace\n\nQUANTIFIERS\n  {n}      Exactly n occurrences\n  {n,}     n or more occurrences\n  {n,m}    Between n and m occurrences\n\nEXAMPLES\n  ^[0-9]+$              Only digits\n  ^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$  Email\n  ^([0-9]{1,3}\\.){3}[0-9]{1,3}$                     IPv4\n  [0-9]{4}-[0-9]{2}-[0-9]{2}                         Date YYYY-MM-DD",
+      "output": "Regular expression syntax reference for grep, sed, and awk."
+    },
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "Cron Expression Reference"
+    },
+    {
+      "type": "code",
+      "language": "text",
+      "value": "CRON FIELDS\n  * * * * *  command\n  │ │ │ │ │\n  │ │ │ │ └── Day of week (0-7, 0 and 7 = Sunday)\n  │ │ │ └──── Month (1-12)\n  │ │ └────── Day of month (1-31)\n  │ └──────── Hour (0-23)\n  └────────── Minute (0-59)\n\nSPECIAL CHARACTERS\n  *        Any value\n  ,        List (1,3,5)\n  -        Range (1-5)\n  /        Step (*/5 = every 5)\n\nCOMMON SCHEDULES\n  * * * * *        Every minute\n  */5 * * * *      Every 5 minutes\n  0 * * * *        Every hour\n  0 */2 * * *      Every 2 hours\n  0 2 * * *        Daily at 2:00 AM\n  0 2 * * 1-5      Weekdays at 2:00 AM\n  0 3 * * 0        Weekly on Sunday at 3:00 AM\n  0 4 1 * *        Monthly on 1st at 4:00 AM\n  0 0 * * 0        Weekly (Sunday midnight)\n  @reboot          At system boot\n  @daily            Alias for 0 0 * * *\n  @hourly           Alias for 0 * * * *\n  @weekly           Alias for 0 0 * * 0\n  @monthly          Alias for 0 0 1 * *\n  @yearly           Alias for 0 0 1 1 *",
+      "output": "Cron expression syntax and common scheduling patterns."
+    },
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "Final Exam: Test Your Knowledge"
+    },
+    {
+      "type": "paragraph",
+      "value": "This final exam tests your understanding across all parts of the course. Try to answer each question before checking the explanation. A score of 80% or higher means you are ready to use the command line confidently in real work."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "What is the difference between `rm -r folder/` and `rm -rf folder/`?",
+      "options": [
+        "They do exactly the same thing",
+        "`-rf` forces removal without confirmation; `-r` may prompt for write-protected files",
+        "`-r` removes files; `-rf` removes only empty directories",
+        "`-rf` creates a backup first; `-r` does not"
+      ],
+      "correctAnswer": "`-rf` forces removal without confirmation; `-r` may prompt for write-protected files",
+      "explanation": "Both `rm -r` and `rm -rf` recursively remove directories. The `-f` (force) flag suppresses most error messages and ignores non-existent files, and prevents prompts for write-protected files. Without `-f`, `rm -r` will ask for confirmation before removing write-protected files. The `-rf` combination is extremely dangerous — it will delete anything without asking."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "You need to find all `.log` files larger than 50MB modified more than 7 days ago and delete them. Which command is correct?",
+      "options": [
+        "find . -name '*.log' -size +50M -mtime +7 -delete",
+        "find . -name '*.log' -size 50M -mtime 7 -rm",
+        "grep -r '*.log' | awk '$5 > 50M' | xargs rm",
+        "ls -la | grep '.log' | grep '50M' | rm"
+      ],
+      "correctAnswer": "find . -name '*.log' -size +50M -mtime +7 -delete",
+      "explanation": "`find . -name '*.log'` finds all .log files in current directory and subdirectories. `-size +50M` filters for files larger than 50MB. `-mtime +7` filters for files modified more than 7 days ago. `-delete` removes the matched files. The other options either use wrong syntax (`-rm` is not a find action), wrong tools (grep cannot filter by file size), or wrong approach (piping filenames to rm without xargs)."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "What does the pipeline `cat access.log | awk '{print $1}' | sort | uniq -c | sort -nr | head -10` produce?",
+      "options": [
+        "The 10 most recent log entries",
+        "The top 10 IP addresses by number of requests, sorted from most to least frequent",
+        "The first 10 lines of the log file",
+        "A list of 10 unique URLs accessed"
+      ],
+      "correctAnswer": "The top 10 IP addresses by number of requests, sorted from most to least frequent",
+      "explanation": "This is a classic log analysis pipeline: `cat access.log` outputs the log file. `awk '{print $1}'` extracts the first column (IP address in Apache/Nginx combined log format). `sort` groups identical IPs together. `uniq -c` counts occurrences of each IP. `sort -nr` sorts numerically in reverse order (highest count first). `head -10` shows only the top 10. The result is the 10 most active IP addresses."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "In a shell script, why should you write `\"$var\"` instead of `$var`?",
+      "options": [
+        "It makes the variable name easier to read",
+        "It prevents word splitting and globbing on the variable's value",
+        "It makes the script run faster",
+        "It is required for all variable names longer than 3 characters"
+      ],
+      "correctAnswer": "It prevents word splitting and globbing on the variable's value",
+      "explanation": "Without quotes, Bash performs word splitting on the variable's value — if `$var` contains 'hello world', it becomes two separate arguments. It also performs globbing (filename expansion) on special characters like `*` and `?`. Quoting `\"$var\"` preserves the value as a single argument and prevents unexpected expansion. This is one of the most common bugs in shell scripts. Always quote your variables unless you specifically want word splitting."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "You run a script with `set -euo pipefail` at the top. The script contains `grep 'pattern' file.txt | wc -l`. If `grep` fails because the file does not exist, what happens?",
+      "options": [
+        "The script continues because `wc -l` succeeds",
+        "The script exits immediately because `pipefail` causes the entire pipeline to fail",
+        "The script prints an error but continues",
+        "The script ignores the error because `grep` errors are not critical"
+      ],
+      "correctAnswer": "The script exits immediately because `pipefail` causes the entire pipeline to fail",
+      "explanation": "`set -e` makes the script exit on any command failure. `set -o pipefail` extends this to pipelines — if any command in a pipe fails, the entire pipeline's exit status reflects that failure, triggering `set -e`. Without `pipefail`, the pipeline's exit status would be that of the last command (`wc -l`), which would succeed even if `grep` failed, masking the error. This combination is essential for catching errors in pipelines."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "You need to schedule a script to run every Monday, Wednesday, and Friday at 3:15 AM. What is the correct cron expression?",
+      "options": [
+        "15 3 * * 1,3,5",
+        "3 15 * * 1,3,5",
+        "15 3 1,3,5 * *",
+        "0 3 * * 1-5"
+      ],
+      "correctAnswer": "15 3 * * 1,3,5",
+      "explanation": "Cron fields are: minute, hour, day-of-month, month, day-of-week. 3:15 AM means minute=15, hour=3. Monday=1, Wednesday=3, Friday=5 in the day-of-week field. The `,` operator lists multiple values. So `15 3 * * 1,3,5` means: at minute 15, hour 3, any day of month, any month, on days 1, 3, and 5 of the week. Option B reverses minute and hour. Option C puts days in the wrong field. Option D runs every weekday, not Mon/Wed/Fri."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "What is the purpose of the `trap` command in shell scripts?",
+      "options": [
+        "To catch syntax errors before the script runs",
+        "To execute cleanup code when the script receives signals or exits",
+        "To debug the script by printing variable values",
+        "To prevent the script from being run by unauthorized users"
+      ],
+      "correctAnswer": "To execute cleanup code when the script receives signals or exits",
+      "explanation": "`trap` catches signals (like SIGINT from Ctrl+C, SIGTERM from kill) and the EXIT pseudo-signal. It ensures cleanup code runs regardless of how the script terminates — success, error, or interruption. For example, `trap cleanup EXIT` runs the `cleanup` function when the script exits for any reason. This is essential for removing temporary files, releasing locks, and closing connections."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "You are working on a remote server via SSH and start a long-running database migration. Your internet connection is unstable. What is the best way to ensure the migration continues even if your connection drops?",
+      "options": [
+        "Run it normally and hope the connection stays stable",
+        "Use `nohup ./migrate.sh &` before starting the command",
+        "Start a `tmux` session, run the command inside it, then detach",
+        "Use `kill -9` on the SSH process to force it to stay open"
+      ],
+      "correctAnswer": "Start a `tmux` session, run the command inside it, then detach",
+      "explanation": "`tmux` creates a persistent terminal session on the server. You start the migration inside tmux, detach with Ctrl+B then D, and the session (and your command) keeps running on the server even if your SSH connection drops. Later, you SSH back in and reattach with `tmux attach`. `nohup` also works but does not give you the ability to reattach and view progress. `kill -9` on SSH would actually terminate the connection and your process."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "You have a script that should create a backup, but you want it to use a default backup directory if the user does not provide one as an argument. Which syntax accomplishes this?",
+      "options": [
+        "BACKUP_DIR=$1",
+        "BACKUP_DIR=${1:-/backup/default}",
+        "BACKUP_DIR=$1 || /backup/default",
+        "BACKUP_DIR=default($1, /backup/default)"
+      ],
+      "correctAnswer": "BACKUP_DIR=${1:-/backup/default}",
+      "explanation": "`${1:-/backup/default}` is parameter expansion with a default value. If `$1` is unset or empty, it evaluates to `/backup/default`. If `$1` is set, it uses the provided value. Option A would set BACKUP_DIR to empty if no argument is given. Option C uses `||` which tests exit status, not emptiness. Option D is not valid Bash syntax. This pattern is extremely common for scripts with optional arguments."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "A file has permissions `-rwxr-xr--`. What can the group members do with this file?",
+      "options": [
+        "Read, write, and execute it",
+        "Read and execute it, but not modify it",
+        "Only read it",
+        "Nothing at all"
+      ],
+      "correctAnswer": "Read and execute it, but not modify it",
+      "explanation": "The permission string `-rwxr-xr--` breaks down as: `-` = regular file, `rwx` = owner has read, write, execute, `r-x` = group has read and execute but NOT write, `r--` = others have only read. So group members (the middle `r-x` triplet) can read the file and execute it if it is a program/script, but they cannot modify it because the `w` permission is missing. This is a common permission pattern for shared executables."
+    },
+    {
+      "type": "quiz",
+      "quizType": "mcq",
+      "question": "Which command correctly creates a compressed archive named `project-backup.tar.gz` containing the `src/`, `config/`, and `docs/` directories while excluding all `.git` directories and `.tmp` files?",
+      "options": [
+        "tar -czvf project-backup.tar.gz src/ config/ docs/ --exclude='.git' --exclude='*.tmp'",
+        "zip -r project-backup.tar.gz src/ config/ docs/ -x .git -x *.tmp",
+        "tar -czvf project-backup.tar.gz --exclude='.git' --exclude='*.tmp' src/ config/ docs/",
+        "gzip -r project-backup.tar.gz src/ config/ docs/"
+      ],
+      "correctAnswer": "tar -czvf project-backup.tar.gz --exclude='.git' --exclude='*.tmp' src/ config/ docs/",
+      "explanation": "The `--exclude` patterns must come BEFORE the directory arguments in tar. `tar -czvf` creates a gzip-compressed archive (`-c` create, `-z` gzip, `-v` verbose, `-f` file). The exclude patterns filter out `.git` directories and `.tmp` files. Option A places excludes after directories, which may not work in all tar versions. Option B uses zip with wrong extension. Option D uses `gzip -r` which compresses individual files, not creating an archive."
+    },
+    {
+      "type": "heading",
+      "level": "h2",
+      "value": "Where to Go From Here"
+    },
+    {
+      "type": "paragraph",
+      "value": "You have completed the Linux Command Line & Shell Scripting course. You now understand the filesystem, can navigate confidently, process text with pipes and filters, manage permissions and processes, write robust shell scripts, schedule automation, and use modern tools. The command line is a skill that deepens with practice — every server you SSH into, every log file you analyze, every deployment you automate will make you faster and more capable. Keep this reference handy, build real projects, and explore tools like Ansible, Docker, and Kubernetes that build on these foundations. The terminal is not just a tool; it is your superpower. Welcome to the command line."
     }
+  ]
+}
   ]
 }
