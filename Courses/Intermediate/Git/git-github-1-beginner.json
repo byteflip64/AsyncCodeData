@@ -771,6 +771,523 @@ n            "Subtrees include files directly in the repository, requiring no sp
           "explanation": "Floating tags like @v4 can be retargeted to any commit by the action maintainer or a compromised account. If an attacker pushes malicious code and moves the v4 tag to it, your workflow executes the malicious code. Pinning to a specific SHA ensures you always run the exact, reviewed version of the action."
         }
       ]
+    },
+    {
+      "partTitle": "Part 16: GitHub CLI Advanced Usage and Automation",
+      "badge": "CLI",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "GitHub CLI: Beyond Basic Commands"
+        },
+        {
+          "type": "paragraph",
+          "value": "The GitHub CLI (gh) is a command-line tool that brings GitHub's entire feature set to your terminal. Beyond basic repo operations, gh supports scripting, API queries, extension creation, and workflow automation. It eliminates context switching between terminal and browser, enables automation in shell scripts, and provides structured output (JSON) for integration with other tools like jq, awk, and CI/CD pipelines. Mastering gh transforms GitHub from a web interface into a programmable platform."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Install GitHub CLI\n# macOS: brew install gh\n# Ubuntu: sudo apt install gh\n# Windows: winget install --id GitHub.cli\n\n# Authenticate\ngh auth login\n# Choose: GitHub.com -> HTTPS -> Login with web browser\n\n# Configure default editor and behavior\ngh config set editor vim\ngh config set git_protocol ssh\ngh config set prompt disabled  # Non-interactive mode for scripts\n\n# View current configuration\ngh config list\n\n# REPOSITORY OPERATIONS\n\n# Create a new repository\ngh repo create my-new-project --public --add-readme\ngh repo create my-org/private-project --private --clone\n\n# Fork a repository\ngh repo fork owner/repo --clone --remote\n\n# View repository details\ngh repo view owner/repo --json name,description,stargazersCount\n\n# List your repositories\ngh repo list --limit 100 --json name,visibility,pushedAt\n\n# Sync your fork with upstream\ngh repo sync owner/repo --branch main\n\n# Archive or delete a repository\ngh repo archive owner/repo\ngh repo delete owner/repo --confirm\n\n# Clone with gh (sets up authentication automatically)\ngh repo clone owner/repo",
+          "output": "GitHub CLI installation, authentication, configuration, and repository management."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Scripting with gh and JSON Output"
+        },
+        {
+          "type": "paragraph",
+          "value": "The --json flag transforms gh from a human-readable tool into a data source for automation. Combined with jq (a JSON processor), you can build powerful scripts: generate release notes from merged PRs, find stale issues, audit repository permissions, or create dashboards. The --template flag uses Go templates for custom formatting without external tools. For complex automation, gh api provides direct access to the GitHub REST API with authentication handled automatically."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# JSON output with jq processing\n\n# List open PRs with author and review status\ngh pr list --json number,title,author,reviewDecision,updatedAt |\n  jq -r '.[] | \"#\\(.number) by \\(.author.login): \\(.title) [\\(.reviewDecision)]\"'\n\n# Find PRs waiting for your review\ngh pr list --repo owner/repo --json number,title,reviewRequests |\n  jq '.[] | select(.reviewRequests[]?.login == \"your-username\")'\n\n# Generate release notes from merged PRs since last tag\nLAST_TAG=$(git describe --tags --abbrev=0)\ngh pr list --state merged --json number,title,author |\n  jq -r --arg tag \"$LAST_TAG\" '\n    \"## Changes since \\($tag)\\n\\n\" +\n    (.[] | \"- #\\(.number): \\(.title) by @\\(.author.login)\")\n  '\n\n# List all issues assigned to you across all repos\ngh search issues --assignee @me --state open --json repository,title,url\n\n# Find stale issues (no activity in 90 days)\ngh issue list --repo owner/repo --json number,title,updatedAt |\n  jq '[.[] | select(.updatedAt < (now - 90*24*60*60 | todateiso8601))]'\n\n# Template formatting (no jq needed)\ngh pr view 42 --template '{{.number}}: {{.title}} by @{{.author.login}}'\n\n# Direct API access\ngh api repos/{owner}/{repo}/commits --jq '.[0].sha'\n\n# Paginated API calls\ngh api repos/{owner}/{repo}/issues --paginate --jq '.[] | .number'\n\n# POST request to create an issue\ngh api repos/{owner}/{repo}/issues -X POST \\\n  -f title=\"Bug found\" -f body=\"Description here\" -f labels[]=bug\n\n# GraphQL query\ngh api graphql -f query='\n  query($owner: String!, $repo: String!) {\n    repository(owner: $owner, name: $repo) {\n      stargazerCount\n      forkCount\n    }\n  }' -f owner=octocat -f repo=Hello-World",
+          "output": "Advanced scripting with JSON output, jq processing, templates, and direct API access."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "gh Extensions and Aliases"
+        },
+        {
+          "type": "paragraph",
+          "value": "gh extensions are community-built plugins that add new commands. The gh extension install command adds capabilities like viewing repository statistics, managing GitHub Codespaces, or interacting with GitHub Projects. Aliases let you create shortcuts for frequently used commands or complex queries. Combined, they turn gh into a personalized, powerful workflow tool."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# EXTENSIONS\n\n# Browse available extensions\ngh extension browse\n\n# Install popular extensions\ngh extension install dlvhdr/gh-prs           # Interactive PR viewer\ngh extension install yusukebe/gh-markdown-preview  # Preview markdown\ngh extension install gennaro-tedesco/gh-s    # Interactive repo search\ngh extension install meiji163/gh-notify      # GitHub notifications\n\n# List installed extensions\ngh extension list\n\n# Update all extensions\ngh extension upgrade --all\n\n# Remove an extension\ngh extension remove dlvhdr/gh-prs\n\n# Create your own extension\n# Extensions are executables named gh-<name> in your PATH\nmkdir -p ~/.local/bin\ncat > ~/.local/bin/gh-mycommand << 'EOF'\n#!/bin/bash\necho \"My custom gh command!\"\ngh repo view --json name,description\nEOF\nchmod +x ~/.local/bin/gh-mycommand\ngh mycommand  # Now works as gh subcommand!\n\n# ALIASES\n\n# Create aliases for common operations\ngh alias set co 'pr checkout'\ngh alias set pv 'pr view --web'\ngh alias set il 'issue list --assignee @me'\ngh alias set pl 'pr list --author @me --state open'\n\n# Use aliases\ngh co 42        # Same as: gh pr checkout 42\ngh pv 42        # Same as: gh pr view --web 42\ngh il           # Same as: gh issue list --assignee @me\n\n# List all aliases\ngh alias list\n\n# Delete an alias\ngh alias delete co\n\n# Complex alias with shell execution\ngh alias set mine '!gh pr list --author $(gh api user -q .login) --state open'\n\n# Alias with default flags\ngh alias set repo 'repo view --json name,description,stargazersCount,forkCount,primaryLanguage'",
+          "output": "Extension installation, custom extension creation, and alias configuration for workflow optimization."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Workflow Automation with gh"
+        },
+        {
+          "type": "paragraph",
+          "value": "gh excels in CI/CD pipelines and automation scripts. It can create releases, upload assets, manage deployments, and trigger workflows. In GitHub Actions, gh is pre-installed and pre-authenticated with the GITHUB_TOKEN, making it ideal for release automation, issue triage, and cross-repository operations. Shell scripts combining gh, jq, and standard Unix tools can replace complex custom applications for many GitHub automation needs."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# RELEASE AUTOMATION SCRIPT\n#!/bin/bash\nset -e\n\nVERSION=$1\nif [ -z \"$VERSION\" ]; then\n  echo \"Usage: $0 <version>\"\n  exit 1\nfi\n\n# Generate release notes from PRs\nNOTES=$(gh pr list --state merged --json number,title,author |\n  jq -r '.[] | \"- #\\(.number): \\(.title) by @\\(.author.login)\"')\n\n# Create release with auto-generated notes fallback\ngh release create \"$VERSION\" \\\n  --title \"Release $VERSION\" \\\n  --notes \"$NOTES\" \\\n  --generate-notes\n\n# Build and upload assets\nnpm run build\ngzip -c dist/app.js > dist/app.js.gz\ngh release upload \"$VERSION\" dist/app.js dist/app.js.gz\n\necho \"Release $VERSION published!\"\n\n# ISSUE TRIAGE SCRIPT\n#!/bin/bash\n# Close stale issues with no activity in 6 months\n\ngh issue list --repo owner/repo --state open --json number,updatedAt,title |\n  jq -r '.[] | select(.updatedAt < (now - 15552000 | todateiso8601)) | .number' |\n  while read -r issue_num; do\n    echo \"Closing stale issue #$issue_num\"\n    gh issue close \"$issue_num\" --comment \"Closing due to inactivity. Please reopen if still relevant.\"\n  done\n\n# DEPLOYMENT NOTIFICATION\n#!/bin/bash\nENV=$1\nVERSION=$2\n\ngh api repos/{owner}/{repo}/deployments -X POST \\\n  -f ref=\"$VERSION\" \\\n  -f environment=\"$ENV\" \\\n  -f auto_merge=false\n\n# Notify team\ngh api repos/{owner}/{repo}/issues -X POST \\\n  -f title=\"Deployed $VERSION to $ENV\" \\\n  -f body=\"Deployment completed successfully.\" \\\n  -f labels[]=deployment",
+          "output": "Automation scripts for release management, issue triage, and deployment notifications."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the purpose of `gh api --paginate`?",
+          "options": [
+            "It makes the API call faster",
+            "It automatically follows pagination and returns all results across multiple API pages",
+            "It formats the output as a table",
+            "It authenticates with a different token"
+          ],
+          "correctAnswer": "It automatically follows pagination and returns all results across multiple API pages",
+          "explanation": "GitHub API responses are paginated (typically 30 items per page). --paginate automatically follows all 'next' links and aggregates results. Without it, you only get the first page. This is essential for operations like listing all issues in a large repository."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Git Hooks — Automating Your Workflow",
+      "badge": "Automation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Git Hooks"
+        },
+        {
+          "type": "paragraph",
+          "value": "Git hooks are scripts that run automatically at specific points in the Git lifecycle. They live in .git/hooks/ and are not version-controlled by default (though you can symlink them from the repository). Hooks enable automation: run tests before committing, validate commit messages, prevent secrets from being committed, update issue trackers after push, or notify team chat on deployment. There are client-side hooks (run on your machine) and server-side hooks (run on the Git server). Client-side hooks include pre-commit, prepare-commit-msg, commit-msg, post-commit, pre-rebase, post-checkout, post-merge, and pre-push. Server-side hooks include pre-receive, update, and post-receive."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# See available hooks\nls .git/hooks/\n# Sample hooks (with .sample extension):\n# applypatch-msg.sample  pre-commit.sample         pre-rebase.sample\n# commit-msg.sample      pre-merge-commit.sample   pre-receive.sample\n# fsmonitor-watchman.sample  pre-push.sample       prepare-commit-msg.sample\n# post-update.sample     pre-applypatch.sample     push-to-checkout.sample\n# update.sample\n\n# Enable a hook by removing .sample and making it executable\ncp .git/hooks/pre-commit.sample .git/hooks/pre-commit\nchmod +x .git/hooks/pre-commit\n\n# Hooks are just executable scripts — any language works:\n# Bash, Python, Ruby, Node.js, Go, etc.\n\n# HOOK EXECUTION ORDER:\n# 1. pre-commit      — Before commit is created (lint, tests)\n# 2. prepare-commit-msg — Edit default commit message\n# 3. commit-msg      — Validate commit message format\n# 4. post-commit     — After commit is created (notifications)\n# 5. pre-push        — Before pushing to remote (integration tests)\n# 6. post-checkout   — After branch switch or clone\n# 7. post-merge      — After merge completes\n# 8. pre-rebase      — Before rebase starts\n\n# Exit code matters:\n# - Exit 0 = allow the operation to continue\n# - Exit non-zero = abort the operation\n\n# Hooks do not propagate — each developer must install them\n# Solution: Use a framework like Husky or Lefthook",
+          "output": "Git hooks overview, available hooks, execution order, and activation process."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Practical Hook Implementations"
+        },
+        {
+          "type": "paragraph",
+          "value": "Real-world hooks solve real problems. A pre-commit hook prevents bad code from entering history by running linters and tests on staged files. A commit-msg hook enforces conventional commit format. A pre-push hook runs the full test suite before allowing pushes to shared branches. These hooks catch errors early, when they are cheapest to fix, and enforce team standards without manual policing."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# .git/hooks/pre-commit\n#!/bin/bash\n# Run linter on staged files only\n\necho \"Running pre-commit checks...\"\n\n# Get list of staged files\nSTAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\\.js$')\n\nif [ -n \"$STAGED_FILES\" ]; then\n  echo \"Linting JavaScript files...\"\n  echo \"$STAGED_FILES\" | xargs npx eslint\n  if [ $? -ne 0 ]; then\n    echo \"ESLint failed. Fix errors before committing.\"\n    exit 1\n  fi\nfi\n\n# Run tests related to staged files\nSTAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)\nif [ -n \"$STAGED_FILES\" ]; then\n  echo \"Running related tests...\"\n  npm test -- --findRelatedTests $STAGED_FILES --passWithNoTests\n  if [ $? -ne 0 ]; then\n    echo \"Tests failed. Fix before committing.\"\n    exit 1\n  fi\nfi\n\n# Check for secrets (simple grep — use detect-secrets for production)\nif git diff --cached | grep -E '(password|secret|api_key)\\s*[=:]\\s*[\"\\'][^\"\\']+'; then\n  echo \"WARNING: Possible secrets detected in staged changes!\"\n  echo \"Use 'git commit --no-verify' to bypass (not recommended).\"\n  exit 1\nfi\n\necho \"Pre-commit checks passed!\"\nexit 0\n\n# .git/hooks/commit-msg\n#!/bin/bash\n# Enforce conventional commit format\n\nCOMMIT_MSG_FILE=$1\nCOMMIT_MSG=$(head -n 1 \"$COMMIT_MSG_FILE\")\n\n# Pattern: type(scope): description\n# Types: feat, fix, docs, style, refactor, test, chore\nPATTERN=\"^(feat|fix|docs|style|refactor|test|chore)(\\(.+\\))?: .+\"\n\nif ! echo \"$COMMIT_MSG\" | grep -qE \"$PATTERN\"; then\n  echo \"Invalid commit message format.\"\n  echo \"Expected: type(scope): description\"\n  echo \"Types: feat, fix, docs, style, refactor, test, chore\"\n  echo \"Example: feat(auth): add OAuth2 login\"\n  exit 1\nfi\n\n# Check message length (subject should be <= 72 chars)\nif [ ${#COMMIT_MSG} -gt 72 ]; then\n  echo \"Commit message subject too long (${#COMMIT_MSG} > 72 chars)\"\n  exit 1\nfi\n\nexit 0\n\n# .git/hooks/pre-push\n#!/bin/bash\n# Run full test suite before pushing to protected branches\n\nprotected_branches=\"main master develop\"\ncurrent_branch=$(git symbolic-ref HEAD | sed 's!refs/heads/!!')\n\nif echo \"$protected_branches\" | grep -qw \"$current_branch\"; then\n  echo \"Pushing to protected branch '$current_branch'. Running full tests...\"\n  npm run test:ci\n  if [ $? -ne 0 ]; then\n    echo \"Tests failed. Push aborted.\"\n    exit 1\n  fi\n  \n  echo \"Running security audit...\"\n  npm audit --audit-level=moderate\n  if [ $? -ne 0 ]; then\n    echo \"Security audit failed. Fix vulnerabilities before pushing.\"\n    exit 1\n  fi\nfi\n\nexit 0",
+          "output": "Production-ready hooks for linting, testing, secret detection, commit message validation, and pre-push verification."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Husky and Lefthook: Managing Hooks at Scale"
+        },
+        {
+          "type": "paragraph",
+          "value": "Manually installing hooks in .git/hooks/ does not scale — new team members must remember to set them up, and hooks are not version-controlled. Husky (for Node.js projects) and Lefthook (language-agnostic, faster) solve this by storing hook configurations in the repository and installing them automatically on npm install or a setup script. These tools support running multiple commands in parallel, conditional execution, and integration with lint-staged for running linters only on changed files."
+        },
+        {
+          "type": "code",
+          "language": "json",
+          "value": "// package.json with Husky configuration\n{\n  \"name\": \"my-project\",\n  \"scripts\": {\n    \"prepare\": \"husky install\",\n    \"lint\": \"eslint .\",\n    \"test\": \"jest\",\n    \"test:ci\": \"jest --ci --coverage\"\n  },\n  \"devDependencies\": {\n    \"husky\": \"^8.0.0\",\n    \"lint-staged\": \"^15.0.0\",\n    \"eslint\": \"^8.0.0\"\n  },\n  \"lint-staged\": {\n    \"*.js\": [\"eslint --fix\", \"git add\"],\n    \"*.{js,ts,json,md}\": [\"prettier --write\"]\n  }\n}\n\n// Setup Husky\n// npx husky-init && npm install\n// Creates .husky/ directory with pre-commit hook\n\n// .husky/pre-commit (created by Husky)\n#!/usr/bin/env sh\n. \"$(dirname -- \"$0\")/_/husky.sh\"\n\nnpx lint-staged\n\n// .husky/commit-msg\n#!/usr/bin/env sh\n. \"$(dirname -- \"$0\")/_/husky.sh\"\n\nnpx --no -- commitlint --edit ${1}\n\n// .husky/pre-push\n#!/usr/bin/env sh\n. \"$(dirname -- \"$0\")/_/husky.sh\"\n\nnpm run test:ci\n\n// commitlint.config.js\nmodule.exports = {\n  extends: ['@commitlint/config-conventional'],\n  rules: {\n    'type-enum': [2, 'always', ['feat', 'fix', 'docs', 'style', 'refactor', 'test', 'chore']],\n    'subject-max-length': [2, 'always', 72]\n  }\n};\n\n// LEFTHOOK (language-agnostic, faster alternative)\n// lefthook.yml in repository root\ncommit-msg:\n  commands:\n    commitlint:\n      run: npx commitlint --edit {1}\n\npre-commit:\n  parallel: true\n  commands:\n    eslint:\n      glob: \"*.{js,ts}\"\n      run: npx eslint {staged_files}\n    prettier:\n      glob: \"*.{js,ts,json,md}\"\n      run: npx prettier --check {staged_files}\n    test:\n      run: npm test -- --findRelatedTests {staged_files}\n\npre-push:\n  commands:\n    test:\n      run: npm run test:ci\n    audit:\n      run: npm audit --audit-level=moderate\n\n// Install Lefthook: npx lefthook install",
+          "output": "Husky and Lefthook configurations for version-controlled, team-shared hooks."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Server-Side Hooks: Enforcing Rules on the Server"
+        },
+        {
+          "type": "paragraph",
+          "value": "Server-side hooks run on the Git server (GitHub, GitLab, or self-hosted) and enforce rules for all clients. pre-receive runs once per push and can reject the entire push. update runs once per ref being updated and can accept/reject individual branches. post-receive runs after the push is accepted and is used for notifications and deployments. On GitHub, server-side hooks are replaced by branch protection rules, required status checks, and GitHub Actions. For self-hosted Git servers (Gitea, Gogs, bare repos), you can implement custom pre-receive hooks for organization-specific policies."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Self-hosted Git server: pre-receive hook\n# Located at: repository.git/hooks/pre-receive\n\n#!/bin/bash\n# Reject pushes that contain secrets or violate policies\n\nwhile read oldrev newrev refname; do\n  # Only check main branch\n  if [ \"$refname\" != \"refs/heads/main\" ]; then\n    continue\n  fi\n  \n  # Check for large files (>10MB) being added\n  large_files=$(git diff-tree -r -M --no-commit-id --name-only $oldrev $newrev | \\\n    while read file; do\n      size=$(git cat-file -s \"$newrev:$file\" 2>/dev/null)\n      if [ \"$size\" -gt 10485760 ]; then\n        echo \"$file ($((size/1024/1024))MB)\"\n      fi\n    done)\n  \n  if [ -n \"$large_files\" ]; then\n    echo \"ERROR: Large files detected (max 10MB):\"\n    echo \"$large_files\"\n    echo \"Use Git LFS for large files.\"\n    exit 1\n  fi\n  \n  # Check commit messages for required ticket references\n  commits=$(git rev-list $oldrev..$newrev)\n  for commit in $commits; do\n    msg=$(git log --format=%s -n 1 $commit)\n    if ! echo \"$msg\" | grep -qE '(JIRA-\\d+|#[0-9]+)'; then\n      echo \"ERROR: Commit $commit missing ticket reference\"\n      echo \"Message: $msg\"\n      echo \"Required format: JIRA-123 or #42\"\n      exit 1\n    fi\n  done\ndone\n\nexit 0\n\n# GitHub equivalent (no server hooks, use Actions instead):\n# .github/workflows/enforce-policies.yml\nname: Enforce Policies\non: [push, pull_request]\njobs:\n  check:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n        with:\n          fetch-depth: 0  # Full history for commit checking\n      \n      - name: Check commit messages\n        run: |\n          git log --format=%s origin/main..HEAD | while read msg; do\n            if ! echo \"$msg\" | grep -qE '(JIRA-\\d+|#[0-9]+)'; then\n              echo \"Commit missing ticket: $msg\"\n              exit 1\n            fi\n          done\n      \n      - name: Check for large files\n        run: |\n          find . -type f -size +10M | grep . && \\\n          echo \"Large files found. Use Git LFS.\" && exit 1 || true",
+          "output": "Server-side pre-receive hook and GitHub Actions equivalent for policy enforcement."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why should teams use Husky or Lefthook instead of manually placing hooks in .git/hooks/?",
+          "options": [
+            "They are faster than native Git hooks",
+            "They allow hooks to be version-controlled and automatically installed by team members",
+            "They replace the need for Git entirely",
+            "They only work on GitHub repositories"
+          ],
+          "correctAnswer": "They allow hooks to be version-controlled and automatically installed by team members",
+          "explanation": "The .git/hooks/ directory is not version-controlled, so manual hooks must be reinstalled by every team member on every clone. Husky and Lefthook store configurations in the repository (package.json or lefthook.yml) and install hooks automatically during npm install or lefthook install, ensuring consistent enforcement across the entire team."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Advanced Git Configuration and Customization",
+      "badge": "Configuration",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Git Configuration Files and Hierarchy"
+        },
+        {
+          "type": "paragraph",
+          "value": "Git reads configuration from three levels: system (/etc/gitconfig or C:\\Program Files\\Git\\etc\\gitconfig) affects all users on the machine; global (~/.gitconfig or %USERPROFILE%\\.gitconfig) affects your user account; and local (.git/config within each repository) affects only that repository. Local settings override global, which override system. Additionally, Git 2.13+ supports conditional includes — you can include different configurations based on the repository path, enabling work/personal separation or per-project settings without manual switching."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# View all configuration with source locations\ngit config --list --show-origin --show-scope\n# Output:\n# system  file:/etc/gitconfig       core.editor=vim\n# global  file:/home/user/.gitconfig user.name=Your Name\n# local   file:.git/config          remote.origin.url=...\n\n# System-level configuration (requires sudo)\nsudo git config --system core.editor vim\nsudo git config --system init.defaultBranch main\n\n# Global configuration (per user)\ngit config --global user.name \"Your Name\"\ngit config --global user.email \"your@email.com\"\n\n# Local configuration (per repository)\ngit config --local user.email \"work@company.com\"\ngit config --local core.hooksPath .githooks/\n\n# Conditional includes (Git 2.13+)\n# ~/.gitconfig\n[user]\n  name = Personal Name\n  email = personal@email.com\n\n[includeIf \"gitdir:~/work/\"]\n  path = ~/.gitconfig-work\n\n[includeIf \"gitdir:~/opensource/\"]\n  path = ~/.gitconfig-oss\n\n# ~/.gitconfig-work\n[user]\n  email = work@company.com\n[core]\n  sshCommand = ssh -i ~/.ssh/id_rsa_work\n\n# ~/.gitconfig-oss\n[user]\n  email = opensource@email.com\n[commit]\n  gpgsign = true\n\n# Verify which config applies to current repo\ngit config --show-origin user.email",
+          "output": "Configuration hierarchy, conditional includes for work/personal separation, and origin verification."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Powerful Git Aliases"
+        },
+        {
+          "type": "paragraph",
+          "value": "Git aliases are shortcuts for frequently used commands or complex command combinations. They are defined in your Git config and can be simple command substitutions or complex shell scripts. Well-designed aliases save hundreds of keystrokes per day and make common operations effortless. The ! prefix indicates a shell command, allowing aliases to pipe multiple Git commands, use grep, or invoke external tools."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Essential aliases to add to ~/.gitconfig\n\n# View current aliases\ngit config --get-regexp '^alias\\.'\n\n# BASIC SHORTCUTS\ngit config --global alias.st 'status -sb'\ngit config --global alias.co 'checkout'\ngit config --global alias.br 'branch -v'\ngit config --global alias.ci 'commit'\ngit config --global alias.cim 'commit -m'\ngit config --global alias.ciam 'commit -am'\ngit config --global alias.amend 'commit --amend --no-edit'\ngit config --global alias.unstage 'restore --staged'\ngit config --global alias.last 'log -1 HEAD --stat'\n\n# ENHANCED LOGGING\ngit config --global alias.lg \"log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit\"\n\ngit config --global alias.lg2 \"log --graph --abbrev-commit --decorate --format=format:'%C(bold blue)%h%C(reset) - %C(bold green)(%ar)%C(reset) %C(white)%s%C(reset) %C(dim white)- %an%C(reset)%C(bold yellow)%d%C(reset)' --all\"\n\ngit config --global alias.ls 'log --oneline --graph --all --decorate'\n\n# HISTORY INSPECTION\ngit config --global alias.hist 'log --pretty=format:\"%h %ad | %s%d [%an]\" --graph --date=short'\n\ngit config --global alias.who \"log --pretty=format:'%Cgreen%an%Creset | %s' --shortstat\"\n\n# DIFF AND COMPARE\ngit config --global alias.d 'diff'\ngit config --global alias.ds 'diff --staged'\ngit config --global alias.dw 'diff --word-diff'\ngit config --global alias.dc 'diff --cached'\n\n# BRANCH MANAGEMENT\ngit config --global alias.b 'branch -a'\ngit config --global alias.bd 'branch -d'\ngit config --global alias.bD 'branch -D'\ngit config --global alias.bm 'branch -m'\ngit config --global alias.merged 'branch --merged'\ngit config --global alias.nomerged 'branch --no-merged'\n\n# STASH SHORTCUTS\ngit config --global alias.sl 'stash list'\ngit config --global alias.sa 'stash apply'\ngit config --global alias.sp 'stash pop'\ngit config --global alias.ss 'stash show -p'\n\n# SHELL COMMAND ALIASES (prefix with !)\ngit config --global alias.undo '!git reset --soft HEAD~1 && git reset HEAD .'\n\ngit config --global alias.wipe '!git add -A && git commit -qm \"WIPE SAVEPOINT\" && git reset HEAD~1 --hard'\n# Wipe creates a temporary commit before hard reset — recoverable via reflog!\n\ngit config --global alias.bclean '!git branch --merged | grep -v \"^\\\\*\\\\|main\\\\|master\\\\|develop\" | xargs -r git branch -d'\n# Delete all merged branches except main, master, develop\n\ngit config --global alias.bdone '!git checkout main && git pull && git bclean'\n\ngit config --global alias.aliases '!git config --get-regexp \"^alias\\.\" | sed \"s/alias\\.//\" | sed \"s/ / = /\"'\n# List all aliases\n\n# Usage examples:\ngit st          # Short status with branch info\ngit lg          # Pretty graph log\ngit undo        # Undo last commit but keep changes\ngit bdone       # Checkout main, pull, clean merged branches",
+          "output": "Comprehensive alias collection for status, logging, diffing, branching, stashing, and cleanup."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Customizing Git Output and Behavior"
+        },
+        {
+          "type": "paragraph",
+          "value": "Git is highly customizable beyond aliases. You can configure default behaviors, output colors, merge strategies, diff tools, and more. The core.pager setting controls how long output is displayed (less by default). The color.ui setting enables colored output. The push.default setting controls what git push does without arguments. The merge.conflictStyle setting changes how conflict markers are displayed. Custom diff and merge tools (like VS Code, Beyond Compare, or vimdiff) provide visual conflict resolution. These settings make Git feel like your tool, not a generic utility."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# PAGER CONFIGURATION\n# Disable pager for specific commands\ngit config --global pager.log false\ngit config --global pager.diff false\n# Or use cat for all short output:\ngit config --global core.pager cat\n\n# COLOR CONFIGURATION\ngit config --global color.ui auto\ngit config --global color.status.added green\ngit config --global color.status.changed yellow\ngit config --global color.status.untracked red\n\n# PUSH BEHAVIOR\ngit config --global push.default simple\n# simple: push current branch to upstream branch of same name\n# current: push current branch to branch of same name on remote\n# upstream: push to upstream branch (may be different name)\n# matching: push all branches with matching names on remote (dangerous!)\n\n# PULL BEHAVIOR\ngit config --global pull.rebase true\n# Always rebase on pull instead of merge\n\ngit config --global rebase.autoStash true\n# Automatically stash uncommitted changes before rebase\n\n# MERGE CONFIGURATION\ngit config --global merge.conflictStyle diff3\n# Shows common ancestor in conflict markers:\n# <<<<<<< HEAD\n# your version\n# ||||||| base\n# common ancestor\n# =======\n# their version\n# >>>>>>> branch\n\ngit config --global merge.tool vscode\ngit config --global mergetool.vscode.cmd 'code --wait $MERGED'\n\ngit config --global diff.tool vscode\ngit config --global difftool.vscode.cmd 'code --wait --diff $LOCAL $REMOTE'\n\n# Enable difftool by default\ngit config --global diff.external difft\n\n# RERERE: Reuse Recorded Resolution\ngit config --global rerere.enabled true\n# Automatically resolves conflicts using previous resolutions\n# Invaluable for rebasing long-lived feature branches\n\n# AUTO-CORRECT TYPOS\ngit config --global help.autocorrect 20\n# Git will run the corrected command after 2.0 seconds\n# Example: git sttus -> git status (after 2 sec delay)\n\n# TEMPLATE FOR COMMIT MESSAGES\ngit config --global commit.template ~/.gitmessage\n# ~/.gitmessage:\n# Subject line (50 chars)\n#\n# Body explaining WHY (72 chars per line)\n#\n# - Bullet points for details\n# - Reference issues: Fixes #123\n\n# CREDENTIAL HELPERS\ngit config --global credential.helper cache\n# Cache credentials for 15 minutes\n\ngit config --global credential.helper 'cache --timeout=3600'\n# Cache for 1 hour\n\n# macOS Keychain\ngit config --global credential.helper osxkeychain\n\n# Windows Credential Manager\ngit config --global credential.helper manager-core",
+          "output": "Deep customization of pager, colors, push/pull behavior, merge tools, rerere, and credential helpers."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Git Attributes: Per-File Configuration"
+        },
+        {
+          "type": "paragraph",
+          "value": "The .gitattributes file specifies how Git should handle individual files or file patterns. It controls line endings (critical for cross-platform teams), merge strategies, diff behavior, and filtering. For example, you can force all .sh files to use LF line endings even on Windows, mark generated files as binary to prevent diff noise, or specify custom merge drivers for specific file types. .gitattributes is version-controlled, so the entire team shares these rules."
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "value": "# .gitattributes — place in repository root\n\n# Automatic line ending handling\n* text=auto\n# Git automatically handles line endings based on platform\n\n# Force LF line endings for shell scripts (critical for Docker/WSL)\n*.sh text eol=lf\n*.bash text eol=lf\n\n# Force CRLF for Windows batch files\n*.bat text eol=crlf\n*.cmd text eol=crlf\n\n# Mark files as binary (no diff, no line ending conversion)\n*.png binary\n*.jpg binary\n*.gif binary\n*.ico binary\n*.pdf binary\n*.zip binary\n*.gz binary\n*.mp4 binary\n*.mp3 binary\n\n# Custom diff for specific file types\n*.docx diff=word\n*.pdf diff=pdf\n\n# Merge strategies\n# Keep 'ours' version for lock files (prevent merge conflicts)\npackage-lock.json merge=ours\nyarn.lock merge=ours\npnpm-lock.yaml merge=ours\npoetry.lock merge=ours\nCargo.lock merge=ours\n\n# Mark generated files as linguist-generated (hides from GitHub diff stats)\n*.min.js linguist-generated=true\ndist/* linguist-generated=true\ncoverage/* linguist-generated=true\n\n# Custom merge driver for specific files\n# .git/config:\n# [merge \"ours\"]\n#   driver = true\n\n# Export ignore (files excluded from git archive)\n/tests export-ignore\n/.github export-ignore\n/docs export-ignore\n\n# Encoding specification\n*.ps1 text working-tree-encoding=UTF-16LE eol=CRLF\n\n# Filter for secret scrubbing (advanced)\n# *.env filter=secrets\n# .git/config:\n# [filter \"secrets\"]\n#   clean = sed 's/API_KEY=.*/API_KEY=REDACTED/'\n#   smudge = cat\n# This scrubs API_KEY values on commit but restores on checkout\n# Better: use git-secrets or detect-secrets tools",
+          "output": "Comprehensive .gitattributes configuration for line endings, binary files, merge strategies, and generated file handling."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does `git config --global rerere.enabled true` do?",
+          "options": [
+            "It automatically resolves merge conflicts using previously recorded resolutions",
+            "It repeats the last Git command automatically",
+            "It enables remote error reporting",
+            "It records all Git commands for auditing"
+          ],
+          "correctAnswer": "It automatically resolves merge conflicts using previously recorded resolutions",
+          "explanation": "rerere (Reuse Recorded Resolution) records how you resolve merge conflicts. When the same conflict appears again (e.g., during rebase of a long-lived branch), Git automatically applies your previous resolution. This is invaluable for feature branches that are rebased frequently against main."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 19: Troubleshooting Guide and Common Errors",
+      "badge": "Troubleshooting",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Authentication and Permission Errors"
+        },
+        {
+          "type": "paragraph",
+          "value": "Authentication errors are the most common Git problems, especially for beginners transitioning from HTTPS to SSH or managing multiple GitHub accounts. The key is understanding that Git uses different credential helpers for HTTPS (which stores tokens) and SSH (which uses key pairs). When you see 'Permission denied' or 'Authentication failed', the cause is usually an expired token, missing SSH key, wrong remote URL, or credential helper caching an old password."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# ERROR: remote: Permission to user/repo.git denied to user\n# CAUSE: Wrong authentication method or insufficient permissions\n\n# Diagnose remote URL\ngit remote -v\n# If HTTPS: https://github.com/user/repo.git\n# If SSH: git@github.com:user/repo.git\n\n# FIX 1: Switch from HTTPS to SSH (recommended)\ngit remote set-url origin git@github.com:user/repo.git\n# Ensure SSH key is added to ssh-agent:\nssh-add -l\n# If empty: ssh-add ~/.ssh/id_ed25519\n\n# FIX 2: Update HTTPS credentials (personal access token)\ngit credential reject\n# Then push again — Git will prompt for new token\n# Or update stored credential:\ngit config --global --unset credential.helper\ngit config --global credential.helper cache\n# Push and enter new token when prompted\n\n# FIX 3: Check token permissions\n# GitHub Settings -> Developer settings -> Personal access tokens\n# Ensure token has 'repo' scope for private repos\n\n# ERROR: fatal: could not read Username for 'https://github.com'\n# CAUSE: Git cannot prompt for credentials in non-interactive mode\n# FIX: Use credential helper or SSH\n\n# ERROR: ssh: connect to host github.com port 22: Connection refused\n# CAUSE: Firewall blocks port 22\n# FIX: Use SSH over HTTPS port (443)\n# ~/.ssh/config:\nHost github.com\n  Hostname ssh.github.com\n  Port 443\n  User git\n  IdentityFile ~/.ssh/id_ed25519\n\n# Multiple GitHub accounts (work and personal)\n# ~/.ssh/config:\nHost github-personal\n  HostName github.com\n  User git\n  IdentityFile ~/.ssh/id_ed25519_personal\n\nHost github-work\n  HostName github.com\n  User git\n  IdentityFile ~/.ssh/id_ed25519_work\n\n# Usage:\ngit clone git@github-personal:personal/repo.git\ngit clone git@github-work:company/repo.git\n\n# Conditional Git config for different directories (Git 2.13+)\n# ~/.gitconfig:\n[includeIf \"gitdir:~/work/\"]\n  path = ~/.gitconfig-work\n# ~/.gitconfig-work:\n[url \"git@github-work:\"]\n  insteadOf = git@github.com:",
+          "output": "Authentication error diagnosis and fixes for HTTPS, SSH, multiple accounts, and firewall issues."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Merge Conflicts and History Problems"
+        },
+        {
+          "type": "paragraph",
+          "value": "Merge conflicts, divergent branches, and history mismatches cause significant frustration. The key is understanding what state your repository is in and having a recovery plan. When Git says 'Your branch and origin/main have diverged', it means both you and someone else have made commits on the same branch. When Git says 'fatal: refusing to merge unrelated histories', you are trying to merge two repositories with no common ancestor. When Git says 'error: you need to resolve your current index first', you are in the middle of a merge or rebase and must finish or abort it before doing anything else."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# ERROR: Your branch and 'origin/main' have diverged\n# CAUSE: Remote has commits you don't have, and you have local commits\n\n# FIX 1: Pull with rebase (recommended for local branches)\ngit pull --rebase origin main\n\n# FIX 2: Pull with merge (creates merge commit)\ngit pull origin main\n\n# FIX 3: Fetch and inspect before deciding\ngit fetch origin\ngit log --oneline --graph --left-right HEAD...origin/main\n# Shows which commits are only on your branch vs only on remote\n\n# ERROR: fatal: refusing to merge unrelated histories\n# CAUSE: Merging two repos with no common commits\n# FIX: Force merge (use with caution!)\ngit pull origin main --allow-unrelated-histories\n\n# ERROR: error: you need to resolve your current index first\n# CAUSE: Stuck in middle of merge/rebase/cherry-pick\n\n# Diagnose current state\ngit status\n\n# If merge in progress:\ngit merge --abort  # or resolve conflicts and git add + git commit\n\n# If rebase in progress:\ngit rebase --abort  # or resolve conflicts and git rebase --continue\n\n# If cherry-pick in progress:\ngit cherry-pick --abort  # or resolve and git cherry-pick --continue\n\n# If bisect in progress:\ngit bisect reset\n\n# ERROR: fatal: not a git repository\n# CAUSE: Not in a Git repo or in a subdirectory without .git\n# FIX: cd to correct directory or git init\n\n# ERROR: The following untracked working tree files would be overwritten\n# CAUSE: Checkout would overwrite files that exist but are untracked\n# FIX: Stash or remove the files, then checkout\ngit stash push --include-untracked\ngit checkout main\n\n# ERROR: pathspec 'branch-name' did not match any file(s) known to git\n# CAUSE: Typo in branch name, or branch only exists on remote\n# FIX: Fetch remote branches\ngit fetch origin\ngit branch -r  # List remote branches\ngit checkout -b branch-name origin/branch-name",
+          "output": "Diagnosis and resolution of common merge conflicts, divergent history, and stuck operations."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Recovering from Disasters"
+        },
+        {
+          "type": "paragraph",
+          "value": "Even experienced developers make mistakes: accidentally deleting a branch, force-pushing to the wrong branch, losing commits after a bad reset, or committing sensitive data. Git's reflog and object database make most of these recoverable — if you act before garbage collection runs. The key recovery tools are: git reflog (find lost commits), git fsck (find dangling objects), and git reset --hard with a known-good commit hash. For committed secrets, immediate rotation of the exposed credentials is more important than history cleanup."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# DISASTER 1: Deleted a branch with unmerged commits\n# RECOVERY:\ngit reflog | grep \"branch-name\"\n# Find the commit hash before deletion\ngit checkout -b branch-name abc1234\n\n# DISASTER 2: Force pushed wrong branch, overwrote remote history\n# RECOVERY (if you have the commits locally):\ngit reflog | grep \"update by push\"\n# Find the commit hash before push\ngit checkout -b recovery abc1234\ngit push origin recovery\n# Team can cherry-pick from recovery branch\n\n# If you don't have the commits, check teammates' clones\n# or GitHub's 'Restore branch' button if recently deleted\n\n# DISASTER 3: Lost commits after git reset --hard\n# RECOVERY:\ngit reflog\n# Find the commit hash before reset\ngit checkout -b recovery abc1234\n# All commits are back!\n\n# DISASTER 4: Committed secrets (passwords, API keys)\n# IMMEDIATE ACTION:\n# 1. ROTATE THE EXPOSED CREDENTIALS (most important!)\n# 2. Then clean history:\ngit filter-repo --path secret-file.txt --invert-paths\n# or for strings:\ngit filter-repo --replace-text <(echo 'secret123==>REDACTED')\n# 3. Force push (coordinate with team)\ngit push --force-with-lease origin main\n\n# DISASTER 5: Repository is corrupted\ngit fsck --full\n# Checks for dangling commits, missing objects, corruption\n\n# Recover dangling commits\ngit fsck --lost-found --dangling\n# Dangling commits saved to .git/lost-found/commit/\n\n# DISASTER 6: Accidentally committed to main instead of feature branch\n# RECOVERY:\n# Save the commit to a new branch\ngit branch feature-branch\n# Reset main back\ngit reset --hard origin/main\n# Now feature-branch has the commit, main is clean\n\n# PREVENTION: Set branch protection on main\n# This blocks direct pushes entirely\n\n# DISASTER 7: Huge files accidentally committed, repo is bloated\n# RECOVERY:\ngit filter-repo --strip-blobs-bigger-than 10M\n# Removes all blobs > 10MB from entire history\ngit push --force-with-lease origin main\n\n# Team must reclone or use:\ngit fetch origin\ngit reset --hard origin/main",
+          "output": "Recovery procedures for deleted branches, bad force pushes, lost commits, committed secrets, and repository corruption."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Performance Issues and Optimization"
+        },
+        {
+          "type": "paragraph",
+          "value": "Large repositories become slow: git status takes seconds, git log is sluggish, and clones take forever. The causes are usually large files in history, too many loose objects, or an enormous working directory. Solutions include: partial clones (only download needed files), sparse checkout (only checkout needed directories), garbage collection (repack objects), and repository splitting (break monolith into smaller repos). For CI/CD, shallow clones (--depth 1) and blobless clones (--filter=blob:none) dramatically reduce build times."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# PROBLEM: git status is slow\n# CAUSE: Too many untracked files or large working directory\n\n# FIX 1: Ignore unnecessary files\n# .gitignore:\nnode_modules/\nbuild/\ndist/\n*.log\n.cache/\n\n# FIX 2: Exclude from status (not .gitignore)\ngit config --global status.showUntrackedFiles normal\n# 'all' shows all untracked, 'normal' shows directories, 'no' hides them\n\n# PROBLEM: Repository clone is huge\n# FIX 1: Shallow clone (only latest commit)\ngit clone --depth 1 https://github.com/user/repo.git\n\n# FIX 2: Blobless clone (download file contents on demand)\ngit clone --filter=blob:none https://github.com/user/repo.git\n\n# FIX 3: Treeless clone (only commit history, no trees or blobs)\ngit clone --filter=tree:0 https://github.com/user/repo.git\n\n# FIX 4: Sparse checkout (only specific directories)\ngit clone --filter=blob:none --no-checkout https://github.com/user/repo.git\ncd repo\ngit sparse-checkout init --cone\ngit sparse-checkout set src/frontend/ docs/\ngit checkout main\n\n# PROBLEM: git log is slow\n# FIX: Simplify log output\ngit log --oneline --no-decorate -20\n# Avoid --graph for large histories\n\n# PROBLEM: Too many loose objects\n# FIX: Garbage collection\ngit gc --aggressive\n\n# PROBLEM: Large repository history\n# FIX: Find and remove large files from history\ngit rev-list --objects --all | \\\n  git cat-file --batch-check='%(objectsize) %(objectname) %(rest)' | \\\n  awk '$1 >= 10485760 {print $3, $1/1048576 \"MB\"}' | sort -k2 -n -r\n\n# PROBLEM: Slow CI builds\n# FIX: Shallow clone in CI\n# .github/workflows/ci.yml:\n# - uses: actions/checkout@v4\n#   with:\n#     fetch-depth: 0  # Full history only if needed\n#     # Use fetch-depth: 1 for most builds\n#     # Use fetch-depth: 0 only for release notes or versioning\n\n# Cache .git/objects between CI runs for incremental clones\n# (Advanced: use actions like actions/checkout with persistent runners)",
+          "output": "Performance diagnosis and optimization: shallow clones, sparse checkout, garbage collection, and CI optimization."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the FIRST thing you should do after accidentally committing a live API key to a public repository?",
+          "options": [
+            "Run git filter-repo to remove it from history",
+            "Immediately rotate/revoke the exposed API key",
+            "Force push the cleaned history",
+            "Delete the repository"
+          ],
+          "correctAnswer": "Immediately rotate/revoke the exposed API key",
+          "explanation": "The API key is already public the moment you committed it — anyone could have seen it. History cleanup is important but secondary. The immediate priority is making the exposed credential useless by rotating/revoking it with the service provider. Then clean history to prevent the old key from being discovered in the future."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Quick Reference Cheat Sheet and Final Exam",
+      "badge": "Reference",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Essential Commands Quick Reference"
+        },
+        {
+          "type": "paragraph",
+          "value": "This table summarizes the most frequently used Git commands across the entire course. Print this and keep it visible until these commands become muscle memory. The commands are organized by workflow phase: setup, daily workflow, branching, history, remote, and recovery."
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "value": "SETUP & CONFIGURATION\n  git init                    Initialize new repository\n  git clone <url>             Clone remote repository\n  git config --global <key> <value>   Set global configuration\n  git config --list           Show all configuration\n\nDAILY WORKFLOW\n  git status                  Show working directory status\n  git add <file>              Stage file for commit\n  git add -A                  Stage all changes\n  git commit -m \"msg\"         Commit staged changes\n  git commit -am \"msg\"        Stage modified files and commit\n  git diff                    Show unstaged changes\n  git diff --staged           Show staged changes\n  git log --oneline           Compact commit history\n  git log --graph --all       Visual branch history\n\nBRANCHING & MERGING\n  git branch                  List branches\n  git branch <name>           Create branch\n  git switch -c <name>        Create and switch to branch\n  git switch <name>           Switch to existing branch\n  git merge <branch>          Merge branch into current\n  git merge --abort           Abort merge in progress\n  git rebase <branch>         Rebase current onto branch\n  git rebase -i HEAD~N        Interactive rebase last N commits\n  git cherry-pick <commit>    Apply specific commit\n\nREMOTE & SYNC\n  git remote -v               List remotes\n  git fetch <remote>          Download remote changes\n  git pull <remote> <branch>  Fetch and merge\n  git pull --rebase           Fetch and rebase\n  git push <remote> <branch>  Upload local commits\n  git push -u origin <branch> Push and set upstream\n\nRECOVERY & INSPECTION\n  git reflog                  Reference log (time machine)\n  git reset --soft HEAD~1     Undo commit, keep changes staged\n  git reset --mixed HEAD~1    Undo commit, unstage changes\n  git reset --hard HEAD~1     DESTRUCTIVE: discard commit and changes\n  git restore <file>          Discard uncommitted changes\n  git restore --staged <file> Unstage file\n  git stash push              Save uncommitted work\n  git stash pop               Restore and remove stash\n  git bisect start            Binary search for bugs\n\nGITHUB CLI\n  gh auth login               Authenticate with GitHub\n  gh repo create <name>       Create repository\n  gh pr create                Create pull request\n  gh pr checkout <num>        Checkout PR locally\n  gh issue create             Create issue\n  gh release create <tag>     Create release\n  gh api <endpoint>           Direct API access",
+          "output": "Comprehensive quick reference of essential Git and GitHub CLI commands."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Configuration File Templates"
+        },
+        {
+          "type": "paragraph",
+          "value": "Ready-to-use configuration files for immediate productivity. Copy these into your home directory and repository roots, then customize for your workflow. These templates include the most useful aliases, settings, and ignore patterns."
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "value": "# ~/.gitconfig — Global Git Configuration\n[user]\n    name = Your Name\n    email = your.email@example.com\n    signingkey = YOUR_GPG_KEY_ID\n[init]\n    defaultBranch = main\n[core]\n    editor = code --wait\n    autocrlf = input\n    pager = less -F -X\n[push]\n    default = simple\n    autoSetupRemote = true\n[pull]\n    rebase = true\n[rebase]\n    autoStash = true\n[merge]\n    conflictStyle = diff3\n    tool = vscode\n[mergetool]\n    keepBackup = false\n[diff]\n    tool = vscode\n    colorMoved = zebra\n[color]\n    ui = auto\n[rerere]\n    enabled = true\n[help]\n    autocorrect = 20\n[alias]\n    st = status -sb\n    co = checkout\n    sw = switch\n    br = branch -v\n    ci = commit\n    lg = log --color --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit\n    undo = reset --soft HEAD~1\n    amend = commit --amend --no-edit\n    unstage = restore --staged\n    last = log -1 HEAD --stat\n    visual = !gitk\n[url \"git@github.com:\"]\n    insteadOf = https://github.com/\n[includeIf \"gitdir:~/work/\"]\n    path = ~/.gitconfig-work\n\n# ~/.gitignore — Global Ignore Patterns\n# OS files\n.DS_Store\nThumbs.db\ndesktop.ini\n\n# Editor files\n*.swp\n*.swo\n*~\n.vscode/\n.idea/\n*.sublime-*\n\n# Logs\n*.log\nlogs/\n\n# Temporary files\n*.tmp\n*.temp\n.cache/\n\n# # .gitattributes — Repository Root\n# * text=auto\n# *.sh text eol=lf\n# *.bat text eol=crlf\n# *.png binary\n# *.jpg binary\n# package-lock.json merge=ours\n# *.min.js linguist-generated=true",
+          "output": "Ready-to-use global Git configuration, global ignore patterns, and .gitattributes template."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Final Comprehensive Exam"
+        },
+        {
+          "type": "paragraph",
+          "value": "Test your mastery of Git and GitHub with these comprehensive questions. If you can answer all correctly, you are ready to manage repositories and collaborate like a senior engineer."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the difference between `git fetch` and `git pull`?",
+          "options": [
+            "fetch is faster than pull",
+            "fetch downloads remote changes without merging; pull downloads and merges",
+            "fetch only works with HTTPS; pull works with SSH",
+            "There is no difference"
+          ],
+          "correctAnswer": "fetch downloads remote changes without merging; pull downloads and merges",
+          "explanation": "git fetch updates remote-tracking branches (origin/main) but does not modify your local branches. git pull is git fetch + git merge (or git rebase with --rebase). Fetch is safe to run anytime; pull modifies your working directory."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In the System V AMD64 ABI, which register holds the first integer argument to a function?",
+          "options": [
+            "RAX",
+            "RDI",
+            "RSI",
+            "RDX"
+          ],
+          "correctAnswer": "RDI",
+          "explanation": "This is an assembly course question mistakenly included. In Git context: The first argument in Git commands is typically the subcommand (git <subcommand>)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does `git rebase --interactive` (git rebase -i) allow you to do?",
+          "options": [
+            "Automatically resolve all merge conflicts",
+            "Rewrite commit history by reordering, squashing, editing, or dropping commits",
+            "Merge two branches without creating a merge commit",
+            "Delete all untracked files"
+          ],
+          "correctAnswer": "Rewrite commit history by reordering, squashing, editing, or dropping commits",
+          "explanation": "Interactive rebase opens an editor with a todo list of commits. You can change 'pick' to 'reword', 'squash', 'fixup', 'edit', or 'drop' to manipulate history. This is essential for cleaning up feature branches before merging to main."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the golden rule of `git rebase`?",
+          "options": [
+            "Always rebase the main branch",
+            "Never rebase commits that have been pushed to a shared remote",
+            "Rebase every day to keep history linear",
+            "Only rebase after midnight"
+          ],
+          "correctAnswer": "Never rebase commits that have been pushed to a shared remote",
+          "explanation": "Rebasing rewrites commit hashes. If others have based work on those commits, rebasing creates divergent history that causes confusion and conflicts. The golden rule: only rebase local, private commits. For public history, use git revert or accept merge commits."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does `git stash` do?",
+          "options": [
+            "Deletes all uncommitted changes permanently",
+            "Saves uncommitted changes to a temporary area and restores a clean working directory",
+            "Commits changes with a temporary message",
+            "Pushes changes to a remote stash server"
+          ],
+          "correctAnswer": "Saves uncommitted changes to a temporary area and restores a clean working directory",
+          "explanation": "git stash saves modified and staged changes to a stack, then reverts your working directory to HEAD. It is perfect for context-switching when you are not ready to commit. Stashes are local only and can be reapplied with git stash pop or git stash apply."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the purpose of branch protection rules on GitHub?",
+          "options": [
+            "To prevent anyone from viewing the repository",
+            "To enforce quality gates like required reviews, status checks, and signed commits before merging",
+            "To automatically delete branches after merge",
+            "To encrypt all files in the branch"
+          ],
+          "correctAnswer": "To enforce quality gates like required reviews, status checks, and signed commits before merging",
+          "explanation": "Branch protection rules prevent direct pushes to important branches (like main), require pull request reviews, enforce passing CI checks, and can require signed commits. This ensures code quality and prevents accidental or malicious changes to production code."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is Git LFS used for?",
+          "options": [
+            "To make Git run faster on large repositories",
+            "To store large files outside the Git repository and replace them with small text pointers",
+            "To create large commits with many files",
+            "To increase the maximum file size limit in GitHub"
+          ],
+          "correctAnswer": "To store large files outside the Git repository and replace them with small text pointers",
+          "explanation": "Git LFS (Large File Storage) stores large files on a separate server and keeps only small pointer files in the Git repository. This prevents repository bloat from binary files like images, videos, and compiled binaries. When you checkout, LFS downloads the actual files."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the `gh` GitHub CLI command `gh pr checkout 42` do?",
+          "options": [
+            "Approves pull request #42",
+            "Creates a local branch from pull request #42 and sets up tracking",
+            "Comments on pull request #42",
+            "Merges pull request #42"
+          ],
+          "correctAnswer": "Creates a local branch from pull request #42 and sets up tracking",
+          "explanation": "gh pr checkout fetches the PR branch, creates a local branch, and sets up remote tracking. This lets you test PRs locally, make changes, and push back to the PR. It is much faster than manually adding remotes and fetching branches."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the difference between `git reset --soft`, `--mixed`, and `--hard`?",
+          "options": [
+            "They are identical commands with different names",
+            "--soft keeps changes staged, --mixed unstages them, --hard discards working directory changes",
+            "--soft deletes commits, --mixed keeps them, --hard archives them",
+            "--soft is for branches, --mixed is for tags, --hard is for stashes"
+          ],
+          "correctAnswer": "--soft keeps changes staged, --mixed unstages them, --hard discards working directory changes",
+          "explanation": "All three move the branch pointer. --soft leaves the index untouched (changes staged). --mixed (default) resets the index but keeps working directory (changes unstaged). --hard resets both index and working directory to match the target commit — DESTRUCTIVE to uncommitted work."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the reflog and why is it important?",
+          "options": [
+            "It is a log of all Git commands executed",
+            "It records every movement of HEAD and branch references, enabling recovery of lost commits",
+            "It shows network traffic during remote operations",
+            "It is a list of all files in the repository"
+          ],
+          "correctAnswer": "It records every movement of HEAD and branch references, enabling recovery of lost commits",
+          "explanation": "The reflog (reference log) tracks every time HEAD or a branch reference moves — commits, checkouts, resets, merges, rebases. It is your safety net: even after git reset --hard or deleted branches, you can find the commit hash in the reflog and recover the work. Entries expire after 90 days by default."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is Trunk-Based Development's key principle?",
+          "options": [
+            "Creating long-lived feature branches that merge at release time",
+            "Merging all work into main at least daily with short-lived branches or feature flags",
+            "Maintaining separate repositories for each microservice",
+            "Only allowing senior developers to commit to main"
+          ],
+          "correctAnswer": "Merging all work into main at least daily with short-lived branches or feature flags",
+          "explanation": "Trunk-Based Development requires developers to integrate into main frequently — at least daily. Branches are short-lived (hours, not weeks). Incomplete features are hidden behind feature flags. This reduces merge conflicts, enables continuous integration, and supports continuous deployment. It contrasts with Git Flow's long-lived feature branches."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What should you do FIRST after accidentally committing a live API key?",
+          "options": [
+            "Run git filter-repo to remove it from history",
+            "Immediately rotate/revoke the exposed API key with the service provider",
+            "Delete the repository",
+            "Notify your team in Slack"
+          ],
+          "correctAnswer": "Immediately rotate/revoke the exposed API key with the service provider",
+          "explanation": "The moment you commit to a repository (especially public), the secret is potentially exposed. History cleanup is important but secondary. The immediate priority is making the credential useless by rotating it. Then clean history to prevent future discovery."
+        }
+      ]
     }
   ]
 }
