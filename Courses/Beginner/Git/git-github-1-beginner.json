@@ -684,7 +684,7 @@
           "question": "What is the main advantage of Git subtrees over Git submodules?",
           "options": [
             "Subtrees allow exact commit pinning like submodules",
-n            "Subtrees include files directly in the repository, requiring no special clone commands",
+            "Subtrees include files directly in the repository, requiring no special clone commands",
             "Subtrees support multiple parent repositories better",
             "Subtrees are better for security-critical dependencies"
           ],
