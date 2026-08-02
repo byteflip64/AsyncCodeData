@@ -5,15 +5,7 @@
     "description": "A complete, hands-on journey through Git version control and GitHub collaboration. Designed for intermediate learners but built from absolute fundamentals. Covers every Git command, branching strategies, pull requests, CI/CD integration, and professional workflows. By the end, you will manage repositories like a senior engineer and contribute confidently to open-source projects.",
     "category": "Version Control & Collaboration",
     "level": "Intermediate",
-    "tags": [
-      "Git",
-      "GitHub",
-      "Version Control",
-      "Collaboration",
-      "DevOps",
-      "Open Source",
-      "CI/CD"
-    ]
+    "tags": ["Git", "GitHub", "Version Control", "Collaboration", "DevOps", "Open Source", "CI/CD"]
   },
   "parts": [
     {
