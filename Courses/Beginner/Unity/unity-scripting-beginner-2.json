@@ -766,6 +766,710 @@
           "explanation": "Every time you pass a string like `animator.SetBool(\"IsWalking\", true)`, Unity must hash that string to find the parameter internally. This allocates memory and performs a dictionary lookup. By caching `Animator.StringToHash(\"IsWalking\")` in Awake(), you precompute the hash and pass an integer ID instead. This is a zero-allocation, O(1) lookup — critical when called every frame in Update()."
         }
       ]
+    },
+    {
+      "partTitle": "Part 11: Animation Events",
+      "badge": "Animation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Animation Events"
+        },
+        {
+          "type": "paragraph",
+          "value": "Animation Events let you call methods at specific frames of an animation. This is how you synchronize gameplay logic with visual feedback."
+        },
+        {
+          "type": "paragraph",
+          "value": "Common use cases:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Deal damage on the exact frame a punch connects",
+            "Spawn footstep particle/sound when foot touches ground",
+            "Enable/disable hitbox colliders during attack animations",
+            "Spawn projectile when gun recoil animation peaks",
+            "Trigger camera shake on heavy attack impact"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class CombatAnimator : MonoBehaviour\n{\n    [SerializeField] private Collider swordCollider;\n    [SerializeField] private ParticleSystem slashEffect;\n    [SerializeField] private AudioSource swingSound;\n    [SerializeField] private Transform hitSpawnPoint;\n\n    // Called by Animation Event at start of swing\n    public void OnSwingStart()\n    {\n        swingSound?.Play();\n        slashEffect?.Play();\n    }\n\n    // Called by Animation Event when sword should deal damage\n    // Usually the frame where sword is fully extended\n    public void OnDamageFrame()\n    {\n        swordCollider.enabled = true;\n    }\n\n    // Called by Animation Event when swing ends\n    public void OnSwingEnd()\n    {\n        swordCollider.enabled = false;\n    }\n\n    // Called by Animation Event with a float parameter\n    // Set in animation event inspector\n    public void OnFootstep(float volume)\n    {\n        // Spawn footstep at current position\n        // volume can vary based on surface type\n        AudioSource.PlayClipAtPoint(footstepClip, transform.position, volume);\n    }\n\n    // Called by Animation Event with a string parameter\n    public void OnSpawnEffect(string effectName)\n    {\n        GameObject effect = ObjectPool.Instance.Get(effectName);\n        effect.transform.position = hitSpawnPoint.position;\n    }\n}",
+          "output": "Animation Events for combat timing: enabling hitboxes, playing effects, spawning objects, and parameterized events."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Setting Up Animation Events"
+        },
+        {
+          "type": "paragraph",
+          "value": "To add an Animation Event:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Open the Animation window (Window → Animation → Animation)",
+            "Select the GameObject with the Animator",
+            "Click the event marker line (the thin line below the timeline)",
+            "Choose the method to call from the dropdown",
+            "Optionally add a parameter (float, int, string, or Object reference)",
+            "Drag the event to the exact frame where it should fire"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "The method must exist on the same GameObject as the Animator, or on a component referenced by the animation clip."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You want to deal damage exactly when a sword swing animation reaches its peak extension. What's the best approach?",
+          "options": [
+            "Check animation time in Update() and call damage when time > 0.5f",
+            "Use an Animation Event at the peak frame calling a damage method",
+            "Use a coroutine with WaitForSeconds matching the animation length",
+            "Call damage immediately when the attack button is pressed"
+          ],
+          "correctAnswer": "Use an Animation Event at the peak frame calling a damage method",
+          "explanation": "Animation Events fire at exact frames, perfectly synchronized with the visual. Checking time in Update() is imprecise and frame-dependent. Coroutines drift if animation speed changes. Immediate damage on button press feels disconnected from the visual feedback. Animation Events are the industry standard for this pattern."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Blend Trees & 2D Animation",
+      "badge": "Animation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Blend Trees and 2D Animation"
+        },
+        {
+          "type": "paragraph",
+          "value": "`Blend Trees` smoothly blend between multiple animations based on parameters. They are essential for natural movement."
+        },
+        {
+          "type": "paragraph",
+          "value": "Types of blend trees:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`1D Blend Tree` — Blends based on a single float (e.g., Speed: Idle → Walk → Run)",
+            "`2D Blend Tree` — Blends based on two floats (e.g., Velocity X and Z for 8-directional movement)",
+            "`2D Simple Directional` — For distinct directions (up, down, left, right)",
+            "`2D Freeform Cartesian` — For continuous 2D space (top-down movement)"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class BlendTreeController : MonoBehaviour\n{\n    private Animator animator;\n    private int velocityXHash;\n    private int velocityZHash;\n\n    void Awake()\n    {\n        animator = GetComponent<Animator>();\n        velocityXHash = Animator.StringToHash(\"VelocityX\");\n        velocityZHash = Animator.StringToHash(\"VelocityZ\");\n    }\n\n    void Update()\n    {\n        // Get input relative to camera\n        float h = Input.GetAxis(\"Horizontal\");\n        float v = Input.GetAxis(\"Vertical\");\n\n        // Convert to camera-relative direction\n        Vector3 cameraForward = Camera.main.transform.forward;\n        Vector3 cameraRight = Camera.main.transform.right;\n        cameraForward.y = 0;\n        cameraRight.y = 0;\n        cameraForward.Normalize();\n        cameraRight.Normalize();\n\n        Vector3 moveDir = (cameraForward * v + cameraRight * h).normalized;\n\n        // Transform world direction to local direction relative to player\n        Vector3 localDir = transform.InverseTransformDirection(moveDir);\n\n        // Set blend tree parameters (-1 to 1 range)\n        animator.SetFloat(velocityXHash, localDir.x);\n        animator.SetFloat(velocityZHash, localDir.z);\n\n        // For 1D blend tree (speed-based)\n        float speed = new Vector2(h, v).magnitude;\n        animator.SetFloat(\"Speed\", speed);\n    }\n}\n\n// 2D Sprite Animation (for 2D games)\npublic class SpriteAnimator : MonoBehaviour\n{\n    private Animator animator;\n    private SpriteRenderer spriteRenderer;\n    private int directionHash;\n\n    void Awake()\n    {\n        animator = GetComponent<Animator>();\n        spriteRenderer = GetComponent<SpriteRenderer>();\n        directionHash = Animator.StringToHash(\"Direction\");\n    }\n\n    void Update()\n    {\n        float h = Input.GetAxisRaw(\"Horizontal\");\n        float v = Input.GetAxisRaw(\"Vertical\");\n\n        // 0=Down, 1=Up, 2=Left, 3=Right\n        int direction = 0;\n        if (v > 0) direction = 1;\n        else if (v < 0) direction = 0;\n        else if (h < 0) direction = 2;\n        else if (h > 0) direction = 3;\n\n        animator.SetInteger(directionHash, direction);\n        animator.SetBool(\"IsMoving\", h != 0 || v != 0);\n\n        // Flip sprite for left/right without separate animations\n        if (h < 0) spriteRenderer.flipX = true;\n        else if (h > 0) spriteRenderer.flipX = false;\n    }\n}",
+          "output": "2D blend tree for 8-directional movement and 2D sprite animation with direction handling and sprite flipping."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "When to Use Each Blend Tree Type"
+        },
+        {
+          "type": "paragraph",
+          "value": "Choose the right blend tree for your game's needs:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`1D` — FPS/third-person walk/run blend, weapon recoil intensity",
+            "`2D Simple Directional` — 4-way or 8-way character movement (top-down RPG)",
+            "`2D Freeform Cartesian` — Any-direction movement (twin-stick shooter, flight sim)",
+            "`2D Freeform Directional` — Directional movement with magnitude (strafing + speed)"
+          ]
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You are making a top-down RPG where the player can walk in 8 directions. Which blend tree type should you use?",
+          "options": [
+            "1D Blend Tree",
+            "2D Simple Directional",
+            "2D Freeform Cartesian",
+            "Direct Blend Tree"
+          ],
+          "correctAnswer": "2D Simple Directional",
+          "explanation": "`2D Simple Directional` is designed for distinct movement directions (up, down, left, right, and diagonals). It blends between the nearest directional clips based on input. `2D Freeform Cartesian` is for continuous 2D space where direction isn't discrete. `1D` only handles one parameter. `Direct` is for complex multi-parameter blending, not movement."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: Unity Audio System & AudioManager",
+      "badge": "Systems",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Audio System"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's audio uses the `AudioSource` component to play sounds and the `AudioListener` component (usually on the Main Camera) to hear them."
+        },
+        {
+          "type": "paragraph",
+          "value": "Audio best practices:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Use `Audio Mixer` groups (SFX, Music, Voice) for volume control and effects",
+            "Pool AudioSources for frequent sounds (gunshots, footsteps) instead of creating/destroying",
+            "Use `AudioSource.PlayOneShot()` for overlapping sounds on the same source",
+            "Use `AudioSource.PlayClipAtPoint()` for 3D positioned sounds that auto-cleanup",
+            "Compress audio assets appropriately: Vorbis for music, ADPCM for short SFX"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEngine.Audio;\n\npublic class AudioManager : MonoBehaviour\n{\n    public static AudioManager Instance { get; private set; }\n\n    [Header(\"Audio Mixers\")]\n    [SerializeField] private AudioMixer mainMixer;\n\n    [Header(\"Sound Pools\")]\n    [SerializeField] private AudioSource sfxSource;\n    [SerializeField] private AudioSource musicSource;\n    [SerializeField] private AudioSource voiceSource;\n\n    [Header(\"Sound Clips\")]\n    [SerializeField] private AudioClip jumpClip;\n    [SerializeField] private AudioClip landClip;\n    [SerializeField] private AudioClip[] footstepClips;\n\n    void Awake()\n    {\n        // Singleton pattern\n        if (Instance != null && Instance != this)\n        {\n            Destroy(gameObject);\n            return;\n        }\n        Instance = this;\n        DontDestroyOnLoad(gameObject);\n    }\n\n    public void PlaySFX(AudioClip clip, float volume = 1f, float pitch = 1f)\n    {\n        if (clip == null) return;\n        \n        sfxSource.pitch = pitch;\n        sfxSource.PlayOneShot(clip, volume);\n    }\n\n    public void PlayRandomFootstep()\n    {\n        if (footstepClips.Length == 0) return;\n        AudioClip clip = footstepClips[Random.Range(0, footstepClips.Length)];\n        float randomPitch = Random.Range(0.9f, 1.1f);\n        PlaySFX(clip, 0.5f, randomPitch);\n    }\n\n    public void PlayMusic(AudioClip music, bool loop = true)\n    {\n        if (musicSource.isPlaying) musicSource.Stop();\n        musicSource.clip = music;\n        musicSource.loop = loop;\n        musicSource.Play();\n    }\n\n    public void PlayAtPosition(AudioClip clip, Vector3 position, float volume = 1f)\n    {\n        // Creates temporary AudioSource that auto-destroys when done\n        AudioSource.PlayClipAtPoint(clip, position, volume);\n    }\n\n    public void SetVolume(string mixerGroup, float volume)\n    {\n        // Convert 0-1 slider to decibels (-80 to 0)\n        float dB = volume > 0 ? Mathf.Log10(volume) * 20 : -80f;\n        mainMixer.SetFloat(mixerGroup, dB);\n    }\n\n    public void FadeOutMusic(float duration)\n    {\n        StartCoroutine(FadeMusic(musicSource, 0f, duration));\n    }\n\n    private System.Collections.IEnumerator FadeMusic(AudioSource source, float targetVolume, float duration)\n    {\n        float startVolume = source.volume;\n        float elapsed = 0f;\n        \n        while (elapsed < duration)\n        {\n            elapsed += Time.deltaTime;\n            source.volume = Mathf.Lerp(startVolume, targetVolume, elapsed / duration);\n            yield return null;\n        }\n        \n        source.volume = targetVolume;\n        if (targetVolume <= 0) source.Stop();\n    }\n}",
+          "output": "Complete AudioManager with singleton pattern, mixer groups, sound pooling, random pitch variation, 3D positioned audio, volume control in decibels, and music fading."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "3D Audio & Spatial Sound"
+        },
+        {
+          "type": "paragraph",
+          "value": "For immersive 3D audio, configure your AudioSource:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Spatial Blend = 1` — Full 3D spatialization",
+            "`Min Distance` — Distance where sound is at full volume",
+            "`Max Distance` — Distance where sound becomes silent",
+            "`Rolloff Mode` — How volume decreases with distance (Logarithmic, Linear, Custom)",
+            "`Spread` — Stereo width of the sound source"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "void Configure3DAudio(AudioSource source)\n{\n    source.spatialBlend = 1f;        // Full 3D\n    source.minDistance = 2f;         // Full volume within 2 units\n    source.maxDistance = 50f;        // Silent beyond 50 units\n    source.rolloffMode = AudioRolloffMode.Logarithmic;\n    source.spread = 0f;              // Point source\n}\n\n// For footsteps that get quieter with distance\nAudioSource.PlayClipAtPoint(footstepClip, transform.position, 0.7f);",
+          "output": "Configuring 3D spatial audio for immersive sound design."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why should you use `AudioSource.PlayOneShot()` instead of assigning `clip` and calling `Play()` for overlapping sounds?",
+          "options": [
+            "PlayOneShot is louder",
+            "PlayOneShot allows multiple sounds on the same source without interrupting the current clip",
+            "PlayOneShot uses less memory",
+            "PlayOneShot automatically loops the sound"
+          ],
+          "correctAnswer": "PlayOneShot allows multiple sounds on the same source without interrupting the current clip",
+          "explanation": "When you assign `source.clip = newClip` and call `Play()`, it stops whatever was playing. `PlayOneShot()` fires the clip independently on the same AudioSource, allowing rapid-fire sounds like gunshots or footsteps to overlap without cutting each other off. This is essential for any sound that triggers frequently."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: Unity UI (uGUI) Scripting",
+      "badge": "Systems",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Unity UI (uGUI) Scripting"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's UI system (uGUI) uses `Canvas` as the root, `RectTransform` for positioning, and various UI components (Text, Image, Button, Slider, etc.)."
+        },
+        {
+          "type": "paragraph",
+          "value": "Canvas render modes:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Screen Space - Overlay` — UI renders on top of everything, always visible",
+            "`Screen Space - Camera` — UI rendered by a specific camera, can be affected by camera effects",
+            "`World Space` — UI exists in 3D world (in-world screens, holograms, health bars above enemies)"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEngine.UI;\nusing TMPro;\n\npublic class UIManager : MonoBehaviour\n{\n    [Header(\"HUD Elements\")]\n    [SerializeField] private TextMeshProUGUI healthText;\n    [SerializeField] private Slider healthBar;\n    [SerializeField] private Image damageFlash;\n    [SerializeField] private TextMeshProUGUI scoreText;\n\n    [Header(\"Menus\")]\n    [SerializeField] private GameObject pauseMenu;\n    [SerializeField] private GameObject gameOverPanel;\n\n    [Header(\"World Space UI\")]\n    [SerializeField] private GameObject damageNumberPrefab;\n\n    void Start()\n    {\n        // Subscribe to player events\n        PlayerHealth.OnHealthChanged += UpdateHealthUI;\n        PlayerHealth.OnDamageTaken += ShowDamageFlash;\n        GameManager.OnScoreChanged += UpdateScore;\n    }\n\n    void OnDestroy()\n    {\n        // Always unsubscribe\n        PlayerHealth.OnHealthChanged -= UpdateHealthUI;\n        PlayerHealth.OnDamageTaken -= ShowDamageFlash;\n        GameManager.OnScoreChanged -= UpdateScore;\n    }\n\n    void UpdateHealthUI(int current, int max)\n    {\n        healthText.text = $\"{current} / {max}\";\n        healthBar.value = (float)current / max;\n    }\n\n    void ShowDamageFlash(float damageAmount)\n    {\n        // Flash red when taking damage\n        damageFlash.color = new Color(1, 0, 0, 0.5f);\n        StartCoroutine(FadeOut(damageFlash, 0.5f));\n    }\n\n    void UpdateScore(int score)\n    {\n        // Animate score counting up\n        StartCoroutine(AnimateScore(score));\n    }\n\n    public void ShowDamageNumber(Vector3 worldPosition, float damage)\n    {\n        // Spawn world-space damage number\n        GameObject number = Instantiate(damageNumberPrefab, worldPosition, Quaternion.identity);\n        \n        // Billboard — always face camera\n        number.transform.LookAt(number.transform.position + Camera.main.transform.rotation * Vector3.forward,\n                                  Camera.main.transform.rotation * Vector3.up);\n        \n        TextMeshPro tmp = number.GetComponent<TextMeshPro>();\n        tmp.text = $\"-{damage:F0}\";\n        tmp.color = damage > 50 ? Color.red : Color.yellow;\n        \n        Destroy(number, 1.5f);\n    }\n\n    public void TogglePause()\n    {\n        pauseMenu.SetActive(!pauseMenu.activeSelf);\n        Time.timeScale = pauseMenu.activeSelf ? 0f : 1f;\n    }\n\n    public void ShowGameOver()\n    {\n        gameOverPanel.SetActive(true);\n        // Animate panel scale up\n        gameOverPanel.transform.localScale = Vector3.zero;\n        StartCoroutine(ScaleUp(gameOverPanel.transform, 0.3f));\n    }\n\n    // Button click handlers (assign in Inspector)\n    public void OnRestartClicked()\n    {\n        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);\n    }\n\n    public void OnQuitClicked()\n    {\n        Application.Quit();\n    }\n\n    private System.Collections.IEnumerator FadeOut(Image image, float duration)\n    {\n        Color start = image.color;\n        float elapsed = 0f;\n        \n        while (elapsed < duration)\n        {\n            elapsed += Time.deltaTime;\n            float alpha = Mathf.Lerp(start.a, 0f, elapsed / duration);\n            image.color = new Color(start.r, start.g, start.b, alpha);\n            yield return null;\n        }\n    }\n\n    private System.Collections.IEnumerator AnimateScore(int target)\n    {\n        int current = int.Parse(scoreText.text);\n        float duration = 0.5f;\n        float elapsed = 0f;\n        \n        while (elapsed < duration)\n        {\n            elapsed += Time.deltaTime;\n            int display = Mathf.RoundToInt(Mathf.Lerp(current, target, elapsed / duration));\n            scoreText.text = display.ToString();\n            yield return null;\n        }\n        scoreText.text = target.ToString();\n    }\n\n    private System.Collections.IEnumerator ScaleUp(Transform target, float duration)\n    {\n        float elapsed = 0f;\n        while (elapsed < duration)\n        {\n            elapsed += Time.deltaTime;\n            target.localScale = Vector3.Lerp(Vector3.zero, Vector3.one, elapsed / duration);\n            yield return null;\n        }\n        target.localScale = Vector3.one;\n    }\n}",
+          "output": "Complete UIManager with event-driven HUD updates, damage flash, animated score, world-space damage numbers, pause menu with time scaling, and button click handlers."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "UI Layout & Anchoring"
+        },
+        {
+          "type": "paragraph",
+          "value": "`RectTransform` uses anchors to position UI relative to screen edges. This makes your UI responsive across different resolutions."
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Anchor Min/Max` — Defines the rectangle the element stretches to (0,0 = bottom-left, 1,1 = top-right)",
+            "`Pivot` — The rotation and scaling center point",
+            "`Offset Min/Max` — Pixel offsets from the anchor rectangle",
+            "`Size Delta` — Width and height relative to anchors",
+            "Use `Anchor Presets` (Ctrl+Shift+W) for quick setup"
+          ]
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You want a health bar to stay in the top-left corner on all screen sizes. What should you set its anchors to?",
+          "options": [
+            "Min (0, 1), Max (0, 1) — top-left corner",
+            "Min (0.5, 0.5), Max (0.5, 0.5) — center",
+            "Min (0, 0), Max (1, 1) — stretch to full screen",
+            "Min (1, 1), Max (1, 1) — top-right corner"
+          ],
+          "correctAnswer": "Min (0, 1), Max (0, 1) — top-left corner",
+          "explanation": "Anchors with Min and Max both at (0, 1) pin the element to the top-left corner of the Canvas. The element maintains its offset from that corner regardless of screen resolution. (0.5, 0.5) is center, (0,0)-(1,1) stretches full screen, and (1,1) is top-right."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 15: Scene Management & Async Loading",
+      "badge": "Systems",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Scene Management and Loading"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity uses `Scenes` to organize content. You load scenes to switch between menus, levels, and game states."
+        },
+        {
+          "type": "paragraph",
+          "value": "Loading methods:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`SceneManager.LoadScene(index)` — Instant load, causes frame hitch",
+            "`SceneManager.LoadSceneAsync(name)` — Loads in background without freezing",
+            "`Additive` loading — Loads scene on top of current (good for UI overlays, streaming open worlds)",
+            "`LoadSceneMode.Single` — Replaces current scene (default)",
+            "Always use `Async` for gameplay to avoid freezing the player"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEngine.SceneManagement;\nusing UnityEngine.UI;\n\npublic class SceneLoader : MonoBehaviour\n{\n    [SerializeField] private GameObject loadingScreen;\n    [SerializeField] private Slider progressBar;\n    [SerializeField] private TextMeshProUGUI progressText;\n\n    public void LoadLevel(string sceneName)\n    {\n        StartCoroutine(LoadAsync(sceneName));\n    }\n\n    private System.Collections.IEnumerator LoadAsync(string sceneName)\n    {\n        // Show loading screen\n        loadingScreen.SetActive(true);\n        \n        // Begin async load\n        AsyncOperation operation = SceneManager.LoadSceneAsync(sceneName);\n        \n        // Prevent scene from activating immediately when ready\n        operation.allowSceneActivation = false;\n        \n        // Progress goes 0 → 0.9 while loading, then jumps to 1.0 when activated\n        while (operation.progress < 0.9f)\n        {\n            float progress = Mathf.Clamp01(operation.progress / 0.9f);\n            UpdateProgressUI(progress);\n            yield return null;\n        }\n        \n        // Loading complete, show 100%\n        UpdateProgressUI(1f);\n        \n        // Optional: wait for input or minimum display time\n        yield return new WaitForSeconds(0.5f);\n        \n        // Activate the scene\n        operation.allowSceneActivation = true;\n    }\n\n    void UpdateProgressUI(float progress)\n    {\n        progressBar.value = progress;\n        progressText.text = $\"{progress * 100:F0}%\";\n    }\n\n    public void LoadAdditive(string overlayScene)\n    {\n        // Load UI or additional content without unloading current scene\n        SceneManager.LoadScene(overlayScene, LoadSceneMode.Additive);\n    }\n\n    public void UnloadAdditive(string sceneName)\n    {\n        SceneManager.UnloadSceneAsync(sceneName);\n    }\n\n    public void ReloadCurrentScene()\n    {\n        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);\n    }\n\n    public void QuitGame()\n    {\n        #if UNITY_EDITOR\n            UnityEditor.EditorApplication.isPlaying = false;\n        #else\n            Application.Quit();\n        #endif\n    }\n}",
+          "output": "Async scene loading with progress bar, additive scene loading for overlays, and platform-aware quit handling."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Additive Scene Loading for Open Worlds"
+        },
+        {
+          "type": "paragraph",
+          "value": "For large open worlds, load chunks of the world additively as the player approaches them, then unload chunks they've left behind."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "public class WorldStreamer : MonoBehaviour\n{\n    [SerializeField] private float loadDistance = 100f;\n    [SerializeField] private float unloadDistance = 150f;\n    \n    private Dictionary<Vector2Int, AsyncOperation> loadingChunks = new();\n    private HashSet<Vector2Int> loadedChunks = new();\n\n    void Update()\n    {\n        Vector2Int playerChunk = GetChunkCoord(transform.position);\n        \n        // Load nearby chunks\n        for (int x = -2; x <= 2; x++)\n        {\n            for (int z = -2; z <= 2; z++)\n            {\n                Vector2Int chunk = playerChunk + new Vector2Int(x, z);\n                if (!loadedChunks.Contains(chunk) && !loadingChunks.ContainsKey(chunk))\n                {\n                    string sceneName = $\"Chunk_{chunk.x}_{chunk.y}\";\n                    loadingChunks[chunk] = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Additive);\n                }\n            }\n        }\n        \n        // Unload distant chunks\n        foreach (var chunk in loadedChunks.ToList())\n        {\n            float dist = Vector2Int.Distance(chunk, playerChunk) * chunkSize;\n            if (dist > unloadDistance)\n            {\n                SceneManager.UnloadSceneAsync($\"Chunk_{chunk.x}_{chunk.y}\");\n                loadedChunks.Remove(chunk);\n            }\n        }\n    }\n}",
+          "output": "World streaming system using additive scene loading for infinite open worlds."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You need to load a large open-world level without freezing the game for several seconds. Which approach should you use?",
+          "options": [
+            "SceneManager.LoadScene(\"OpenWorld\")",
+            "SceneManager.LoadSceneAsync(\"OpenWorld\") with a loading screen",
+            "Instantiate all terrain chunks manually in a coroutine",
+            "Use SceneManager.LoadSceneAdditive(\"OpenWorld\") on top of the menu scene"
+          ],
+          "correctAnswer": "SceneManager.LoadSceneAsync(\"OpenWorld\") with a loading screen",
+          "explanation": "`LoadScene()` freezes the entire game until loading completes — unacceptable for large levels. `LoadSceneAsync()` loads in the background while your game continues running, allowing you to show a progress bar and keep the player engaged. Manual instantiation is complex and error-prone. Additive loading keeps the menu scene active, which is not what you want when transitioning to gameplay."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 16: Persistent Data — PlayerPrefs & ScriptableObjects",
+      "badge": "Systems",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Persistent Data: PlayerPrefs and ScriptableObjects"
+        },
+        {
+          "type": "paragraph",
+          "value": "Games need to save settings, progress, and high scores. Unity provides two built-in solutions."
+        },
+        {
+          "type": "paragraph",
+          "value": "`PlayerPrefs` — Simple key-value storage (not secure, limited to basic types):"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Stores `int`, `float`, `string` only",
+            "Saved automatically to disk",
+            "Easy to hack — do NOT store sensitive data (passwords, purchase status)",
+            "Good for: volume settings, graphics quality, last played level, username"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "`ScriptableObjects` — Data assets that live in the project, not in scenes:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Create data containers that designers can configure",
+            "Shared across scenes without duplication",
+            "Cannot be modified at runtime in builds (read-only)",
+            "Good for: weapon stats, enemy configurations, game balance data"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// PlayerPrefs wrapper with type safety\npublic static class GameSettings\n{\n    public static float MusicVolume\n    {\n        get => PlayerPrefs.GetFloat(\"MusicVolume\", 0.8f);\n        set => PlayerPrefs.SetFloat(\"MusicVolume\", value);\n    }\n\n    public static int GraphicsQuality\n    {\n        get => PlayerPrefs.GetInt(\"GraphicsQuality\", 2); // Default: Medium\n        set => PlayerPrefs.SetInt(\"GraphicsQuality\", value);\n    }\n\n    public static string PlayerName\n    {\n        get => PlayerPrefs.GetString(\"PlayerName\", \"Player\");\n        set => PlayerPrefs.SetString(\"PlayerName\", value);\n    }\n\n    public static int HighestLevelUnlocked\n    {\n        get => PlayerPrefs.GetInt(\"HighestLevel\", 1);\n        set\n        {\n            if (value > HighestLevelUnlocked)\n            {\n                PlayerPrefs.SetInt(\"HighestLevel\", value);\n                PlayerPrefs.Save(); // Force immediate save\n            }\n        }\n    }\n\n    public static void SaveAll()\n    {\n        PlayerPrefs.Save();\n    }\n}\n\n// ScriptableObject for game data\n[CreateAssetMenu(fileName = \"WeaponData\", menuName = \"Game/Weapon Data\")]\npublic class WeaponData : ScriptableObject\n{\n    [Header(\"Basic Info\")]\n    public string weaponName = \"Rifle\";\n    public Sprite weaponIcon;\n\n    [Header(\"Combat Stats\")]\n    public float damage = 25f;\n    public float fireRate = 0.1f; // Seconds between shots\n    public float range = 100f;\n    public int magazineSize = 30;\n\n    [Header(\"Recoil & Spread\")]\n    public float recoilVertical = 2f;\n    public float recoilHorizontal = 0.5f;\n    public float spreadBase = 0.01f;\n    public float spreadMax = 0.1f;\n\n    [Header(\"Audio & Visual\")]\n    public AudioClip fireSound;\n    public ParticleSystem muzzleFlashPrefab;\n    public GameObject impactEffectPrefab;\n}\n\n// Usage in a weapon script\npublic class Weapon : MonoBehaviour\n{\n    [SerializeField] private WeaponData weaponData;\n    private int currentAmmo;\n    private float lastFireTime;\n\n    void Start()\n    {\n        currentAmmo = weaponData.magazineSize;\n    }\n\n    void Update()\n    {\n        if (Input.GetButton(\"Fire1\") && Time.time >= lastFireTime + weaponData.fireRate)\n        {\n            Fire();\n        }\n    }\n\n    void Fire()\n    {\n        if (currentAmmo <= 0) return;\n        \n        currentAmmo--;\n        lastFireTime = Time.time;\n        \n        // Apply damage with configured stats\n        RaycastHit hit;\n        if (Physics.Raycast(transform.position, transform.forward, out hit, weaponData.range))\n        {\n            IDamageable target = hit.collider.GetComponent<IDamageable>();\n            target?.TakeDamage(weaponData.damage);\n            \n            // Spawn impact effect from ScriptableObject\n            Instantiate(weaponData.impactEffectPrefab, hit.point, Quaternion.LookRotation(hit.normal));\n        }\n        \n        // Play sound\n        AudioManager.Instance.PlaySFX(weaponData.fireSound);\n    }\n}",
+          "output": "Type-safe PlayerPrefs wrapper for settings persistence, and ScriptableObject data containers for designer-configurable weapon stats."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "JSON Save System for Complex Data"
+        },
+        {
+          "type": "paragraph",
+          "value": "For complex save data (inventory, quest progress, world state), use `JsonUtility` or `Newtonsoft.Json` with file I/O."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "[System.Serializable]\npublic class SaveData\n{\n    public int level;\n    public float health;\n    public Vector3 position;\n    public List<string> inventory;\n    public Dictionary<string, bool> questsCompleted;\n}\n\npublic static class SaveSystem\n{\n    private static string SavePath => Application.persistentDataPath + \"/save.json\";\n\n    public static void Save(SaveData data)\n    {\n        string json = JsonUtility.ToJson(data, true);\n        System.IO.File.WriteAllText(SavePath, json);\n    }\n\n    public static SaveData Load()\n    {\n        if (!System.IO.File.Exists(SavePath)) return null;\n        string json = System.IO.File.ReadAllText(SavePath);\n        return JsonUtility.FromJson<SaveData>(json);\n    }\n}",
+          "output": "Custom JSON save system for complex game state persistence beyond PlayerPrefs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You need to store player inventory data (item IDs, quantities, durability). What's the best approach?",
+          "options": [
+            "Store each item in separate PlayerPrefs keys",
+            "Use a ScriptableObject for inventory data",
+            "Serialize inventory to JSON and save to a file",
+            "Store it in a static variable"
+          ],
+          "correctAnswer": "Serialize inventory to JSON and save to a file",
+          "explanation": "PlayerPrefs only handles int/float/string — complex nested data like inventory would require dozens of keys and manual parsing. ScriptableObjects are read-only at runtime in builds. Static variables are lost on scene reload or app restart. JSON serialization with `JsonUtility` or `Newtonsoft.Json` is the standard for complex save data."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Design Patterns in Unity",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Singleton Pattern"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Singleton pattern ensures only one instance of a class exists and provides global access. Use it sparingly — overuse creates tight coupling."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class GameManager : MonoBehaviour\n{\n    public static GameManager Instance { get; private set; }\n\n    [SerializeField] private int score;\n    public int Score => score;\n\n    void Awake()\n    {\n        if (Instance != null && Instance != this)\n        {\n            Destroy(gameObject);\n            return;\n        }\n        Instance = this;\n        DontDestroyOnLoad(gameObject);\n    }\n\n    public void AddScore(int points)\n    {\n        score += points;\n        OnScoreChanged?.Invoke(score);\n    }\n\n    public event System.Action<int> OnScoreChanged;\n}\n\n// Thread-safe generic singleton for non-MonoBehaviour classes\npublic class Singleton<T> where T : class, new()\n{\n    private static readonly object _lock = new object();\n    private static T _instance;\n\n    public static T Instance\n    {\n        get\n        {\n            if (_instance == null)\n            {\n                lock (_lock)\n                {\n                    _instance ??= new T();\n                }\n            }\n            return _instance;\n        }\n    }\n}",
+          "output": "Singleton pattern with null-check safety, event-based score updates, and a generic thread-safe base."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Observer Pattern with C# Events"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Observer pattern lets objects subscribe to and react to events without direct references. This decouples your code."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class PlayerHealth : MonoBehaviour\n{\n    [SerializeField] private int maxHealth = 100;\n    private int currentHealth;\n\n    // Events that other scripts can subscribe to\n    public event System.Action<int, int> OnHealthChanged; // current, max\n    public event System.Action OnDeath;\n    public event System.Action<float> OnDamageTaken; // damage amount\n\n    void Start()\n    {\n        currentHealth = maxHealth;\n        OnHealthChanged?.Invoke(currentHealth, maxHealth);\n    }\n\n    public void TakeDamage(int damage)\n    {\n        currentHealth -= damage;\n        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);\n        \n        OnDamageTaken?.Invoke(damage);\n        OnHealthChanged?.Invoke(currentHealth, maxHealth);\n        \n        if (currentHealth <= 0)\n        {\n            OnDeath?.Invoke();\n        }\n    }\n}\n\n// Subscriber — no direct reference needed\npublic class HealthBar : MonoBehaviour\n{\n    [SerializeField] private PlayerHealth playerHealth;\n\n    void OnEnable()\n    {\n        playerHealth.OnHealthChanged += UpdateBar;\n    }\n\n    void OnDisable()\n    {\n        playerHealth.OnHealthChanged -= UpdateBar;\n    }\n\n    void UpdateBar(int current, int max)\n    {\n        float pct = (float)current / max;\n        // Update UI slider...\n    }\n}",
+          "output": "Observer pattern with C# events: PlayerHealth publishes changes, UI subscribes without tight coupling."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "State Pattern for AI & Gameplay"
+        },
+        {
+          "type": "paragraph",
+          "value": "The State pattern encapsulates behavior that changes based on state. Perfect for enemy AI, player states, and game flow."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "public interface IEnemyState\n{\n    void Enter(Enemy enemy);\n    void Update(Enemy enemy);\n    void Exit(Enemy enemy);\n}\n\npublic class PatrolState : IEnemyState\n{\n    public void Enter(Enemy enemy) => enemy.SetAnimation(\"Walk\");\n    \n    public void Update(Enemy enemy)\n    {\n        enemy.MoveAlongPath();\n        if (enemy.CanSeePlayer())\n            enemy.ChangeState(new ChaseState());\n    }\n    \n    public void Exit(Enemy enemy) { }\n}\n\npublic class ChaseState : IEnemyState\n{\n    public void Enter(Enemy enemy) => enemy.SetAnimation(\"Run\");\n    \n    public void Update(Enemy enemy)\n    {\n        enemy.MoveTowardPlayer();\n        if (!enemy.CanSeePlayer())\n            enemy.ChangeState(new PatrolState());\n        if (enemy.IsInAttackRange())\n            enemy.ChangeState(new AttackState());\n    }\n    \n    public void Exit(Enemy enemy) { }\n}\n\npublic class Enemy : MonoBehaviour\n{\n    private IEnemyState currentState;\n\n    void Start() => ChangeState(new PatrolState());\n    \n    void Update() => currentState?.Update(this);\n\n    public void ChangeState(IEnemyState newState)\n    {\n        currentState?.Exit(this);\n        currentState = newState;\n        currentState.Enter(this);\n    }\n}",
+          "output": "State pattern for enemy AI: clean separation of Patrol, Chase, and Attack behaviors with enter/update/exit lifecycle."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What's the main risk of overusing the Singleton pattern in Unity?",
+          "options": [
+            "It makes the game run slower",
+            "It creates tight coupling between systems, making code hard to test and refactor",
+            "It causes memory leaks automatically",
+            "It prevents use of DontDestroyOnLoad"
+          ],
+          "correctAnswer": "It creates tight coupling between systems, making code hard to test and refactor",
+          "explanation": "Singletons provide global access, which encourages scripts to directly reference `GameManager.Instance` everywhere. This creates hidden dependencies that are hard to track, impossible to mock in unit tests, and painful to refactor when requirements change. Use dependency injection or events as alternatives when possible."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Events, Delegates & Script Communication",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Delegates, Actions, and Funcs"
+        },
+        {
+          "type": "paragraph",
+          "value": "C# provides built-in delegate types that make event-driven code clean and type-safe."
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Action` — Delegate with no return value: `Action`, `Action<T>`, `Action<T1, T2>`",
+            "`Func` — Delegate with a return value: `Func<TResult>`, `Func<T, TResult>`",
+            "`Predicate` — Delegate that returns bool: `Predicate<T>`",
+            "`event` keyword — Prevents external invocation, enforces subscription model"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System;\n\npublic class EventSystemDemo : MonoBehaviour\n{\n    // Action with no parameters\n    public event Action OnGameStarted;\n    \n    // Action with parameters\n    public event Action<int> OnScoreChanged;\n    \n    // Action with multiple parameters\n    public event Action<Vector3, float> OnExplosion;\n    \n    // Func that returns a value\n    public Func<bool> CanPlayerMove;\n    \n    // Custom delegate for complex signatures\n    public delegate void DamageEvent(int damage, Vector3 hitPoint, bool isCritical);\n    public event DamageEvent OnDamageDealt;\n\n    void StartGame()\n    {\n        // Only subscribers can be notified — external code can't force invocation\n        OnGameStarted?.Invoke();\n    }\n\n    void DealDamage(int dmg, Vector3 point)\n    {\n        bool critical = dmg > 50;\n        OnDamageDealt?.Invoke(dmg, point, critical);\n    }\n\n    void CheckMovement()\n    {\n        // Ask subscribers if movement is allowed\n        bool canMove = CanPlayerMove?.Invoke() ?? true;\n        if (canMove)\n        {\n            // Move player...\n        }\n    }\n}",
+          "output": "Action, Func, and custom delegates for flexible, type-safe event-driven communication."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "UnityEvents vs C# Events"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity provides `UnityEvent` — a serializable event that works in the Inspector. Designers can wire up responses without writing code."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEngine.Events;\n\npublic class Health : MonoBehaviour\n{\n    [SerializeField] private int maxHealth = 100;\n    private int currentHealth;\n\n    // Designer-friendly: visible and configurable in Inspector\n    [SerializeField] private UnityEvent OnDeath;\n    [SerializeField] private UnityEvent<int> OnHealthChanged;\n    [SerializeField] private UnityEvent<float> OnDamageTaken;\n\n    void Start()\n    {\n        currentHealth = maxHealth;\n        OnHealthChanged?.Invoke(currentHealth);\n    }\n\n    public void TakeDamage(int damage)\n    {\n        currentHealth -= damage;\n        OnDamageTaken?.Invoke(damage);\n        OnHealthChanged?.Invoke(currentHealth);\n        \n        if (currentHealth <= 0)\n        {\n            OnDeath?.Invoke();\n        }\n    }\n}\n\n// In the Inspector, designers can:\n// - Drag AudioSource to OnDeath → Play()\n// - Drag ParticleSystem to OnDeath → Play()\n// - Drag GameObject to OnDeath → SetActive(false)\n// All without writing a single line of code",
+          "output": "UnityEvents allow designers to wire up responses in the Inspector without code changes."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Event Bus / Messenger Pattern"
+        },
+        {
+          "type": "paragraph",
+          "value": "For decoupled global communication, use an Event Bus. Objects publish events without knowing who subscribes."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System;\nusing System.Collections.Generic;\n\npublic static class EventBus\n{\n    private static Dictionary<Type, Delegate> _events = new();\n\n    public static void Subscribe<T>(Action<T> handler) where T : struct\n    {\n        Type type = typeof(T);\n        if (_events.ContainsKey(type))\n            _events[type] = Delegate.Combine(_events[type], handler);\n        else\n            _events[type] = handler;\n    }\n\n    public static void Unsubscribe<T>(Action<T> handler) where T : struct\n    {\n        Type type = typeof(T);\n        if (_events.ContainsKey(type))\n            _events[type] = Delegate.Remove(_events[type], handler);\n    }\n\n    public static void Publish<T>(T eventData) where T : struct\n    {\n        Type type = typeof(T);\n        if (_events.TryGetValue(type, out Delegate del))\n        {\n            (del as Action<T>)?.Invoke(eventData);\n        }\n    }\n}\n\n// Define event types as structs\npublic struct PlayerDiedEvent { public Vector3 deathPosition; }\npublic struct ItemCollectedEvent { public string itemId; public int quantity; }\n\n// Usage — completely decoupled\npublic class EnemySpawner : MonoBehaviour\n{\n    void OnEnable() => EventBus.Subscribe<PlayerDiedEvent>(OnPlayerDied);\n    void OnDisable() => EventBus.Unsubscribe<PlayerDiedEvent>(OnPlayerDied);\n    void OnPlayerDied(PlayerDiedEvent e) => StopSpawning();\n}\n\npublic class AchievementSystem : MonoBehaviour\n{\n    void OnEnable() => EventBus.Subscribe<ItemCollectedEvent>(OnItemCollected);\n    void OnDisable() => EventBus.Unsubscribe<ItemCollectedEvent>(OnItemCollected);\n    void OnItemCollected(ItemCollectedEvent e) => CheckAchievements(e.itemId);\n}",
+          "output": "Type-safe Event Bus for global decoupled communication between any systems."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When should you use `UnityEvent` instead of a C# `event Action`?",
+          "options": [
+            "When you need better performance",
+            "When designers need to wire up responses in the Inspector without code",
+            "When you need to pass complex data types",
+            "When you want thread safety"
+          ],
+          "correctAnswer": "When designers need to wire up responses in the Inspector without code",
+          "explanation": "`UnityEvent` is serializable and appears in the Inspector, allowing non-programmers to drag-and-drop GameObjects and methods as responses. C# `event Action` is faster and more flexible for code-only workflows but invisible to designers. Use UnityEvents for designer-facing systems (UI buttons, health events) and C# events for internal code communication."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 19: Beginner Optimization — Object Pooling & Caching",
+      "badge": "Optimization",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Object Pooling"
+        },
+        {
+          "type": "paragraph",
+          "value": "Instantiating and destroying GameObjects causes garbage collection spikes (stutters). Object Pooling reuses objects instead of creating new ones."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Collections.Generic;\n\npublic class ObjectPool : MonoBehaviour\n{\n    [SerializeField] private GameObject prefab;\n    [SerializeField] private int poolSize = 50;\n    \n    private Queue<GameObject> pool = new Queue<GameObject>();\n\n    void Start()\n    {\n        // Pre-instantiate objects\n        for (int i = 0; i < poolSize; i++)\n        {\n            GameObject obj = Instantiate(prefab, transform);\n            obj.SetActive(false);\n            pool.Enqueue(obj);\n        }\n    }\n\n    public GameObject Get(Vector3 position, Quaternion rotation)\n    {\n        GameObject obj;\n        \n        if (pool.Count > 0)\n        {\n            obj = pool.Dequeue();\n        }\n        else\n        {\n            // Pool exhausted — create new (with warning)\n            Debug.LogWarning(\"Pool exhausted! Consider increasing pool size.\");\n            obj = Instantiate(prefab);\n        }\n        \n        obj.transform.SetPositionAndRotation(position, rotation);\n        obj.SetActive(true);\n        return obj;\n    }\n\n    public void Return(GameObject obj)\n    {\n        obj.SetActive(false);\n        obj.transform.SetParent(transform);\n        pool.Enqueue(obj);\n    }\n}\n\n// Usage\npublic class Gun : MonoBehaviour\n{\n    [SerializeField] private ObjectPool bulletPool;\n\n    void Fire()\n    {\n        GameObject bullet = bulletPool.Get(firePoint.position, firePoint.rotation);\n        bullet.GetComponent<Bullet>().OnHit += () => bulletPool.Return(bullet);\n    }\n}",
+          "output": "Generic object pool that pre-instantiates objects and reuses them to eliminate garbage collection from frequent spawn/destroy cycles."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Caching References"
+        },
+        {
+          "type": "paragraph",
+          "value": "Repeated lookups are expensive. Cache everything you use more than once."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "public class BadExample : MonoBehaviour\n{\n    void Update()\n    {\n        // BAD: Searches every frame\n        GetComponent<Rigidbody>().AddForce(Vector3.up);\n        Camera.main.transform.position = transform.position;\n        GameObject.Find(\"Player\").GetComponent<Health>().TakeDamage(1);\n    }\n}\n\npublic class GoodExample : MonoBehaviour\n{\n    private Rigidbody rb;\n    private Camera mainCamera;\n    private Health playerHealth;\n\n    void Awake()\n    {\n        // GOOD: Cache once in Awake/Start\n        rb = GetComponent<Rigidbody>();\n        mainCamera = Camera.main;\n        playerHealth = GameObject.FindWithTag(\"Player\").GetComponent<Health>();\n    }\n\n    void Update()\n    {\n        // Zero lookup cost every frame\n        rb.AddForce(Vector3.up);\n        mainCamera.transform.position = transform.position;\n    }\n}\n\n// Cache component hashes\nprivate static readonly int SpeedHash = Animator.StringToHash(\"Speed\");\nanimator.SetFloat(SpeedHash, speed); // vs \"Speed\" string every frame",
+          "output": "Caching component references, Camera.main, and Animator hashes to eliminate per-frame lookups."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Other Quick Wins"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Use `CompareTag()` instead of `tag == \"Name\"` — `CompareTag()` avoids string allocation",
+            "Avoid `FindObjectsOfType` and `Find` in `Update()` — cache in `Start()` or use events",
+            "Use `transform.Translate` with `Space.Self` for local movement instead of manual math",
+            "Batch `Instantiate` calls — spawn objects in `Start()` or use coroutines to spread load",
+            "Use `Physics.OverlapSphereNonAlloc` instead of `OverlapSphere` to avoid array allocations",
+            "Disable unused scripts with `enabled = false` instead of checking a bool every frame"
+          ]
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Your game stutters every time an enemy fires a bullet. What's the most likely cause and fix?",
+          "options": [
+            "The bullet moves too fast — reduce bullet speed",
+            "Instantiating bullets causes garbage collection spikes — use Object Pooling",
+            "The bullet collider is too complex — use a simpler shape",
+            "Too many bullets on screen — limit max bullets"
+          ],
+          "correctAnswer": "Instantiating bullets causes garbage collection spikes — use Object Pooling",
+          "explanation": "`Instantiate()` allocates memory on the heap. When bullets are destroyed, that memory becomes garbage. The GC eventually pauses the game to clean it up — causing a stutter. Object Pooling pre-allocates bullets and reuses them, producing zero garbage after the initial setup. This is the single most impactful optimization for games with frequent spawning."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Introduction to ECS/DOTS & Next Steps",
+      "badge": "Advanced",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "What is ECS / DOTS?"
+        },
+        {
+          "type": "paragraph",
+          "value": "`DOTS` (Data-Oriented Technology Stack) is Unity's high-performance alternative to `MonoBehaviour`-based development. It consists of three core technologies:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`ECS` (Entity Component System) — Data-oriented architecture where logic lives in `Systems`, not `MonoBehaviours`",
+            "`Job System` — Multithreaded code that runs safely across CPU cores",
+            "`Burst Compiler` — LLVM-based compiler that generates highly optimized machine code"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "Traditional `MonoBehaviour` is object-oriented: each object has its own data and logic. ECS is data-oriented: data is stored in contiguous arrays (``chunks``), and systems process that data in tight loops. This gives massive performance gains — 10x to 100x in CPU-bound scenarios."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Entities;\nusing Unity.Transforms;\nusing Unity.Mathematics;\n\n// A Component is pure data — no logic\npublic struct MoveSpeed : IComponentData\n{\n    public float Value;\n}\n\npublic struct RotationSpeed : IComponentData\n{\n    public float Value;\n}\n\n// A System contains all the logic\npublic partial struct MovementSystem : ISystem\n{\n    void OnUpdate(ref SystemState state)\n    {\n        float deltaTime = SystemAPI.Time.DeltaTime;\n        \n        // Process ALL entities with LocalTransform and MoveSpeed in one loop\n        foreach (var (transform, speed) in \n            SystemAPI.Query<RefRW<LocalTransform>, RefRO<MoveSpeed>>())\n        {\n            transform.ValueRW.Position += new float3(0, 0, speed.ValueRO.Value * deltaTime);\n        }\n    }\n}\n\n// A Baker converts GameObjects to ECS entities\npublic class MovementAuthoring : MonoBehaviour\n{\n    [SerializeField] private float moveSpeed = 5f;\n    \n    class Baker : Baker<MovementAuthoring>\n    {\n        public override void Bake(MovementAuthoring authoring)\n        {\n            var entity = GetEntity(TransformUsageFlags.Dynamic);\n            AddComponent(entity, new MoveSpeed { Value = authoring.moveSpeed });\n        }\n    }\n}",
+          "output": "ECS architecture: pure data Components, logic-only Systems, and Baker conversion from GameObjects."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "When to Use ECS vs MonoBehaviour"
+        },
+        {
+          "type": "paragraph",
+          "value": "ECS is powerful but not always the right choice. Here's when to use each:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Use MonoBehaviour` — Small projects, rapid prototyping, UI-heavy games, games with < 1000 active objects",
+            "`Use ECS` — Large-scale simulations, thousands of entities (bullets, enemies, particles), CPU-bound games, VR/AR where frame time is critical",
+            "`Hybrid approach` — Use ECS for simulation (AI, physics, particles) and MonoBehaviour for UI, cutscenes, and designer workflows"
+          ]
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Your Next Steps"
+        },
+        {
+          "type": "paragraph",
+          "value": "You've built a solid foundation. Here's where to go from here:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Build a complete game` — Apply everything you've learned in a small project (2-week scope)",
+            "`Learn Unity's Addressables` — For asset loading, DLC, and memory management in large games",
+            "`Explore Shader Graph & VFX Graph` — Visual scripting for shaders and particle effects",
+            "`Study advanced C#` — LINQ, async/await, memory management, unsafe code",
+            "`Read Unity's source code` — The `UnityCsReference` repo on GitHub reveals engine internals",
+            "`Join the community` — Unity Forums, Discord, and Stack Overflow for real-world problem solving"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Final challenge: Build a complete player controller\n// combining everything you've learned\n\n[RequireComponent(typeof(CharacterController))]\npublic class CompletePlayer : MonoBehaviour\n{\n    [Header(\"Movement\")]\n    [SerializeField] private float moveSpeed = 5f;\n    [SerializeField] private float jumpForce = 8f;\n    \n    [Header(\"References\")]\n    [SerializeField] private Animator animator;\n    [SerializeField] private AudioSource audioSource;\n    \n    private CharacterController controller;\n    private Vector3 velocity;\n    private static readonly int SpeedHash = Animator.StringToHash(\"Speed\");\n    private static readonly int JumpTrigger = Animator.StringToHash(\"Jump\");\n\n    void Awake()\n    {\n        controller = GetComponent<CharacterController>();\n        // Cache everything in Awake — no lookups in Update!\n    }\n\n    void Update()\n    {\n        // Input (New Input System recommended for production)\n        float h = Input.GetAxisRaw(\"Horizontal\");\n        float v = Input.GetAxisRaw(\"Vertical\");\n        \n        // Movement with frame-rate independence\n        Vector3 move = transform.right * h + transform.forward * v;\n        controller.Move(move * moveSpeed * Time.deltaTime);\n        \n        // Animation — use cached hash\n        animator.SetFloat(SpeedHash, move.magnitude);\n        \n        // Jump with ground check\n        if (controller.isGrounded && Input.GetButtonDown(\"Jump\"))\n        {\n            velocity.y = jumpForce;\n            animator.SetTrigger(JumpTrigger);\n            AudioManager.Instance?.PlaySFX(jumpClip);\n        }\n        \n        // Gravity\n        velocity.y += Physics.gravity.y * Time.deltaTime;\n        controller.Move(velocity * Time.deltaTime);\n    }\n}",
+          "output": "A complete player controller combining input, CharacterController, animation hashes, audio, and caching — the culmination of the course."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "A game needs to simulate 10,000 individual agents with AI, collision, and rendering at 60 FPS. Which architecture should you use?",
+          "options": [
+            "MonoBehaviour with Update() on each agent",
+            "ECS with Burst Compiler and Job System",
+            "Coroutine-based agent simulation",
+            "A single MonoBehaviour that loops through all agents"
+          ],
+          "correctAnswer": "ECS with Burst Compiler and Job System",
+          "explanation": "10,000 MonoBehaviours with Update() would cripple performance due to cache misses and virtual call overhead. A single loop is better but still single-threaded. ECS stores data in contiguous memory chunks, processes it in tight SIMD-friendly loops, and distributes work across CPU cores via the Job System. The Burst Compiler further optimizes to near-native machine code. This is the only architecture that can handle 10,000 agents at 60 FPS."
+        }
+      ]
     }
   ]
 }
