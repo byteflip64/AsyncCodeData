@@ -1,0 +1,426 @@
+{
+  "id": "unity-csharp-scripting-engine-architecture-beginner",
+  "course": {
+    "title": "Unity C# Scripting & Engine Architecture: From First Script to Optimized Game",
+    "description": "A complete, hands-on journey through Unity's C# scripting system and engine architecture. Designed for developers who know C# basics but are new to Unity. Covers MonoBehaviour lifecycle, component patterns, input handling, physics, animation scripting, audio, UI scripting, and beginner optimization techniques. By the end, you will confidently write clean Unity C# code, understand how the engine executes your scripts, and build optimized game systems. Essential foundation for game developers, technical artists, and engine programmers.",
+    "category": "Game Development & Engine Architecture",
+    "level": "Beginner",
+    "tags": [
+      "Unity",
+      "C#",
+      "Game Development",
+      "MonoBehaviour",
+      "Component Pattern",
+      "Optimization",
+      "Game Architecture",
+      "ECS",
+      "DOTS"
+    ],
+    "totalParts": 20,
+    "partsReleased": 5
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: Unity Engine Architecture & The Game Loop",
+      "badge": "Fundamentals",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "How Unity Executes Your Code"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity is not just a game editor. It is a runtime engine that executes your C# scripts frame by frame, 60 times per second (or more). Understanding this execution model is the foundation of everything you will build."
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity uses a **component-based architecture**. Every object in your scene is a GameObject. GameObjects do nothing on their own. They become functional when you attach **Components** — scripts, renderers, colliders, audio sources, and more."
+        },
+        {
+          "type": "paragraph",
+          "value": "Your C# scripts are **Components**. They inherit from `MonoBehaviour`, which connects your code to the engine's lifecycle. The engine calls your methods automatically — you do not call them yourself."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/unity-architecture.png",
+          "alt": "Diagram showing GameObject containing multiple Components: Transform, MeshRenderer, PlayerScript, Rigidbody, Collider",
+          "caption": "A GameObject is a container of Components. Scripts are just one type of Component."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Game Loop: Frame-by-Frame Execution"
+        },
+        {
+          "type": "paragraph",
+          "value": "Games run in a loop: Process Input → Update Game State → Render Frame → Repeat. Unity handles this loop for you. Your scripts hook into specific points in this loop through **lifecycle methods**."
+        },
+        {
+          "type": "paragraph",
+          "value": "Key lifecycle methods you will use constantly:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Awake()` — Called once when the script instance is loaded. Use for initialization that does not depend on other objects.",
+            "`OnEnable()` — Called when the object becomes active. Use for subscribing to events.",
+            "`Start()` — Called once before the first frame. Use for initialization that depends on other objects being ready.",
+            "`FixedUpdate()` — Called at a fixed timestep (default 50 times/second). Use for physics and rigidbody logic.",
+            "`Update()` — Called every frame. Use for input, movement, and gameplay logic.",
+            "`LateUpdate()` — Called after all Update() methods. Use for camera follow and post-update logic.",
+            "`OnDisable()` — Called when the object becomes inactive. Use for unsubscribing from events.",
+            "`OnDestroy()` — Called when the object is destroyed. Use for final cleanup."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class LifecycleDemo : MonoBehaviour\n{\n    // Called when script is loaded (even if disabled)\n    void Awake()\n    {\n        Debug.Log(\"Awake: Script instance created\");\n    }\n\n    // Called when object becomes active\n    void OnEnable()\n    {\n        Debug.Log(\"OnEnable: Object is now active\");\n    }\n\n    // Called once before first frame (only if enabled)\n    void Start()\n    {\n        Debug.Log(\"Start: First frame beginning\");\n    }\n\n    // Called at fixed timestep (50Hz default)\n    void FixedUpdate()\n    {\n        // Physics logic here\n        Debug.Log(\"FixedUpdate: Physics step\");\n    }\n\n    // Called every rendered frame\n    void Update()\n    {\n        // Gameplay logic here\n        Debug.Log(\"Update: Frame rendered\");\n    }\n\n    // Called after all Update() calls\n    void LateUpdate()\n    {\n        // Camera follow, post-update logic\n        Debug.Log(\"LateUpdate: After all Updates\");\n    }\n\n    // Called when object becomes inactive\n    void OnDisable()\n    {\n        Debug.Log(\"OnDisable: Object deactivated\");\n    }\n\n    // Called when object is destroyed\n    void OnDestroy()\n    {\n        Debug.Log(\"OnDestroy: Cleanup time\");\n    }\n}",
+          "output": "Demonstrates the complete MonoBehaviour lifecycle with Debug.Log output for each phase."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You have two scripts: ScriptA needs to find ScriptB and call its method. Where should ScriptA find ScriptB?",
+          "options": [
+            "In ScriptA's Awake() method",
+            "In ScriptA's Start() method",
+            "In ScriptA's Update() method",
+            "In ScriptA's OnDestroy() method"
+          ],
+          "correctAnswer": "In ScriptA's Start() method",
+          "explanation": "Awake() is for self-initialization. All Awake() calls complete before any Start() calls. If ScriptA tries to find ScriptB in Awake(), ScriptB might not have initialized yet. Start() is the safe place for cross-object initialization because you are guaranteed all Awake() methods have finished. Update() would waste performance by searching every frame."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Execution Order & Editor vs Runtime",
+      "badge": "Fundamentals",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Execution Order Matters"
+        },
+        {
+          "type": "paragraph",
+          "value": "When multiple scripts exist, Unity calls their lifecycle methods in a specific order. By default, the order is undefined between scripts. This can cause bugs when Script A depends on Script B being initialized first."
+        },
+        {
+          "type": "paragraph",
+          "value": "Solutions for controlling execution order:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Use `Awake()` for self-initialization and `Start()` for cross-object initialization. All Awake() calls complete before any Start() calls.",
+            "Use `[DefaultExecutionOrder(100)]` attribute on a class to make it run earlier (lower numbers) or later (higher numbers).",
+            "Use `Script Execution Order` settings in Edit → Project Settings for fine-grained control."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// This script runs before default scripts (order 0)\n[DefaultExecutionOrder(-100)]\npublic class EarlyInitializer : MonoBehaviour\n{\n    void Awake()\n    {\n        // This Awake runs before other Awake methods\n        GameManager.Instance.Register(this);\n    }\n}\n\n// This script runs after default scripts\n[DefaultExecutionOrder(100)]\npublic class LateInitializer : MonoBehaviour\n{\n    void Start()\n    {\n        // This Start runs after other Start methods\n        // Safe to depend on other objects being ready\n        playerHealth = FindObjectOfType<PlayerHealth>();\n    }\n}",
+          "output": "Using DefaultExecutionOrder attribute to control script execution priority."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Unity Editor vs Runtime"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity has two distinct modes: **Edit Mode** (in the editor, not playing) and **Play Mode** (runtime, your game is running). Some APIs only work in one mode."
+        },
+        {
+          "type": "paragraph",
+          "value": "Key differences:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`[ExecuteInEditMode]` attribute makes a script run in the editor without pressing Play. Useful for editor tools and procedural generation previews.",
+            "`Application.isPlaying` checks if you are in Play Mode.",
+            "`#if UNITY_EDITOR` preprocessor directives compile code only in the editor build.",
+            "Editor scripts go in an `Editor` folder and cannot be included in builds."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// This script runs even when not in Play Mode\n[ExecuteInEditMode]\npublic class EditorVisualizer : MonoBehaviour\n{\n    void Update()\n    {\n        // Only run logic in editor, not in builds\n        #if UNITY_EDITOR\n            // Draw gizmos, update preview, etc.\n            Debug.Log(\"Running in Edit Mode\");\n        #endif\n    }\n\n    void OnValidate()\n    {\n        // Called when inspector values change\n        // Also called in Edit Mode\n        ClampValues();\n    }\n\n    void ClampValues()\n    {\n        // Ensure health never exceeds max in inspector\n        health = Mathf.Clamp(health, 0, maxHealth);\n    }\n\n    [SerializeField] private float health = 100f;\n    [SerializeField] private float maxHealth = 100f;\n}",
+          "output": "Using ExecuteInEditMode and preprocessor directives for editor-only behavior."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which attribute lets a script run in the Unity Editor without entering Play Mode?",
+          "options": [
+            "[RuntimeOnly]",
+            "[ExecuteInEditMode]",
+            "[EditorScript]",
+            "[PlayModeRequired]"
+          ],
+          "correctAnswer": "[ExecuteInEditMode]",
+          "explanation": "`[ExecuteInEditMode]` is the correct attribute. It allows MonoBehaviour methods like Update() and OnValidate() to run while editing in the Unity Editor, even when not in Play Mode. This is essential for building editor tools, procedural previews, and real-time visualizers."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Creating & Attaching Your First Scripts",
+      "badge": "Scripting Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Creating and Attaching Scripts"
+        },
+        {
+          "type": "paragraph",
+          "value": "In Unity, scripts are assets. You create them in the Project window, then attach them to GameObjects in the scene or prefabs."
+        },
+        {
+          "type": "paragraph",
+          "value": "Steps to create your first script:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Right-click in Project window → Create → C# Script → Name it 'PlayerMovement'",
+            "Double-click to open in Visual Studio or Rider",
+            "The script automatically inherits from MonoBehaviour",
+            "Drag the script onto a GameObject in the Hierarchy, or click Add Component → search for your script",
+            "The script is now a Component of that GameObject"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// Every Unity script must inherit from MonoBehaviour\npublic class PlayerMovement : MonoBehaviour\n{\n    // [SerializeField] exposes private fields in the Inspector\n    // without making them public to other scripts\n    [SerializeField] private float moveSpeed = 5f;\n    [SerializeField] private float jumpForce = 10f;\n\n    // Reference to the Rigidbody component\n    private Rigidbody rb;\n\n    void Awake()\n    {\n        // GetComponent finds a component on the same GameObject\n        rb = GetComponent<Rigidbody>();\n        \n        // Safety check: what if someone forgot to add Rigidbody?\n        if (rb == null)\n        {\n            Debug.LogError(\"Rigidbody missing! Add one to this GameObject.\");\n            enabled = false; // Disable this script\n        }\n    }\n\n    void Update()\n    {\n        // Get input axes (-1 to 1)\n        float horizontal = Input.GetAxis(\"Horizontal\");\n        float vertical = Input.GetAxis(\"Vertical\");\n\n        // Create movement vector\n        Vector3 movement = new Vector3(horizontal, 0f, vertical);\n\n        // Apply movement\n        // Time.deltaTime makes movement frame-rate independent\n        transform.position += movement * moveSpeed * Time.deltaTime;\n\n        // Jump on spacebar press\n        if (Input.GetKeyDown(KeyCode.Space))\n        {\n            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);\n        }\n    }\n}",
+          "output": "Basic player movement script with serialized fields, component reference, input handling, and frame-rate independent movement."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Inspector and Serialized Fields"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's Inspector shows public fields and `[SerializeField]` private fields. This is how you configure scripts without changing code."
+        },
+        {
+          "type": "paragraph",
+          "value": "Serialization rules:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Public fields are serialized by default (but this breaks encapsulation)",
+            "`[SerializeField]` on private fields keeps encapsulation while exposing to Inspector",
+            "`[HideInInspector]` hides a public field from the Inspector",
+            "`[Range(0, 100)]` adds a slider in the Inspector",
+            "`[Tooltip(\"Description here\")]` shows hover text in the Inspector",
+            "`[Header(\"Group Name\")]` creates labeled sections in the Inspector"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class PlayerConfig : MonoBehaviour\n{\n    [Header(\"Movement Settings\")]\n    [Tooltip(\"How fast the player moves\")]\n    [Range(1f, 20f)]\n    [SerializeField] private float moveSpeed = 5f;\n\n    [Tooltip(\"How high the player jumps\")]\n    [Range(1f, 30f)]\n    [SerializeField] private float jumpForce = 10f;\n\n    [Header(\"Health Settings\")]\n    [SerializeField] private int maxHealth = 100;\n    \n    [HideInInspector]\n    public int currentHealth; // Hidden from Inspector but public to other scripts\n\n    [Header(\"References\")]\n    [SerializeField] private Transform groundCheck;\n    [SerializeField] private LayerMask groundLayer;\n\n    void Start()\n    {\n        currentHealth = maxHealth;\n    }\n}",
+          "output": "Inspector-friendly script with headers, tooltips, range sliders, and organized sections."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is `[SerializeField] private float speed;` preferred over `public float speed;`?",
+          "options": [
+            "It makes the variable faster at runtime",
+            "It keeps the field private (encapsulated) while still showing it in the Inspector",
+            "It automatically adds validation to the field",
+            "It prevents the field from being saved in the scene"
+          ],
+          "correctAnswer": "It keeps the field private (encapsulated) while still showing it in the Inspector",
+          "explanation": "`public` fields break encapsulation — any script can modify them, leading to bugs. `[SerializeField] private` keeps the field encapsulated (only this class can modify it directly) while still exposing it to the Unity Inspector for designers to configure. This is a core principle of clean Unity architecture: expose configuration, hide implementation."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: Finding & Referencing Other Objects",
+      "badge": "Scripting Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Finding and Referencing Other Objects"
+        },
+        {
+          "type": "paragraph",
+          "value": "Scripts rarely work alone. You need references to other GameObjects, components, and scripts. Unity provides multiple ways to find them."
+        },
+        {
+          "type": "paragraph",
+          "value": "Methods for finding objects:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`GetComponent<T>()` — Gets a component on the same GameObject",
+            "`GetComponentInChildren<T>()` — Searches children recursively",
+            "`GetComponentInParent<T>()` — Searches up the hierarchy",
+            "`FindObjectOfType<T>()` — Searches entire scene (slow, avoid in Update)",
+            "`GameObject.Find(\"Name\")` — Finds by name (slow, fragile)",
+            "`GameObject.FindWithTag(\"Tag\")` — Finds by tag (faster than by name)",
+            "`Transform.Find(\"Path\")` — Finds child by path (e.g., 'Body/Hand/Weapon')",
+            "Serialized references — Drag in Inspector (fastest, most reliable)"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class WeaponSystem : MonoBehaviour\n{\n    // BEST: Serialized reference — drag in Inspector\n    [SerializeField] private Transform weaponHolder;\n    [SerializeField] private Animator playerAnimator;\n    [SerializeField] private ParticleSystem muzzleFlash;\n\n    // OK for scene-wide singletons (call once in Start)\n    private GameManager gameManager;\n\n    // AVOID: Finding every frame in Update\n    void Start()\n    {\n        // Cache the reference — find once, use many times\n        gameManager = FindObjectOfType<GameManager>();\n        \n        if (gameManager == null)\n        {\n            Debug.LogWarning(\"GameManager not found in scene!\");\n        }\n\n        // Find child by path\n        Transform sight = transform.Find(\"Model/Sight\");\n        if (sight != null)\n        {\n            Debug.Log(\"Found sight at: \" + sight.position);\n        }\n    }\n\n    void Update()\n    {\n        // NEVER do this — it searches the entire scene every frame\n        // BAD: FindObjectOfType<Player>() every frame\n        \n        // GOOD: Use cached reference\n        if (gameManager != null && gameManager.IsGameOver)\n        {\n            return;\n        }\n\n        if (Input.GetButtonDown(\"Fire1\"))\n        {\n            FireWeapon();\n        }\n    }\n\n    void FireWeapon()\n    {\n        muzzleFlash?.Play();\n        playerAnimator?.SetTrigger(\"Fire\");\n    }\n}",
+          "output": "Best practices for object references: serialized fields for reliability, caching FindObjectOfType in Start, and avoiding scene searches in Update."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Transform: Position, Rotation, Scale"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every GameObject has a Transform component. It is the only component you cannot remove. It defines where the object is in 3D space."
+        },
+        {
+          "type": "paragraph",
+          "value": "Coordinate systems you must understand:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`transform.position` — World space (global coordinates, relative to scene origin)",
+            "`transform.localPosition` — Local space (relative to parent object's position)",
+            "`transform.rotation` — World space rotation as Quaternion",
+            "`transform.localRotation` — Local space rotation as Quaternion",
+            "`transform.eulerAngles` — World rotation in degrees (X, Y, Z)",
+            "`transform.localEulerAngles` — Local rotation in degrees",
+            "`transform.localScale` — Scale relative to parent"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class TransformDemo : MonoBehaviour\n{\n    [SerializeField] private Transform target;\n    [SerializeField] private float orbitSpeed = 45f;\n\n    void Update()\n    {\n        // Move forward in local space (where the object is facing)\n        transform.Translate(Vector3.forward * Time.deltaTime * 5f, Space.Self);\n        \n        // Move up in world space (ignores object rotation)\n        transform.Translate(Vector3.up * Time.deltaTime * 2f, Space.World);\n\n        // Rotate around Y axis\n        transform.Rotate(0f, orbitSpeed * Time.deltaTime, 0f);\n\n        // Look at a target object\n        if (target != null)\n        {\n            transform.LookAt(target);\n        }\n\n        // Get direction vector to target\n        Vector3 direction = (target.position - transform.position).normalized;\n        \n        // Move toward target\n        transform.position += direction * Time.deltaTime * 3f;\n\n        // Smooth rotation toward target\n        Quaternion targetRotation = Quaternion.LookRotation(direction);\n        transform.rotation = Quaternion.Slerp(\n            transform.rotation, \n            targetRotation, \n            Time.deltaTime * 5f\n        );\n    }\n\n    void Reset()\n    {\n        // Called when component is added or Reset is clicked\n        // Good for setting default values\n        transform.position = Vector3.zero;\n        transform.rotation = Quaternion.identity;\n    }\n}",
+          "output": "Transform manipulation: local vs world space, translation, rotation, LookAt, direction vectors, and smooth interpolation with Slerp."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which is the BEST way to reference another GameObject's component in a script?",
+          "options": [
+            "FindObjectOfType<MyComponent>() in Update()",
+            "GameObject.Find(\"ObjectName\") in Start()",
+            "[SerializeField] private MyComponent myComponent; and drag it in the Inspector",
+            "GetComponentInChildren<MyComponent>() in Awake()"
+          ],
+          "correctAnswer": "[SerializeField] private MyComponent myComponent; and drag it in the Inspector",
+          "explanation": "Serialized references are the fastest (zero runtime search cost), most reliable (no name changes break it), and most designer-friendly method. `FindObjectOfType` and `GameObject.Find` are slow and fragile. `GetComponentInChildren` is fine for self-contained hierarchies but still requires a search."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: The Old Input System",
+      "badge": "Input & Control",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Old Input System"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity has two input systems. The **Old Input System** (built-in, default) uses `Input` class methods. The **New Input System** (package) uses actions and event-driven architecture. Beginners should understand both."
+        },
+        {
+          "type": "paragraph",
+          "value": "Old Input System key methods:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Input.GetAxis(\"Horizontal\")` — Returns -1 to 1 for WASD/arrow keys (smooth, interpolated)",
+            "`Input.GetAxisRaw(\"Horizontal\")` — Returns -1, 0, or 1 (no smoothing, instant response)",
+            "`Input.GetKey(KeyCode.Space)` — True while key is held down",
+            "`Input.GetKeyDown(KeyCode.Space)` — True only on the frame the key is pressed",
+            "`Input.GetKeyUp(KeyCode.Space)` — True only on the frame the key is released",
+            "`Input.GetButton(\"Fire1\")` — Uses Input Manager button mapping (cross-platform)",
+            "`Input.GetMouseButton(0)` — 0=left, 1=right, 2=middle click",
+            "`Input.mousePosition` — Screen coordinates in pixels (bottom-left origin)"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class OldInputExample : MonoBehaviour\n{\n    [SerializeField] private float moveSpeed = 5f;\n    [SerializeField] private float mouseSensitivity = 2f;\n\n    void Update()\n    {\n        // Keyboard movement with smoothing\n        float h = Input.GetAxis(\"Horizontal\");\n        float v = Input.GetAxis(\"Vertical\");\n        Vector3 move = new Vector3(h, 0, v) * moveSpeed * Time.deltaTime;\n        transform.Translate(move);\n\n        // Instant response for competitive games\n        float hRaw = Input.GetAxisRaw(\"Horizontal\");\n        float vRaw = Input.GetAxisRaw(\"Vertical\");\n\n        // Jump on space press (not hold)\n        if (Input.GetKeyDown(KeyCode.Space))\n        {\n            Jump();\n        }\n\n        // Sprint while holding Shift\n        bool isSprinting = Input.GetKey(KeyCode.LeftShift);\n        float currentSpeed = isSprinting ? moveSpeed * 2f : moveSpeed;\n\n        // Fire weapon\n        if (Input.GetButtonDown(\"Fire1\"))\n        {\n            Fire();\n        }\n\n        // Mouse look\n        float mouseX = Input.GetAxis(\"Mouse X\") * mouseSensitivity;\n        float mouseY = Input.GetAxis(\"Mouse Y\") * mouseSensitivity;\n        transform.Rotate(0f, mouseX, 0f);\n    }\n\n    void Jump() { /* ... */ }\n    void Fire() { /* ... */ }\n}",
+          "output": "Old Input System examples: GetAxis vs GetAxisRaw, GetKeyDown for single actions, GetKey for held actions, and mouse input."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Character Controller vs Rigidbody"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity provides two main ways to move a player character. Each has distinct use cases and trade-offs."
+        },
+        {
+          "type": "paragraph",
+          "value": "**Character Controller** (script-based physics):"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Does NOT use physics engine — you control movement exactly",
+            "Good for precise platformers, FPS games, and arcade-style movement",
+            "Handles slopes, steps, and collisions manually",
+            "`controller.Move()` takes a motion vector and handles collisions",
+            "Gravity and jumping must be coded manually"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "**Rigidbody** (physics engine):"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Uses Unity's physics engine (PhysX)",
+            "Good for realistic physics, racing games, and physics puzzles",
+            "Forces, torque, and collisions are simulated automatically",
+            "`rb.AddForce()`, `rb.velocity`, `rb.MovePosition()`",
+            "Must use `FixedUpdate()` for physics code"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// Character Controller approach\n[RequireComponent(typeof(CharacterController))]\npublic class FPSController : MonoBehaviour\n{\n    [SerializeField] private float moveSpeed = 5f;\n    [SerializeField] private float jumpHeight = 2f;\n    [SerializeField] private float gravity = -9.81f;\n\n    private CharacterController controller;\n    private Vector3 velocity;\n    private bool isGrounded;\n\n    void Awake()\n    {\n        controller = GetComponent<CharacterController>();\n    }\n\n    void Update()\n    {\n        // Check if grounded\n        isGrounded = controller.isGrounded;\n        if (isGrounded && velocity.y < 0)\n        {\n            velocity.y = -0.5f; // Small downward force to stay grounded\n        }\n\n        // Movement\n        float x = Input.GetAxis(\"Horizontal\");\n        float z = Input.GetAxis(\"Vertical\");\n        Vector3 move = transform.right * x + transform.forward * z;\n        controller.Move(move * moveSpeed * Time.deltaTime);\n\n        // Jump\n        if (Input.GetButtonDown(\"Jump\") && isGrounded)\n        {\n            velocity.y = Mathf.Sqrt(jumpHeight * -2f * gravity);\n        }\n\n        // Apply gravity\n        velocity.y += gravity * Time.deltaTime;\n        controller.Move(velocity * Time.deltaTime);\n    }\n}\n\n// Rigidbody approach\n[RequireComponent(typeof(Rigidbody))]\npublic class PhysicsPlayer : MonoBehaviour\n{\n    [SerializeField] private float moveForce = 10f;\n    [SerializeField] private float jumpForce = 5f;\n    [SerializeField] private float maxSpeed = 10f;\n\n    private Rigidbody rb;\n    private bool isGrounded;\n\n    void Awake()\n    {\n        rb = GetComponent<Rigidbody>();\n        rb.freezeRotation = true; // Prevent physics from tumbling the player\n    }\n\n    void FixedUpdate() // Physics MUST be in FixedUpdate\n    {\n        // Movement with force\n        float x = Input.GetAxis(\"Horizontal\");\n        float z = Input.GetAxis(\"Vertical\");\n        Vector3 force = new Vector3(x, 0, z) * moveForce;\n        \n        rb.AddForce(force, ForceMode.Force);\n\n        // Clamp velocity to max speed\n        Vector3 flatVelocity = new Vector3(rb.velocity.x, 0, rb.velocity.z);\n        if (flatVelocity.magnitude > maxSpeed)\n        {\n            Vector3 limited = flatVelocity.normalized * maxSpeed;\n            rb.velocity = new Vector3(limited.x, rb.velocity.y, limited.z);\n        }\n    }\n\n    void Update()\n    {\n        // Jump in Update is fine for input detection\n        if (Input.GetButtonDown(\"Jump\") && isGrounded)\n        {\n            rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);\n        }\n    }\n\n    void OnCollisionStay(Collision collision)\n    {\n        // Simple ground check\n        isGrounded = true;\n    }\n\n    void OnCollisionExit(Collision collision)\n    {\n        isGrounded = false;\n    }\n}",
+          "output": "Side-by-side comparison: CharacterController for precise FPS movement vs Rigidbody for physics-driven movement."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You are making a competitive FPS game where frame-perfect input response is critical. Which input method should you use for movement?",
+          "options": [
+            "Input.GetAxis(\"Horizontal\")",
+            "Input.GetAxisRaw(\"Horizontal\")",
+            "Input.GetKey(KeyCode.A)",
+            "Input.mousePosition"
+          ],
+          "correctAnswer": "Input.GetAxisRaw(\"Horizontal\")",
+          "explanation": "`GetAxis` applies smoothing and interpolation, which creates a slight delay between pressing a key and reaching full value. For competitive FPS games, this delay is unacceptable. `GetAxisRaw` returns exactly -1, 0, or 1 with no smoothing, giving instant, frame-perfect response. `GetKey` only checks one key, not the entire axis mapping. `mousePosition` is for cursor location, not movement input."
+        }
+      ]
+    }
+  ]
+}
