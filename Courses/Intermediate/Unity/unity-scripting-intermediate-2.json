@@ -825,6 +825,296 @@
           "explanation": "MonoBehaviour Update() has massive overhead per object (virtual calls, cache misses). A List<Projectile> in a single MonoBehaviour is better but still single-threaded. Coroutines have even more overhead than Update(). IJobParallelFor distributes work across CPU cores, NativeArrays provide cache-friendly contiguous memory, BurstCompile generates SIMD-optimized machine code, and Unity.Mathematics replaces heavy Vector3 operations with lightweight float3 structs. This combination can process 50,000 entities 50-100x faster than MonoBehaviour approaches."
         }
       ]
+    },
+    {
+      "partTitle": "Part 16: Memory Management & Object Pooling",
+      "badge": "Production",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Unity's Memory Model"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity uses two memory domains: Managed Heap (C# / Mono / IL2CPP) and Native Memory (C++ engine, NativeArrays, textures, meshes). Understanding both is critical for shipping stable games."
+        },
+        {
+          "type": "paragraph",
+          "value": "Managed Heap fundamentals:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Garbage Collector (GC) pauses your game to clean up unused objects — causes frame hitches",
+            "Boxing converts value types to reference types, allocating on the heap unexpectedly",
+            "String concatenation in loops creates garbage — use StringBuilder or string interpolation carefully",
+            "LINQ and closures capture variables, creating hidden allocations",
+            "Unity 2021+ has Incremental GC which spreads collection over multiple frames"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Text;\nusing System.Collections.Generic;\nusing System.Linq;\n\npublic class MemoryManagement : MonoBehaviour\n{\n    // BAD: Allocates every frame\n    void BadUpdate()\n    {\n        string status = \"Health: \" + health + \"/\" + maxHealth; // 2 allocations\n        var enemies = FindObjectsOfType<Enemy>(); // Massive allocation + slow\n        foreach (var enemy in enemies.Where(e => e.health > 50)) // LINQ allocates\n        { }\n        object boxed = playerLevel; // Boxing: int -> object allocation\n    }\n\n    // GOOD: Zero-allocation patterns\n    private StringBuilder stringBuilder = new StringBuilder(256);\n    private List<Enemy> enemyCache = new List<Enemy>(100);\n\n    void GoodUpdate()\n    {\n        stringBuilder.Clear();\n        stringBuilder.Append(\"Health: \");\n        stringBuilder.Append(health);\n        stringBuilder.Append(\"/\");\n        stringBuilder.Append(maxHealth);\n        string status = stringBuilder.ToString();\n        \n        enemyCache.Clear();\n        for (int i = 0; i < enemyCache.Count; i++)\n        {\n            if (enemyCache[i].health > 50)\n            { }\n        }\n    }\n\n    private int health = 100;\n    private int maxHealth = 100;\n    private int playerLevel = 1;\n}\n\npublic class Enemy\n{\n    public int health = 100;\n}",
+          "output": "Zero-allocation patterns: StringBuilder reuse, manual filtering instead of LINQ, avoiding FindObjectsOfType, and boxing awareness."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Object Pooling: The Most Important Optimization"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Collections.Generic;\n\n// ============================================\n// GENERIC OBJECT POOL\n// ============================================\n[System.Serializable]\npublic class ObjectPool<T> where T : Component\n{\n    private T prefab;\n    private Queue<T> pool;\n    private Transform parent;\n    private int initialSize;\n\n    public ObjectPool(T prefab, int initialSize, Transform parent = null)\n    {\n        this.prefab = prefab;\n        this.initialSize = initialSize;\n        this.parent = parent;\n        this.pool = new Queue<T>(initialSize);\n        \n        for (int i = 0; i < initialSize; i++)\n        {\n            T instance = Object.Instantiate(prefab, parent);\n            instance.gameObject.SetActive(false);\n            pool.Enqueue(instance);\n        }\n    }\n\n    public T Get()\n    {\n        if (pool.Count > 0)\n        {\n            T instance = pool.Dequeue();\n            instance.gameObject.SetActive(true);\n            return instance;\n        }\n        \n        Debug.LogWarning(\"Pool expanded at runtime. Consider increasing initial size.\");\n        T newInstance = Object.Instantiate(prefab, parent);\n        return newInstance;\n    }\n\n    public void Return(T instance)\n    {\n        instance.gameObject.SetActive(false);\n        pool.Enqueue(instance);\n    }\n}\n\n// ============================================\n// BULLET SYSTEM WITH POOLING\n// ============================================\npublic class BulletSystem : MonoBehaviour\n{\n    [SerializeField] private Bullet bulletPrefab;\n    private ObjectPool<Bullet> bulletPool;\n\n    void Start()\n    {\n        bulletPool = new ObjectPool<Bullet>(bulletPrefab, 200, transform);\n    }\n\n    void Fire(Vector3 position, Vector3 direction)\n    {\n        Bullet bullet = bulletPool.Get();\n        bullet.transform.position = position;\n        bullet.Launch(direction, () => bulletPool.Return(bullet));\n    }\n}\n\npublic class Bullet : MonoBehaviour\n{\n    private Vector3 direction;\n    private float speed = 50f;\n    private float lifetime = 3f;\n    private System.Action onDestroy;\n    private float timer;\n\n    public void Launch(Vector3 dir, System.Action onDestroyCallback)\n    {\n        direction = dir.normalized;\n        onDestroy = onDestroyCallback;\n        timer = lifetime;\n    }\n\n    void Update()\n    {\n        transform.position += direction * speed * Time.deltaTime;\n        timer -= Time.deltaTime;\n        if (timer <= 0)\n            onDestroy?.Invoke();\n    }\n\n    void OnTriggerEnter(Collider other)\n    {\n        // Apply damage...\n        onDestroy?.Invoke();\n    }\n}",
+          "output": "Generic ObjectPool<T> with queue-based reuse, and a BulletSystem that fires pooled bullets with callback-based return."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is Object Pooling critical for games with frequent Instantiate/Destroy calls?",
+          "options": [
+            "It makes objects load faster from disk",
+            "It prevents memory fragmentation and GC pressure by reusing objects",
+            "It reduces the size of the game build",
+            "It allows objects to persist between scene loads"
+          ],
+          "correctAnswer": "It prevents memory fragmentation and GC pressure by reusing objects",
+          "explanation": "Instantiate allocates memory on the heap. Destroy marks memory for collection. Repeated cycles cause heap fragmentation and trigger the Garbage Collector, which pauses the game. Object Pooling reuses existing objects, eliminating allocations and keeping the GC quiet. This is the single most impactful optimization for games with many spawned objects."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Addressables: Modern Asset Management",
+      "badge": "Production",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Addressables: Modern Asset Management"
+        },
+        {
+          "type": "paragraph",
+          "value": "Addressables replace Resources.Load and direct scene references. They provide dynamic loading, memory management, and content delivery (DLC, patches) without rebuilding the player."
+        },
+        {
+          "type": "paragraph",
+          "value": "Why Addressables over Resources folder:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Resources folder bloats build size — every asset in Resources is included regardless of use",
+            "Addressables load on-demand — only assets you actually request are downloaded/bundled",
+            "Automatic memory management — reference counting unloads assets when no longer needed",
+            "Remote content hosting — update game content without app store submission",
+            "AssetBundle management is automatic — no manual bundle assignment"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEngine.AddressableAssets;\nusing UnityEngine.ResourceManagement.AsyncOperations;\nusing System.Collections.Generic;\n\npublic class AddressablesManager : MonoBehaviour\n{\n    public static AddressablesManager Instance { get; private set; }\n    \n    private Dictionary<string, AsyncOperationHandle> loadedAssets = new();\n    private Dictionary<string, int> referenceCounts = new();\n\n    void Awake()\n    {\n        if (Instance != null) { Destroy(gameObject); return; }\n        Instance = this;\n        DontDestroyOnLoad(gameObject);\n    }\n\n    public async System.Threading.Tasks.Task<T> LoadAssetAsync<T>(string key) where T : Object\n    {\n        if (loadedAssets.TryGetValue(key, out var existingHandle))\n        {\n            referenceCounts[key]++;\n            return existingHandle.Result as T;\n        }\n\n        AsyncOperationHandle<T> handle = Addressables.LoadAssetAsync<T>(key);\n        await handle.Task;\n\n        if (handle.Status == AsyncOperationStatus.Succeeded)\n        {\n            loadedAssets[key] = handle;\n            referenceCounts[key] = 1;\n            return handle.Result;\n        }\n        else\n        {\n            Debug.LogError($\"Failed to load asset: {key}\");\n            return null;\n        }\n    }\n\n    public async System.Threading.Tasks.Task<GameObject> InstantiateAsync(\n        string key, Vector3 position, Quaternion rotation, Transform parent = null)\n    {\n        AsyncOperationHandle<GameObject> handle = \n            Addressables.InstantiateAsync(key, position, rotation, parent);\n        \n        await handle.Task;\n        \n        if (handle.Status == AsyncOperationStatus.Succeeded)\n        {\n            string instanceKey = $\"{key}_{handle.Result.GetInstanceID()}\";\n            loadedAssets[instanceKey] = handle;\n            referenceCounts[instanceKey] = 1;\n            return handle.Result;\n        }\n        \n        return null;\n    }\n\n    public void ReleaseAsset(string key)\n    {\n        if (!referenceCounts.ContainsKey(key)) return;\n        \n        referenceCounts[key]--;\n        \n        if (referenceCounts[key] <= 0)\n        {\n            if (loadedAssets.TryGetValue(key, out var handle))\n            {\n                Addressables.Release(handle);\n                loadedAssets.Remove(key);\n                referenceCounts.Remove(key);\n            }\n        }\n    }\n\n    public async System.Threading.Tasks.Task LoadSceneAsync(string sceneKey, bool additive = false)\n    {\n        var handle = Addressables.LoadSceneAsync(sceneKey, \n            additive ? UnityEngine.SceneManagement.LoadSceneMode.Additive :\n                        UnityEngine.SceneManagement.LoadSceneMode.Single);\n        \n        await handle.Task;\n        \n        if (handle.Status == AsyncOperationStatus.Succeeded)\n        {\n            Debug.Log($\"Scene loaded: {sceneKey}\");\n        }\n    }\n\n    public async System.Threading.Tasks.Task PreloadLabel(string label)\n    {\n        var handle = Addressables.LoadAssetsAsync<Object>(label, null);\n        await handle.Task;\n        \n        if (handle.Status == AsyncOperationStatus.Succeeded)\n        {\n            foreach (var asset in handle.Result)\n            {\n                Debug.Log($\"Preloaded: {asset.name}\");\n            }\n        }\n    }\n\n    void OnDestroy()\n    {\n        foreach (var handle in loadedAssets.Values)\n        {\n            if (handle.IsValid())\n            {\n                Addressables.Release(handle);\n            }\n        }\n        loadedAssets.Clear();\n        referenceCounts.Clear();\n    }\n}",
+          "output": "Complete AddressablesManager with async loading, reference counting, scene loading, label preloading, and cleanup on destroy."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Weapon System with Addressables"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// USAGE: WEAPON SYSTEM WITH ADDRESSABLES\npublic class AddressableWeaponSystem : MonoBehaviour\n{\n    [SerializeField] private string weaponDataKey = \"WeaponData_AssaultRifle\";\n    [SerializeField] private string weaponPrefabKey = \"WeaponPrefab_AssaultRifle\";\n    \n    private WeaponData currentWeaponData;\n    private GameObject currentWeaponInstance;\n\n    async void Start()\n    {\n        currentWeaponData = await AddressablesManager.Instance\n            .LoadAssetAsync<WeaponData>(weaponDataKey);\n        \n        currentWeaponInstance = await AddressablesManager.Instance\n            .InstantiateAsync(weaponPrefabKey, transform.position, Quaternion.identity, transform);\n        \n        ConfigureWeapon(currentWeaponData);\n    }\n\n    void ConfigureWeapon(WeaponData data)\n    {\n        Debug.Log($\"Loaded weapon: {data.weaponName}, Damage: {data.damage}\");\n    }\n\n    void OnDestroy()\n    {\n        AddressablesManager.Instance?.ReleaseAsset(weaponDataKey);\n    }\n}\n\n// ============================================\n// ADDRESSABLE ASSET REFERENCE\n// ============================================\npublic class AssetReferenceWeapon : MonoBehaviour\n{\n    [SerializeField] private AssetReferenceGameObject weaponPrefabRef;\n    [SerializeField] private AssetReferenceT<WeaponData> weaponDataRef;\n\n    async void SpawnWeapon()\n    {\n        var handle = weaponPrefabRef.InstantiateAsync(transform.position, Quaternion.identity, transform);\n        await handle.Task;\n        \n        var weaponData = await weaponDataRef.LoadAssetAsync();\n        // Configure spawned weapon...\n    }\n}",
+          "output": "Weapon system loading data and prefabs on-demand via Addressables, plus AssetReference usage for inspector-configurable async assets."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main problem with using the Resources folder for asset loading?",
+          "options": [
+            "Resources.Load is too slow at runtime",
+            "All assets in the Resources folder are included in the build regardless of whether they are used",
+            "The Resources folder does not support subfolders",
+            "Resources.Load cannot load prefabs"
+          ],
+          "correctAnswer": "All assets in the Resources folder are included in the build regardless of whether they are used",
+          "explanation": "The Resources folder causes build bloat because Unity includes every asset inside it in the final build, even if never loaded. Addressables solve this by only including assets that are actually referenced by Addressable groups, and they support on-demand downloading, reference counting, and remote content updates."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Production-Grade Code Patterns",
+      "badge": "Production",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Production-Grade Code Patterns"
+        },
+        {
+          "type": "paragraph",
+          "value": "Shipping games require defensive coding, clear error messages, and systems that degrade gracefully rather than crash. These patterns separate prototype code from production code."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System;\nusing System.Diagnostics;\n\n// ============================================\n// DEFENSIVE NULL CHECKING WITH CONTEXT\n// ============================================\npublic static class Assert\n{\n    [Conditional(\"UNITY_EDITOR\")]\n    public static void NotNull<T>(T obj, string context, UnityEngine.Object owner = null) where T : class\n    {\n        if (obj == null)\n        {\n            string message = $\"[ASSERT FAIL] {context}: Expected {typeof(T).Name} to be non-null.\";\n            if (owner != null)\n                message += $\" On GameObject: {owner.name}\";\n            UnityEngine.Debug.LogError(message, owner);\n        }\n    }\n\n    [Conditional(\"UNITY_EDITOR\")]\n    public static void IsTrue(bool condition, string message, UnityEngine.Object owner = null)\n    {\n        if (!condition)\n            UnityEngine.Debug.LogError($\"[ASSERT FAIL] {message}\", owner);\n    }\n\n    [Conditional(\"UNITY_EDITOR\")]\n    public static void IsValidIndex(int index, int count, string arrayName, UnityEngine.Object owner = null)\n    {\n        if (index < 0 || index >= count)\n            UnityEngine.Debug.LogError($\"[ASSERT FAIL] Index {index} out of range [0, {count}) in {arrayName}\", owner);\n    }\n}\n\n// ============================================\n// RESULT TYPE: EXPLICIT ERROR HANDLING\n// ============================================\npublic readonly struct Result<T>\n{\n    public readonly bool IsSuccess;\n    public readonly T Value;\n    public readonly string Error;\n\n    private Result(T value, bool success, string error)\n    {\n        Value = value;\n        IsSuccess = success;\n        Error = error;\n    }\n\n    public static Result<T> Success(T value) => new Result<T>(value, true, null);\n    public static Result<T> Failure(string error) => new Result<T>(default, false, error);\n\n    public T Unwrap()\n    {\n        if (!IsSuccess)\n            throw new InvalidOperationException($\"Cannot unwrap failed result: {Error}\");\n        return Value;\n    }\n\n    public T UnwrapOr(T defaultValue) => IsSuccess ? Value : defaultValue;\n\n    public void Match(Action<T> onSuccess, Action<string> onFailure)\n    {\n        if (IsSuccess) onSuccess?.Invoke(Value);\n        else onFailure?.Invoke(Error);\n    }\n}",
+          "output": "Conditional Assert helpers (stripped in release builds) and Result<T> monad for explicit error handling without exceptions."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Defensive Inventory with Result Pattern"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System;\n\npublic class ProductionInventory : MonoBehaviour\n{\n    [SerializeField] private int capacity = 20;\n    private ItemInstance[] items;\n    private int count = 0;\n\n    void Awake()\n    {\n        items = new ItemInstance[capacity];\n    }\n\n    public Result<int> AddItem(ItemInstance item)\n    {\n        if (item == null)\n            return Result<int>.Failure(\"Cannot add null item\");\n        \n        if (count >= capacity)\n            return Result<int>.Failure(\"Inventory full\");\n        \n        if (!item.IsStackable && HasItem(item.BaseData))\n            return Result<int>.Failure($\"Non-stackable item {item.BaseData.itemName} already exists\");\n\n        if (item.IsStackable)\n        {\n            for (int i = 0; i < count; i++)\n            {\n                if (items[i].BaseData == item.BaseData && items[i].StackCount < item.BaseData.maxStackSize)\n                {\n                    int space = item.BaseData.maxStackSize - items[i].StackCount;\n                    int toAdd = Math.Min(space, item.StackCount);\n                    items[i].StackCount += toAdd;\n                    item.StackCount -= toAdd;\n                    \n                    if (item.StackCount <= 0)\n                        return Result<int>.Success(i);\n                }\n            }\n        }\n\n        if (count < capacity)\n        {\n            items[count] = item;\n            count++;\n            return Result<int>.Success(count - 1);\n        }\n\n        return Result<int>.Failure(\"Unexpected: no space found\");\n    }\n\n    public Result<ItemInstance> RemoveItem(int slotIndex)\n    {\n        Assert.IsValidIndex(slotIndex, count, nameof(items), this);\n        \n        if (slotIndex < 0 || slotIndex >= count)\n            return Result<ItemInstance>.Failure($\"Invalid slot index: {slotIndex}\");\n\n        ItemInstance removed = items[slotIndex];\n        \n        for (int i = slotIndex; i < count - 1; i++)\n            items[i] = items[i + 1];\n        items[count - 1] = null;\n        count--;\n        \n        return Result<ItemInstance>.Success(removed);\n    }\n\n    bool HasItem(ItemData data)\n    {\n        for (int i = 0; i < count; i++)\n            if (items[i]?.BaseData == data) return true;\n        return false;\n    }\n}\n\npublic class ItemInstance\n{\n    public ItemData BaseData { get; set; }\n    public bool IsStackable => BaseData?.isStackable ?? false;\n    public int StackCount { get; set; } = 1;\n}\n\npublic class ItemData : ScriptableObject\n{\n    public string itemName;\n    public bool isStackable;\n    public int maxStackSize = 99;\n}",
+          "output": "Defensive inventory with Result<T> for every operation, stackable item handling, and Assert validation for array bounds."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Initialization Safety"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System;\nusing System.Threading.Tasks;\n\n// ============================================\n// INITIALIZATION SAFETY\n// ============================================\npublic abstract class InitializableMonoBehaviour : MonoBehaviour\n{\n    private bool isInitialized = false;\n\n    public void Initialize()\n    {\n        if (isInitialized)\n        {\n            UnityEngine.Debug.LogWarning($\"{GetType().Name} already initialized!\", this);\n            return;\n        }\n        \n        OnInitialize();\n        isInitialized = true;\n    }\n\n    protected abstract void OnInitialize();\n    public bool IsInitialized => isInitialized;\n}\n\npublic class GameInitializer : MonoBehaviour\n{\n    [SerializeField] private InitializableMonoBehaviour[] systems;\n    [SerializeField] private bool autoInitialize = true;\n    [SerializeField] private float delayBetweenSystems = 0.1f;\n\n    async void Start()\n    {\n        if (!autoInitialize) return;\n        \n        foreach (var system in systems)\n        {\n            if (system == null)\n            {\n                UnityEngine.Debug.LogError(\"Null reference in initialization order!\");\n                continue;\n            }\n            \n            system.Initialize();\n            \n            if (delayBetweenSystems > 0)\n                await Task.Delay(TimeSpan.FromSeconds(delayBetweenSystems));\n        }\n        \n        UnityEngine.Debug.Log(\"All systems initialized successfully.\");\n    }\n}\n\n// ============================================\n// USAGE EXAMPLE\n// ============================================\npublic class AudioSystem : InitializableMonoBehaviour\n{\n    protected override void OnInitialize()\n    {\n        // Load audio banks, initialize mixer...\n        UnityEngine.Debug.Log(\"Audio system initialized\");\n    }\n}\n\npublic class SaveSystem : InitializableMonoBehaviour\n{\n    protected override void OnInitialize()\n    {\n        // Load save data, verify integrity...\n        UnityEngine.Debug.Log(\"Save system initialized\");\n    }\n}",
+          "output": "InitializableMonoBehaviour base class with double-init protection, and GameInitializer that sequences system startup with optional delays."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why use a Result<T> type instead of throwing exceptions for error handling in games?",
+          "options": [
+            "Exceptions are faster than Result types",
+            "Exceptions can cause frame hitches when caught frequently; Result<T> is explicit and zero-cost",
+            "Result<T> types are required by Unity's API",
+            "Exceptions do not work in IL2CPP builds"
+          ],
+          "correctAnswer": "Exceptions can cause frame hitches when caught frequently; Result<T> is explicit and zero-cost",
+          "explanation": "Exceptions in .NET are expensive — they capture the full stack trace and can cause GC allocations. In games where you handle errors every frame (e.g., inventory full, invalid slot), throwing exceptions would create performance problems. Result<T> is a zero-cost struct that makes error handling explicit and forces the caller to deal with failures."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 19: Async/Await in Unity",
+      "badge": "Production",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Async/Await in Unity"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity supports async/await for non-blocking operations. Unlike coroutines, async methods can return values, propagate exceptions, and compose more naturally."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Threading.Tasks;\nusing System;\n\npublic class AsyncPatterns : MonoBehaviour\n{\n    public async Task<bool> LoadWithTimeout(Func<Task> operation, float timeoutSeconds)\n    {\n        var timeout = Task.Delay(TimeSpan.FromSeconds(timeoutSeconds));\n        var operationTask = operation();\n        var completed = await Task.WhenAny(operationTask, timeout);\n        \n        if (completed == timeout)\n        {\n            Debug.LogWarning(\"Operation timed out!\");\n            return false;\n        }\n        return true;\n    }\n\n    public async Task<T> InitializeWithRetry<T>(Func<Task<T>> operation, int maxRetries = 3)\n    {\n        for (int i = 0; i < maxRetries; i++)\n        {\n            try\n            {\n                return await operation();\n            }\n            catch (Exception ex)\n            {\n                Debug.LogWarning($\"Attempt {i + 1}/{maxRetries} failed: {ex.Message}\");\n                await Task.Delay(TimeSpan.FromSeconds(Mathf.Pow(2, i)));\n            }\n        }\n        throw new Exception($\"Failed after {maxRetries} attempts\");\n    }\n\n    private System.Threading.CancellationTokenSource cts;\n\n    async void Start()\n    {\n        cts = new System.Threading.CancellationTokenSource();\n        try\n        {\n            await LongRunningOperation(cts.Token);\n        }\n        catch (OperationCanceledException)\n        {\n            Debug.Log(\"Operation was cancelled cleanly.\");\n        }\n    }\n\n    async Task LongRunningOperation(System.Threading.CancellationToken token)\n    {\n        for (int i = 0; i < 100; i++)\n        {\n            token.ThrowIfCancellationRequested();\n            await Task.Yield();\n        }\n    }\n\n    void OnDestroy()\n    {\n        cts?.Cancel();\n        cts?.Dispose();\n    }\n\n    public async Task LoadSceneWithProgress(string sceneName, IProgress<float> progress)\n    {\n        var operation = UnityEngine.SceneManagement.SceneManager.LoadSceneAsync(sceneName);\n        operation.allowSceneActivation = false;\n        \n        while (operation.progress < 0.9f)\n        {\n            progress?.Report(operation.progress / 0.9f);\n            await Task.Yield();\n        }\n        \n        progress?.Report(1f);\n        await Task.Delay(500);\n        operation.allowSceneActivation = true;\n    }\n\n    public async Task LoadMultipleAssets()\n    {\n        var task1 = AddressablesManager.Instance.LoadAssetAsync<WeaponData>(\"Weapon_Rifle\");\n        var task2 = AddressablesManager.Instance.LoadAssetAsync<WeaponData>(\"Weapon_Shotgun\");\n        var task3 = AddressablesManager.Instance.LoadAssetAsync<WeaponData>(\"Weapon_Sniper\");\n        \n        await Task.WhenAll(task1, task2, task3);\n        Debug.Log(\"All weapons loaded!\");\n    }\n}",
+          "output": "Async/await patterns: timeout handling with Task.WhenAny, retry with exponential backoff, cancellation tokens for clean shutdown, progress-reporting scene loading, and parallel asset loading."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Async vs Coroutines: When to Use Which"
+        },
+        {
+          "type": "list",
+          "items": [
+            "**Use async/await** for: network requests, file I/O, Addressables loading, any operation that returns a value or can fail",
+            "**Use coroutines** for: frame-delayed operations, animation sequencing, IEnumerator-based Unity APIs (WWW, AssetBundleCreateRequest)",
+            "**Avoid async void** — it swallows exceptions. Use async Task instead and fire-and-forget with _ = MyMethod();",
+            "**Always dispose CancellationTokenSource** to prevent memory leaks"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Threading.Tasks;\n\npublic class AsyncBestPractices : MonoBehaviour\n{\n    // BAD: async void swallows exceptions\n    async void BadPattern()\n    {\n        await Task.Delay(1000);\n        throw new Exception(\"This exception is lost!\");\n    }\n\n    // GOOD: async Task with fire-and-forget\n    async Task GoodPattern()\n    {\n        await Task.Delay(1000);\n        throw new Exception(\"This exception is catchable\");\n    }\n\n    void Start()\n    {\n        // Fire and forget with exception handling\n        _ = GoodPattern().ContinueWith(t =>\n        {\n            if (t.IsFaulted)\n                Debug.LogError(t.Exception);\n        });\n    }\n\n    // ============================================\n    // UNITY-SPECIFIC: MAIN THREAD SAFETY\n    // ============================================\n    async Task UpdateUIAsync()\n    {\n        // This runs on a background thread\n        var data = await FetchDataAsync();\n        \n        // Switch back to main thread for UI\n        await Task.Yield();\n        \n        // Now safe to touch Unity APIs\n        transform.position = Vector3.zero;\n    }\n\n    async Task<byte[]> FetchDataAsync()\n    {\n        await Task.Delay(100);\n        return new byte[1024];\n    }\n}",
+          "output": "Async best practices: avoid async void, use fire-and-forget with ContinueWith, and main thread safety for Unity API access."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main risk of using async void in Unity?",
+          "options": [
+            "It runs slower than async Task",
+            "Exceptions are swallowed and cannot be caught, making debugging impossible",
+            "It blocks the main thread",
+            "It is not supported in IL2CPP builds"
+          ],
+          "correctAnswer": "Exceptions are swallowed and cannot be caught, making debugging impossible",
+          "explanation": "async void methods have no Task object to attach exception handlers to. If an exception occurs, it is thrown on the synchronization context and typically crashes the application or is silently swallowed. Always use async Task and fire-and-forget with _ = MyMethod() if you do not need to await the result."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Unit Testing in Unity & Course Conclusion",
+      "badge": "Production",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Unit Testing in Unity"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Unity Test Framework (UTF) lets you write Edit Mode and Play Mode tests. Testing is essential for production code — it catches regressions and documents expected behavior."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using NUnit.Framework;\nusing UnityEngine;\nusing UnityEngine.TestTools;\nusing System.Collections;\n\npublic class InventoryTests\n{\n    [Test]\n    public void AddItem_ToEmptySlot_ReturnsSuccess()\n    {\n        var inventory = new InventorySystem(capacity: 10);\n        var item = CreateTestItem(\"Sword\", isStackable: false);\n        \n        var result = inventory.AddItem(item);\n        \n        Assert.IsTrue(result.IsSuccess);\n        Assert.AreEqual(0, result.Value);\n    }\n\n    [Test]\n    public void AddItem_ToFullInventory_ReturnsFailure()\n    {\n        var inventory = new InventorySystem(capacity: 1);\n        inventory.AddItem(CreateTestItem(\"Item1\"));\n        \n        var result = inventory.AddItem(CreateTestItem(\"Item2\"));\n        \n        Assert.IsFalse(result.IsSuccess);\n        Assert.AreEqual(\"Inventory full\", result.Error);\n    }\n\n    [Test]\n    public void StackItem_SameType_IncreasesStackCount()\n    {\n        var inventory = new InventorySystem(capacity: 10);\n        var data = ScriptableObject.CreateInstance<ItemData>();\n        data.maxStackSize = 5;\n        \n        var item1 = new ItemInstance(data) { StackCount = 3 };\n        var item2 = new ItemInstance(data) { StackCount = 2 };\n        \n        inventory.AddItem(item1);\n        var result = inventory.AddItem(item2);\n        \n        Assert.IsTrue(result.IsSuccess);\n        Assert.AreEqual(5, inventory.GetItemAt(0).StackCount);\n    }\n\n    [Test]\n    public void RemoveItem_InvalidIndex_ReturnsFailure()\n    {\n        var inventory = new InventorySystem(capacity: 10);\n        \n        var result = inventory.RemoveItem(5);\n        \n        Assert.IsFalse(result.IsSuccess);\n        StringAssert.Contains(\"Invalid slot\", result.Error);\n    }\n\n    private ItemInstance CreateTestItem(string name, bool isStackable = false)\n    {\n        var data = ScriptableObject.CreateInstance<ItemData>();\n        data.itemName = name;\n        data.isStackable = isStackable;\n        data.maxStackSize = isStackable ? 10 : 1;\n        return new ItemInstance(data);\n    }\n}\n\npublic class PlayerMovementTests\n{\n    [UnityTest]\n    public IEnumerator Player_MovesForward_WhenWPressed()\n    {\n        var playerObj = new GameObject(\"Player\");\n        var player = playerObj.AddComponent<PlayerMovement>();\n        player.moveSpeed = 5f;\n        \n        Vector3 startPos = playerObj.transform.position;\n        playerObj.transform.position += Vector3.forward * player.moveSpeed * Time.deltaTime;\n        \n        yield return null;\n        \n        Assert.Greater(playerObj.transform.position.z, startPos.z);\n        Object.Destroy(playerObj);\n    }\n\n    [UnityTest]\n    public IEnumerator Player_Jumps_WhenSpacePressed()\n    {\n        var playerObj = new GameObject(\"Player\");\n        playerObj.AddComponent<Rigidbody>();\n        var player = playerObj.AddComponent<PlayerMovement>();\n        player.jumpForce = 10f;\n        \n        float startY = playerObj.transform.position.y;\n        player.Jump();\n        \n        yield return new WaitForFixedUpdate();\n        yield return new WaitForFixedUpdate();\n        \n        Assert.Greater(playerObj.transform.position.y, startY);\n        Object.Destroy(playerObj);\n    }\n}\n\npublic class InventorySystem\n{\n    private ItemInstance[] items;\n    private int count;\n    public InventorySystem(int capacity) { items = new ItemInstance[capacity]; }\n    public Result<int> AddItem(ItemInstance item) { /* ... */ return Result<int>.Success(0); }\n    public Result<ItemInstance> RemoveItem(int index) { /* ... */ return Result<ItemInstance>.Success(null); }\n    public ItemInstance GetItemAt(int index) => items[index];\n}\n\npublic class PlayerMovement : MonoBehaviour\n{\n    public float moveSpeed = 5f;\n    public float jumpForce = 10f;\n    public void Jump() { GetComponent<Rigidbody>()?.AddForce(Vector3.up * jumpForce, ForceMode.Impulse); }\n}",
+          "output": "Edit Mode tests for pure logic (inventory system), Play Mode tests for frame-aware behavior (player movement with physics), using NUnit assertions and UnityTest attribute for IEnumerator coroutine tests."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Course Conclusion & Next Steps"
+        },
+        {
+          "type": "paragraph",
+          "value": "You have now covered the full spectrum of Unity C# development: from beginner MonoBehaviour lifecycle and input handling, through intermediate architecture patterns like Event Bus and State Machines, to advanced topics including the Job System, ECS, Burst Compiler, Addressables, and production-grade defensive coding."
+        },
+        {
+          "type": "paragraph",
+          "value": "Key takeaways from the intermediate course:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Architecture: Use Dependency Injection or Event Bus to decouple systems; avoid Service Locator anti-patterns in large projects",
+            "Data: ScriptableObjects separate data from logic; RuntimeSets and GameEventSO enable designer-friendly, scene-independent architecture",
+            "Editor Tools: PropertyDrawers and Custom Editors multiply team productivity; invest in tools early",
+            "Performance: The Job System + Burst + Mathematics is 50-100x faster than MonoBehaviour for bulk operations; ECS scales to hundreds of thousands of entities",
+            "Production: Object pooling, zero-allocation patterns, Addressables for asset management, and async/await with cancellation tokens are non-negotiable for shipped games",
+            "Testing: Write Edit Mode tests for logic, Play Mode tests for integration; test-driven development prevents regressions"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "Recommended next topics: Shader Graph and HLSL for graphics programming, Unity Netcode for multiplayer, Unity Cloud for backend services, and DOTS Physics for deterministic simulation."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Your game crashes on low-end devices due to memory pressure during level transitions. Which combination of techniques should you implement?",
+          "options": [
+            "Increase texture resolution and use Resources.Load for faster loading",
+            "Use Addressables with reference counting, ObjectPool for instantiated objects, and unload unused assets between scenes",
+            "Switch to IL2CPP build and disable the garbage collector entirely",
+            "Load all assets at startup and keep them in memory to avoid loading during gameplay"
+          ],
+          "correctAnswer": "Use Addressables with reference counting, ObjectPool for instantiated objects, and unload unused assets between scenes",
+          "explanation": "Increasing resolution worsens memory pressure. Resources.Load includes all assets in build regardless of use. Disabling GC causes memory leaks and eventual crashes. Loading everything at startup is the opposite of what low-end devices need. The correct approach: Addressables load only what you need and release when done (reference counting prevents premature unloading), ObjectPool reuses objects instead of Instantiate/Destroy (which fragment memory), and explicit unloading between scenes frees memory for the next level."
+        }
+      ]
     }
   ]
 }
