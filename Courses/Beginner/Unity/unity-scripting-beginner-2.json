@@ -421,6 +421,351 @@
           "explanation": "`GetAxis` applies smoothing and interpolation, which creates a slight delay between pressing a key and reaching full value. For competitive FPS games, this delay is unacceptable. `GetAxisRaw` returns exactly -1, 0, or 1 with no smoothing, giving instant, frame-perfect response. `GetKey` only checks one key, not the entire axis mapping. `mousePosition` is for cursor location, not movement input."
         }
       ]
+    },
+    {
+      "partTitle": "Part 6: The New Input System",
+      "badge": "Input & Control",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The New Input System"
+        },
+        {
+          "type": "paragraph",
+          "value": "The New Input System is event-driven and action-based. You define actions (like `Move`, `Jump`, `Fire`) and bind them to controls (keyboard, mouse, gamepad, touch)."
+        },
+        {
+          "type": "paragraph",
+          "value": "Setup steps:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Install package: Window → Package Manager → Input System → Install",
+            "Create Input Actions asset: Right-click → Create → Input Actions",
+            "Define Action Maps (e.g., `Player`, `UI`, `Vehicle`)",
+            "Add Actions (e.g., `Move`, `Jump`) with bindings (WASD, arrow keys, gamepad stick)",
+            "Generate C# class from the asset for type-safe access"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEngine.InputSystem;\n\n// Generated class from Input Actions asset\npublic class NewInputExample : MonoBehaviour\n{\n    // Reference to generated input class\n    private PlayerInputActions inputActions;\n    private Vector2 moveInput;\n    private bool jumpPressed;\n\n    void Awake()\n    {\n        inputActions = new PlayerInputActions();\n        \n        // Subscribe to action events\n        inputActions.Player.Move.performed += OnMove;\n        inputActions.Player.Move.canceled += OnMoveCanceled;\n        inputActions.Player.Jump.performed += OnJump;\n    }\n\n    void OnEnable()\n    {\n        inputActions.Player.Enable();\n    }\n\n    void OnDisable()\n    {\n        inputActions.Player.Disable();\n    }\n\n    void OnDestroy()\n    {\n        // Always unsubscribe to prevent memory leaks\n        inputActions.Player.Move.performed -= OnMove;\n        inputActions.Player.Move.canceled -= OnMoveCanceled;\n        inputActions.Player.Jump.performed -= OnJump;\n    }\n\n    private void OnMove(InputAction.CallbackContext context)\n    {\n        moveInput = context.ReadValue<Vector2>();\n    }\n\n    private void OnMoveCanceled(InputAction.CallbackContext context)\n    {\n        moveInput = Vector2.zero;\n    }\n\n    private void OnJump(InputAction.CallbackContext context)\n    {\n        jumpPressed = true;\n    }\n\n    void Update()\n    {\n        // Use cached input values\n        Vector3 movement = new Vector3(moveInput.x, 0, moveInput.y);\n        transform.Translate(movement * Time.deltaTime * 5f);\n\n        if (jumpPressed)\n        {\n            Jump();\n            jumpPressed = false; // Reset for next frame\n        }\n    }\n\n    void Jump() { /* ... */ }\n}",
+          "output": "New Input System: action-based, event-driven input with proper subscription/unsubscription to prevent memory leaks."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Input Action Maps & Context"
+        },
+        {
+          "type": "paragraph",
+          "value": "Action Maps let you group inputs by context. You might have a `Player` map for gameplay and a `UI` map for menus. Switch between them to avoid conflicts."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "void OpenPauseMenu()\n{\n    inputActions.Player.Disable();\n    inputActions.UI.Enable();\n    Time.timeScale = 0f;\n}\n\nvoid ClosePauseMenu()\n{\n    inputActions.UI.Disable();\n    inputActions.Player.Enable();\n    Time.timeScale = 1f;\n}",
+          "output": "Switching between Player and UI action maps for pause menu handling."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why must you unsubscribe from input action events in `OnDestroy()`?",
+          "options": [
+            "To stop the game from crashing",
+            "To prevent memory leaks from dangling event subscriptions",
+            "Because Unity forces you to",
+            "To improve frame rate"
+          ],
+          "correctAnswer": "To prevent memory leaks from dangling event subscriptions",
+          "explanation": "Event subscriptions create references that prevent garbage collection. If you subscribe in `Awake()` but never unsubscribe, the `MonoBehaviour` and its `InputAction` references stay in memory forever — a classic memory leak. Always pair every `+=` with a `-=` in `OnDestroy()`."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: Physics Engine & Rigidbody Basics",
+      "badge": "Physics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Unity's Physics Engine"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity uses `NVIDIA PhysX` for 3D physics and `Box2D` for 2D physics. These are separate systems — 3D and 2D physics do not interact."
+        },
+        {
+          "type": "paragraph",
+          "value": "Core physics components:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Rigidbody` — Makes an object respond to physics forces, gravity, and collisions",
+            "`Collider` — Defines the object's shape for collision detection (Box, Sphere, Capsule, Mesh)",
+            "`Rigidbody2D` — 2D physics equivalent with different properties",
+            "`Collider2D` — 2D collision shapes (Box, Circle, Polygon, Edge)",
+            "`PhysicsMaterial` — Controls friction and bounciness"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "Critical rule: Never modify `transform.position` on a GameObject with a Rigidbody. This teleports the object and breaks physics consistency. Use `rb.MovePosition()` or forces instead."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n[RequireComponent(typeof(Rigidbody))]\npublic class PhysicsBasics : MonoBehaviour\n{\n    private Rigidbody rb;\n\n    void Awake()\n    {\n        rb = GetComponent<Rigidbody>();\n        \n        // Rigidbody configuration\n        rb.mass = 5f;\n        rb.useGravity = true;\n        rb.isKinematic = false; // If true, physics won't affect it\n        rb.interpolation = RigidbodyInterpolation.Interpolate; // Smooth visual movement\n        rb.collisionDetectionMode = CollisionDetectionMode.Continuous; // Better for fast objects\n    }\n\n    void FixedUpdate()\n    {\n        // Apply force in a direction\n        rb.AddForce(Vector3.forward * 10f, ForceMode.Force);\n        \n        // Apply instant velocity change\n        rb.AddForce(Vector3.up * 5f, ForceMode.Impulse);\n        \n        // Set velocity directly (overrides physics)\n        rb.velocity = new Vector3(5f, rb.velocity.y, 0f);\n        \n        // Move to position while respecting collisions\n        rb.MovePosition(transform.position + Vector3.right * Time.fixedDeltaTime);\n        \n        // Rotate while respecting physics\n        rb.MoveRotation(Quaternion.Euler(0f, 45f, 0f));\n    }\n}",
+          "output": "Rigidbody configuration and proper physics manipulation in FixedUpdate."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Force Modes Explained"
+        },
+        {
+          "type": "paragraph",
+          "value": "`ForceMode` determines how force is applied:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`ForceMode.Force` — Continuous force (like a rocket thruster). Affected by mass.",
+            "`ForceMode.Acceleration` — Continuous acceleration (ignores mass).",
+            "`ForceMode.Impulse` — Instant force (like a jump or explosion). Affected by mass.",
+            "`ForceMode.VelocityChange` — Instant velocity change (ignores mass)."
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Jump — instant upward force\nrb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);\n\n// Thruster — continuous forward push\nrb.AddForce(transform.forward * thrustPower, ForceMode.Force);\n\n// Explosion knockback — ignores mass for consistent effect\nrb.AddForce(explosionDir * knockbackStrength, ForceMode.VelocityChange);",
+          "output": "Choosing the right ForceMode for different physics interactions."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You want to apply a continuous rocket thruster force to a Rigidbody. Which ForceMode should you use?",
+          "options": [
+            "ForceMode.Impulse",
+            "ForceMode.Force",
+            "ForceMode.VelocityChange",
+            "ForceMode.Acceleration"
+          ],
+          "correctAnswer": "ForceMode.Force",
+          "explanation": "`ForceMode.Force` is designed for continuous forces applied over time (like thrusters, wind, or magnets). It respects mass, so heavier objects accelerate slower. `Impulse` is for one-time bursts. `VelocityChange` ignores mass entirely. `Acceleration` also works for continuous but ignores mass."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: Collision Detection Methods",
+      "badge": "Physics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Collision Detection Methods"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity provides three ways to detect collisions. Choose based on your needs."
+        },
+        {
+          "type": "paragraph",
+          "value": "**1. Collision Messages** (physical contact between Colliders):"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`OnCollisionEnter(Collision collision)` — Called when colliders first touch",
+            "`OnCollisionStay(Collision collision)` — Called every frame while touching",
+            "`OnCollisionExit(Collision collision)` — Called when colliders separate",
+            "Requires at least one Rigidbody on either object",
+            "Provides `Collision` data: contact points, impulse, relative velocity"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "**2. Trigger Messages** (non-physical overlap detection):"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`OnTriggerEnter(Collider other)` — Called when entering a trigger volume",
+            "`OnTriggerStay(Collider other)` — Called every frame while inside",
+            "`OnTriggerExit(Collider other)` — Called when leaving",
+            "Enable `Is Trigger` on a Collider to make it a trigger",
+            "Triggers detect overlap but do not physically block movement"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "**3. Physics Queries** (manual checks without collision):"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Physics.Raycast()` — Shoot a line and check what it hits",
+            "`Physics.SphereCast()` — Like raycast but with thickness",
+            "`Physics.OverlapSphere()` — Find all colliders in a sphere",
+            "`Physics.BoxCast()` — Cast a box shape",
+            "`Physics.SphereOverlap()` — Find colliders overlapping a sphere"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class CollisionExamples : MonoBehaviour\n{\n    [SerializeField] private LayerMask enemyLayer;\n    [SerializeField] private float damageRadius = 5f;\n\n    // PHYSICAL COLLISION\n    void OnCollisionEnter(Collision collision)\n    {\n        // Check what we hit by tag\n        if (collision.gameObject.CompareTag(\"Enemy\"))\n        {\n            Debug.Log(\"Crashed into enemy!\");\n            \n            // Get impact force\n            float impactForce = collision.impulse.magnitude / Time.fixedDeltaTime;\n            if (impactForce > 10f)\n            {\n                Debug.Log(\"High impact crash!\");\n            }\n        }\n    }\n\n    // TRIGGER OVERLAP\n    void OnTriggerEnter(Collider other)\n    {\n        if (other.CompareTag(\"Coin\"))\n        {\n            CollectCoin(other.gameObject);\n        }\n        \n        if (other.CompareTag(\"DeathZone\"))\n        {\n            Die();\n        }\n    }\n\n    void OnTriggerStay(Collider other)\n    {\n        // Damage over time while in lava\n        if (other.CompareTag(\"Lava\"))\n        {\n            TakeDamage(10f * Time.deltaTime);\n        }\n    }\n\n    // RAYCASTING\n    void Update()\n    {\n        // Shoot a ray from camera through mouse position\n        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);\n        RaycastHit hit;\n        \n        // Check if ray hits anything within 100 units\n        if (Physics.Raycast(ray, out hit, 100f))\n        {\n            Debug.Log($\"Looking at: {hit.collider.name}\");\n            Debug.DrawLine(ray.origin, hit.point, Color.red);\n            \n            // Click to interact\n            if (Input.GetMouseButtonDown(0))\n            {\n                InteractWith(hit.collider.gameObject);\n            }\n        }\n\n        // Ground check with raycast\n        bool isGrounded = Physics.Raycast(\n            transform.position, \n            Vector3.down, \n            1.1f, // Slightly more than half player height\n            LayerMask.GetMask(\"Ground\")\n        );\n\n        // Explosion damage — find all enemies in radius\n        Collider[] hits = Physics.OverlapSphere(transform.position, damageRadius, enemyLayer);\n        foreach (Collider enemy in hits)\n        {\n            float distance = Vector3.Distance(transform.position, enemy.transform.position);\n            float damage = Mathf.Lerp(100f, 10f, distance / damageRadius);\n            enemy.GetComponent<Enemy>()?.TakeDamage(damage);\n        }\n    }\n\n    void CollectCoin(GameObject coin) { Destroy(coin); }\n    void Die() { Debug.Log(\"Player died\"); }\n    void TakeDamage(float amount) { /* ... */ }\n    void InteractWith(GameObject target) { /* ... */ }\n\n    void OnDrawGizmosSelected()\n    {\n        // Visualize damage radius in editor\n        Gizmos.color = Color.yellow;\n        Gizmos.DrawWireSphere(transform.position, damageRadius);\n    }\n}",
+          "output": "Complete physics examples: collision handling, trigger zones, raycasting for interaction, ground checks, and explosion damage with OverlapSphere."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You need to detect when a player enters a pickup zone but the pickup should not physically block the player. What should you use?",
+          "options": [
+            "OnCollisionEnter with a BoxCollider",
+            "OnTriggerEnter with `Is Trigger` enabled on the pickup's collider",
+            "Physics.Raycast from the player every frame",
+            "Vector3.Distance check in Update"
+          ],
+          "correctAnswer": "OnTriggerEnter with `Is Trigger` enabled on the pickup's collider",
+          "explanation": "Triggers detect overlap without physical response — perfect for pickups, checkpoints, and zones. Enable `Is Trigger` on the Collider component. `OnCollisionEnter` requires physical collision and would block movement. `Physics.Raycast` only checks a line, not a volume. `Vector3.Distance` works but is inefficient for many pickups and does not handle complex shapes."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Layer Masks & Physics Filtering",
+      "badge": "Physics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Layer Masks and Physics Filtering"
+        },
+        {
+          "type": "paragraph",
+          "value": "Layer Masks control which objects physics queries and collisions affect. They are essential for performance and correct behavior."
+        },
+        {
+          "type": "paragraph",
+          "value": "How layer masks work:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Assign layers in the Inspector top-right dropdown (Default, Enemy, Ground, UI, etc.)",
+            "`LayerMask.GetMask(\"Enemy\", \"Obstacle\")` creates a mask for multiple layers",
+            "`1 << LayerMask.NameToLayer(\"Enemy\")` creates a mask for one layer using bit shifting",
+            "Pass the mask to Raycast, OverlapSphere, etc. to filter results",
+            "Use `Physics.IgnoreLayerCollision(layer1, layer2)` to prevent specific layers from colliding"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class LayerMaskDemo : MonoBehaviour\n{\n    // Inspector-friendly layer mask field\n    [SerializeField] private LayerMask groundLayer;\n    [SerializeField] private LayerMask enemyLayer;\n\n    void Start()\n    {\n        // Create mask programmatically\n        int enemyMask = 1 << LayerMask.NameToLayer(\"Enemy\");\n        int groundMask = 1 << LayerMask.NameToLayer(\"Ground\");\n        int combinedMask = enemyMask | groundMask; // Both layers\n\n        // Ignore collision between Player and Projectile layers\n        Physics.IgnoreLayerCollision(\n            LayerMask.NameToLayer(\"Player\"),\n            LayerMask.NameToLayer(\"Projectile\"),\n            true\n        );\n    }\n\n    void Update()\n    {\n        // Raycast that ONLY hits ground layer\n        if (Physics.Raycast(transform.position, Vector3.down, out RaycastHit hit, 10f, groundLayer))\n        {\n            Debug.Log($\"Ground distance: {hit.distance}\");\n        }\n\n        // SphereCast that ignores everything except enemies\n        if (Physics.SphereCast(transform.position, 0.5f, transform.forward, out RaycastHit enemyHit, 10f, enemyLayer))\n        {\n            Debug.Log($\"Enemy ahead: {enemyHit.collider.name}\");\n        }\n\n        // Check multiple layers\n        int damageableMask = LayerMask.GetMask(\"Enemy\", \"Destructible\");\n        Collider[] targets = Physics.OverlapSphere(transform.position, 5f, damageableMask);\n    }\n}",
+          "output": "Layer mask creation, combination with bitwise OR, filtering physics queries, and ignoring layer collisions."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Common Layer Mask Patterns"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Everything EXCEPT a specific layer\nint everythingExceptUI = ~(1 << LayerMask.NameToLayer(\"UI\"));\n\n// Multiple layers combined\nint hostileMask = LayerMask.GetMask(\"Enemy\", \"Trap\", \"Projectile\");\n\n// Check if a GameObject is on a specific layer\nbool isEnemy = (enemyMask & (1 << target.layer)) != 0;\n\n// Raycast that hits everything (no mask filter)\nif (Physics.Raycast(ray, out hit, 100f))\n{\n    // Hits any collider\n}",
+          "output": "Advanced layer mask patterns: excluding layers, combining multiple layers, and runtime layer checking."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does `1 << LayerMask.NameToLayer(\"Enemy\")` do?",
+          "options": [
+            "It finds all objects on the Enemy layer",
+            "It creates a bit mask with only the Enemy layer bit set",
+            "It moves the object to the Enemy layer",
+            "It checks if an object is on the Enemy layer"
+          ],
+          "correctAnswer": "It creates a bit mask with only the Enemy layer bit set",
+          "explanation": "`1 << n` is a left bit shift — it moves the binary `1` left by `n` positions, creating a mask where only the nth bit is set. This mask can then be passed to physics queries like `Physics.Raycast()` to filter which layers the query interacts with. It does NOT find objects, move objects, or check layers — it simply creates the filter mask."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: The Animator Component & State Machines",
+      "badge": "Animation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Animator Component"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's animation system uses the `Animator` component with an `Animator Controller` asset. The controller is a state machine that manages animation clips and transitions."
+        },
+        {
+          "type": "paragraph",
+          "value": "Key concepts:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Animator Controller` — State machine asset that defines states, transitions, and parameters",
+            "`Animation States` — Individual animation clips (Idle, Walk, Run, Attack)",
+            "`Transitions` — Rules for moving between states (based on parameters, exit time, or conditions)",
+            "`Parameters` — Variables controlled by scripts: Float, Int, Bool, Trigger",
+            "`Layers` — Multiple animation layers for upper body, lower body, full body",
+            "`Avatar Masks` — Restrict animation to specific body parts"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n[RequireComponent(typeof(Animator))]\npublic class AnimationController : MonoBehaviour\n{\n    private Animator animator;\n    private int isWalkingHash;\n    private int speedHash;\n    private int attackTriggerHash;\n\n    void Awake()\n    {\n        animator = GetComponent<Animator>();\n        \n        // Cache parameter hashes for performance\n        // Using hashes is faster than string lookups every frame\n        isWalkingHash = Animator.StringToHash(\"IsWalking\");\n        speedHash = Animator.StringToHash(\"Speed\");\n        attackTriggerHash = Animator.StringToHash(\"Attack\");\n    }\n\n    void Update()\n    {\n        float speed = Input.GetAxis(\"Vertical\");\n        bool isWalking = Mathf.Abs(speed) > 0.1f;\n\n        // Set bool parameter\n        animator.SetBool(isWalkingHash, isWalking);\n        \n        // Set float parameter (for blend trees)\n        animator.SetFloat(speedHash, Mathf.Abs(speed));\n\n        // Set trigger parameter (auto-resets after transition)\n        if (Input.GetButtonDown(\"Fire1\"))\n        {\n            animator.SetTrigger(attackTriggerHash);\n        }\n\n        // Reset trigger manually if needed\n        if (Input.GetButtonUp(\"Fire1\"))\n        {\n            animator.ResetTrigger(attackTriggerHash);\n        }\n    }\n\n    // Called by Animation Event (set in animation clip)\n    public void OnAttackHit()\n    {\n        // Deal damage at exact frame of animation\n        Debug.Log(\"Attack landed!\");\n    }\n\n    // Check current state\n    bool IsInState(string stateName)\n    {\n        return animator.GetCurrentAnimatorStateInfo(0).IsName(stateName);\n    }\n\n    // Check if transition is happening\n    bool IsTransitioning()\n    {\n        return animator.IsInTransition(0);\n    }\n}",
+          "output": "Animator parameter control with hashed lookups for performance, trigger handling, and animation events."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Animator State Machine Basics"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Animator Controller is a visual state machine. You create states (animation clips), connect them with transitions, and set conditions on those transitions."
+        },
+        {
+          "type": "paragraph",
+          "value": "Transition rules you can set:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "`Has Exit Time` — Waits for animation to finish before transitioning",
+            "`Transition Duration` — How long the blend between animations takes",
+            "`Conditions` — Parameters that must be true (e.g., `Speed > 0.1`, `IsGrounded == true`)",
+            "`Interruption Source` — Whether other transitions can interrupt this one"
+          ]
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why should you use `Animator.StringToHash()` instead of passing strings directly to `animator.SetBool()`?",
+          "options": [
+            "It makes the code more readable",
+            "It avoids string allocation and dictionary lookup every frame, improving performance",
+            "It prevents animation errors",
+            "It is required for the Animator to work"
+          ],
+          "correctAnswer": "It avoids string allocation and dictionary lookup every frame, improving performance",
+          "explanation": "Every time you pass a string like `animator.SetBool(\"IsWalking\", true)`, Unity must hash that string to find the parameter internally. This allocates memory and performs a dictionary lookup. By caching `Animator.StringToHash(\"IsWalking\")` in Awake(), you precompute the hash and pass an integer ID instead. This is a zero-allocation, O(1) lookup — critical when called every frame in Update()."
+        }
+      ]
     }
   ]
 }
