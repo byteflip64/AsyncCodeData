@@ -320,6 +320,511 @@
           "explanation": "ScriptableObjects live as asset files, not in scene files. This means designers can tweak values without opening scenes, changes are tracked in version control as small diffs (not massive scene file changes), and the same data asset can be referenced across multiple scenes without duplication."
         }
       ]
+    },
+    {
+      "partTitle": "Part 6: ScriptableObject Runtime Instances",
+      "badge": "Data Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "ScriptableObject Runtime Instances"
+        },
+        {
+          "type": "paragraph",
+          "value": "ScriptableObject assets are shared and immutable in builds. But you can create runtime instances that are independent copies — perfect for weapon upgrades, modified enemy stats, or player inventory items."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// ============================================\n// RUNTIME-MODIFIABLE WEAPON INSTANCE\n// ============================================\npublic class WeaponInstance\n{\n    public WeaponData BaseData { get; private set; }\n    \n    // Runtime-modified stats\n    public int CurrentAmmo { get; set; }\n    public int CurrentMagazineSize { get; set; }\n    public float CurrentDamage { get; set; }\n    public int UpgradeLevel { get; set; }\n    \n    // Runtime state\n    public float CurrentSpread { get; private set; }\n    public float CurrentRecoil { get; private set; }\n    public bool IsReloading { get; private set; }\n    public float LastFireTime { get; private set; }\n\n    public WeaponInstance(WeaponData baseData)\n    {\n        BaseData = baseData;\n        ResetToBaseStats();\n    }\n\n    public void ResetToBaseStats()\n    {\n        CurrentAmmo = BaseData.magazineSize;\n        CurrentMagazineSize = BaseData.magazineSize;\n        CurrentDamage = BaseData.damage;\n        CurrentSpread = BaseData.baseSpread;\n        CurrentRecoil = 0f;\n        UpgradeLevel = 0;\n    }\n\n    public void Upgrade()\n    {\n        UpgradeLevel++;\n        CurrentDamage *= 1.2f;\n        CurrentMagazineSize = Mathf.RoundToInt(BaseData.magazineSize * (1 + UpgradeLevel * 0.1f));\n        CurrentAmmo = CurrentMagazineSize;\n    }\n\n    public bool CanFire()\n    {\n        return !IsReloading && CurrentAmmo > 0 && \n               Time.time >= LastFireTime + BaseData.fireRate;\n    }\n\n    public void Fire()\n    {\n        if (!CanFire()) return;\n        \n        CurrentAmmo--;\n        LastFireTime = Time.time;\n        \n        CurrentSpread = Mathf.Min(\n            CurrentSpread + BaseData.spreadPerShot,\n            BaseData.maxSpread\n        );\n        \n        CurrentRecoil = BaseData.verticalRecoil.Evaluate(\n            1f - (float)CurrentAmmo / CurrentMagazineSize\n        );\n    }\n\n    public void RecoverSpread(float deltaTime)\n    {\n        CurrentSpread = Mathf.Max(\n            BaseData.baseSpread,\n            CurrentSpread - BaseData.spreadRecovery * deltaTime\n        );\n        CurrentRecoil = Mathf.Max(0f, CurrentRecoil - BaseData.recoilRecoverySpeed * deltaTime);\n    }\n\n    public void StartReload()\n    {\n        if (IsReloading || CurrentAmmo == CurrentMagazineSize) return;\n        IsReloading = true;\n    }\n\n    public void FinishReload()\n    {\n        CurrentAmmo = CurrentMagazineSize;\n        IsReloading = false;\n        CurrentSpread = BaseData.baseSpread;\n    }\n}",
+          "output": "Runtime WeaponInstance with mutable stats, spread recovery, recoil curves, and upgrade system."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Inventory System Using Runtime Instances"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Collections.Generic;\n\n// ============================================\n// INVENTORY SYSTEM USING RUNTIME INSTANCES\n// ============================================\npublic class Inventory : MonoBehaviour\n{\n    [SerializeField] private List<WeaponData> startingWeapons;\n    private List<WeaponInstance> weapons = new();\n    private int equippedWeaponIndex = -1;\n\n    void Start()\n    {\n        foreach (var data in startingWeapons)\n            AddWeapon(data);\n        \n        if (weapons.Count > 0)\n            EquipWeapon(0);\n    }\n\n    public WeaponInstance AddWeapon(WeaponData data)\n    {\n        var instance = new WeaponInstance(data);\n        weapons.Add(instance);\n        return instance;\n    }\n\n    public void EquipWeapon(int index)\n    {\n        if (index < 0 || index >= weapons.Count) return;\n        equippedWeaponIndex = index;\n        \n        var weapon = GetEquippedWeapon();\n        Debug.Log($\"Equipped: {weapon.BaseData.weaponName}\");\n    }\n\n    public WeaponInstance GetEquippedWeapon()\n    {\n        return equippedWeaponIndex >= 0 ? weapons[equippedWeaponIndex] : null;\n    }\n\n    public void UpgradeEquippedWeapon()\n    {\n        var weapon = GetEquippedWeapon();\n        if (weapon == null) return;\n        \n        int cost = weapon.BaseData.upgradeCost * (weapon.UpgradeLevel + 1);\n        if (GameState.Instance.SpendCurrency(cost))\n        {\n            weapon.Upgrade();\n            Debug.Log($\"Upgraded to level {weapon.UpgradeLevel}!\");\n        }\n    }\n}",
+          "output": "Inventory managing multiple WeaponInstance objects with equip and upgrade functionality."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why create runtime instances of ScriptableObjects instead of modifying the asset directly?",
+          "options": [
+            "Runtime instances are faster to create",
+            "ScriptableObject assets are shared and immutable in builds; runtime instances allow per-object state",
+            "ScriptableObjects cannot be modified at all",
+            "Runtime instances use less memory"
+          ],
+          "correctAnswer": "ScriptableObject assets are shared and immutable in builds; runtime instances allow per-object state",
+          "explanation": "ScriptableObject assets are shared references. Modifying one would affect all users of that asset. Runtime instances (created via new Class() or CreateInstance) are independent copies that can hold per-object mutable state like current ammo, upgrade level, and durability."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: ScriptableObject Singletons & Game Architecture",
+      "badge": "Data Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "ScriptableObject Singletons (Game Architecture)"
+        },
+        {
+          "type": "paragraph",
+          "value": "ScriptableObjects can act as persistent, scene-independent singletons. They survive scene loads and do not require GameObjects."
+        },
+        {
+          "type": "paragraph",
+          "value": "This pattern is called ScriptableObject Architecture or Game Architecture with ScriptableObjects:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Create a GameStateSO asset that holds global game state (score, level, currency)",
+            "Create RuntimeSet<T> assets that track active objects (all enemies, all pickups)",
+            "Create GameEventSO assets for designer-configurable events",
+            "Reference these assets in any script via Inspector — no FindObjectOfType needed"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System.Collections.Generic;\nusing UnityEngine;\n\n// ============================================\n// RUNTIME SET — tracks active objects of type T\n// ============================================\npublic abstract class RuntimeSet<T> : ScriptableObject\n{\n    [SerializeField] private List<T> items = new();\n    \n    public int Count => items.Count;\n    public T this[int index] => items[index];\n\n    public void Add(T item)\n    {\n        if (!items.Contains(item))\n            items.Add(item);\n    }\n\n    public void Remove(T item)\n    {\n        if (items.Contains(item))\n            items.Remove(item);\n    }\n\n    public void Clear() => items.Clear();\n    \n    public T GetRandom() => items.Count > 0 ? items[Random.Range(0, items.Count)] : default;\n    \n    public T GetNearest(Vector3 position)\n    {\n        T nearest = default;\n        float nearestDist = float.MaxValue;\n        \n        foreach (var item in items)\n        {\n            var mono = item as MonoBehaviour;\n            if (mono == null) continue;\n            \n            float dist = Vector3.Distance(position, mono.transform.position);\n            if (dist < nearestDist)\n            {\n                nearestDist = dist;\n                nearest = item;\n            }\n        }\n        \n        return nearest;\n    }\n}\n\n[CreateAssetMenu(menuName = \"Game/Runtime Sets/Enemy Set\")]\npublic class EnemyRuntimeSet : RuntimeSet<EnemyAI> { }\n\n[CreateAssetMenu(menuName = \"Game/Runtime Sets/Player Set\")]\npublic class PlayerRuntimeSet : RuntimeSet<PlayerController> { }",
+          "output": "Abstract RuntimeSet<T> with add/remove/getRandom/getNearest, plus concrete EnemyRuntimeSet and PlayerRuntimeSet."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "GameEventSO: Designer-Friendly Events"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System.Collections.Generic;\nusing UnityEngine;\n\n// ============================================\n// GAME EVENT SCRIPTABLEOBJECT\n// ============================================\n[CreateAssetMenu(menuName = \"Game/Events/Void Event\")]\npublic class GameEventSO : ScriptableObject\n{\n    private readonly List<GameEventListener> listeners = new();\n\n    public void Raise()\n    {\n        for (int i = listeners.Count - 1; i >= 0; i--)\n            listeners[i].OnEventRaised();\n    }\n\n    public void RegisterListener(GameEventListener listener)\n    {\n        if (!listeners.Contains(listener))\n            listeners.Add(listener);\n    }\n\n    public void UnregisterListener(GameEventListener listener)\n    {\n        if (listeners.Contains(listener))\n            listeners.Remove(listener);\n    }\n}\n\n// MonoBehaviour that listens to a GameEventSO — drag in Inspector\npublic class GameEventListener : MonoBehaviour\n{\n    [SerializeField] private GameEventSO gameEvent;\n    [SerializeField] private UnityEngine.Events.UnityEvent response;\n\n    void OnEnable() => gameEvent?.RegisterListener(this);\n    void OnDisable() => gameEvent?.UnregisterListener(this);\n\n    public void OnEventRaised() => response?.Invoke();\n}\n\n// ============================================\n// USAGE: Enemy auto-registers to runtime set\n// ============================================\npublic class EnemyAI : MonoBehaviour\n{\n    [SerializeField] private EnemyRuntimeSet enemySet;\n    [SerializeField] private GameEventSO onEnemyDiedEvent;\n\n    void OnEnable() => enemySet?.Add(this);\n    void OnDisable() => enemySet?.Remove(this);\n\n    void Die()\n    {\n        onEnemyDiedEvent?.Raise();\n    }\n}\n\n// ============================================\n// USAGE: Spawn manager uses runtime set\n// ============================================\npublic class SpawnManager : MonoBehaviour\n{\n    [SerializeField] private EnemyRuntimeSet activeEnemies;\n    [SerializeField] private int maxEnemies = 20;\n\n    void Update()\n    {\n        if (activeEnemies.Count < maxEnemies)\n            TrySpawnEnemy();\n    }\n\n    void TrySpawnEnemy() { /* ... */ }\n}",
+          "output": "ScriptableObject architecture: RuntimeSet for tracking active enemies, GameEventSO for designer-friendly events, and automatic registration/unregistration."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You need to track all active enemies in the scene for a spawn manager, minimap, and AI director. What is the most robust approach?",
+          "options": [
+            "Use FindObjectsOfType<EnemyAI>() in each system every few seconds",
+            "Use a ScriptableObject RuntimeSet that enemies register/unregister via OnEnable/OnDisable",
+            "Have the SpawnManager maintain a static List<EnemyAI> that other systems access",
+            "Use SendMessage(\"RegisterEnemy\") on all GameObjects when an enemy spawns"
+          ],
+          "correctAnswer": "Use a ScriptableObject RuntimeSet that enemies register/unregister via OnEnable/OnDisable",
+          "explanation": "FindObjectsOfType is slow and misses dynamically spawned/destroyed enemies. A static list creates hidden coupling and lifecycle bugs. SendMessage is slow, string-based, and deprecated. The RuntimeSet pattern: enemies self-register on enable, self-remove on disable. The asset is shared via Inspector references — no searching, no static state, works across scenes, and is designer-friendly."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: Custom Property Drawers",
+      "badge": "Editor Tools",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Custom Property Drawers"
+        },
+        {
+          "type": "paragraph",
+          "value": "Property drawers customize how fields appear in the Inspector. They make complex data types editable and validate input automatically."
+        },
+        {
+          "type": "paragraph",
+          "value": "Common use cases:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Draw a struct with multiple fields as a single compact line",
+            "Add buttons directly in the Inspector for quick actions",
+            "Show/hide fields based on other field values",
+            "Validate input and show error messages in real-time",
+            "Draw custom graphs, curves, or visualizations for data"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\n\n[System.Serializable]\npublic struct MinMaxFloat\n{\n    public float min;\n    public float max;\n    public float RandomValue => UnityEngine.Random.Range(min, max);\n    public bool IsInRange(float value) => value >= min && value <= max;\n}\n\n[CustomPropertyDrawer(typeof(MinMaxFloat))]\npublic class MinMaxFloatDrawer : PropertyDrawer\n{\n    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)\n    {\n        EditorGUI.BeginProperty(position, label, property);\n        SerializedProperty minProp = property.FindPropertyRelative(\"min\");\n        SerializedProperty maxProp = property.FindPropertyRelative(\"max\");\n        position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);\n        \n        float labelWidth = 30f;\n        float fieldWidth = (position.width - labelWidth * 2) / 2f - 5f;\n        \n        Rect minLabelRect = new Rect(position.x, position.y, labelWidth, position.height);\n        Rect minFieldRect = new Rect(position.x + labelWidth, position.y, fieldWidth, position.height);\n        Rect maxLabelRect = new Rect(position.x + labelWidth + fieldWidth + 5f, position.y, labelWidth, position.height);\n        Rect maxFieldRect = new Rect(position.x + labelWidth * 2 + fieldWidth + 5f, position.y, fieldWidth, position.height);\n        \n        EditorGUI.LabelField(minLabelRect, \"Min\");\n        EditorGUI.PropertyField(minFieldRect, minProp, GUIContent.none);\n        EditorGUI.LabelField(maxLabelRect, \"Max\");\n        EditorGUI.PropertyField(maxFieldRect, maxProp, GUIContent.none);\n        \n        if (minProp.floatValue > maxProp.floatValue)\n            EditorGUI.DrawRect(position, new Color(1f, 0f, 0f, 0.1f));\n        \n        EditorGUI.EndProperty();\n    }\n}\n\npublic class EnemySpawner : MonoBehaviour\n{\n    [Header(\"Spawn Timing\")]\n    public MinMaxFloat spawnInterval;\n    [Header(\"Enemy Stats\")]\n    public MinMaxFloat healthRange;\n    public MinMaxFloat speedRange;\n}",
+          "output": "Custom PropertyDrawer for MinMaxFloat struct: compact two-field line with built-in validation highlighting when min exceeds max."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Range Slider Property Drawer"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\n\n[System.Serializable]\npublic struct RangedFloat\n{\n    public float minValue;\n    public float maxValue;\n    public float currentValue;\n}\n\n[CustomPropertyDrawer(typeof(RangedFloat))]\npublic class RangedFloatDrawer : PropertyDrawer\n{\n    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)\n    {\n        EditorGUI.BeginProperty(position, label, property);\n        \n        var minProp = property.FindPropertyRelative(\"minValue\");\n        var maxProp = property.FindPropertyRelative(\"maxValue\");\n        var currentProp = property.FindPropertyRelative(\"currentValue\");\n        \n        position = EditorGUI.PrefixLabel(position, GUIUtility.GetControlID(FocusType.Passive), label);\n        \n        float sliderWidth = position.width * 0.5f;\n        float fieldWidth = position.width * 0.25f - 5f;\n        \n        Rect sliderRect = new Rect(position.x, position.y, sliderWidth, position.height);\n        Rect minRect = new Rect(position.x + sliderWidth + 5f, position.y, fieldWidth, position.height);\n        Rect maxRect = new Rect(position.x + sliderWidth + fieldWidth + 10f, position.y, fieldWidth, position.height);\n        \n        float min = minProp.floatValue;\n        float max = maxProp.floatValue;\n        float current = currentProp.floatValue;\n        \n        current = EditorGUI.Slider(sliderRect, current, min, max);\n        min = EditorGUI.FloatField(minRect, min);\n        max = EditorGUI.FloatField(maxRect, max);\n        \n        minProp.floatValue = min;\n        maxProp.floatValue = max;\n        currentProp.floatValue = current;\n        \n        EditorGUI.EndProperty();\n    }\n}\n\npublic class HealthSystem : MonoBehaviour\n{\n    [Header(\"Health Configuration\")]\n    public RangedFloat health;\n    [Header(\"Stamina Configuration\")]\n    public RangedFloat stamina;\n}",
+          "output": "RangedFloat PropertyDrawer with a slider showing current value between min and max, plus editable min/max fields."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the primary purpose of a CustomPropertyDrawer in Unity?",
+          "options": [
+            "To replace the entire Inspector for a MonoBehaviour",
+            "To customize how a specific field type is drawn in the Inspector",
+            "To create standalone editor windows",
+            "To modify the Unity engine source code"
+          ],
+          "correctAnswer": "To customize how a specific field type is drawn in the Inspector",
+          "explanation": "PropertyDrawers customize the visual representation of a specific field type (like a struct or class) wherever it appears in the Inspector. They are reusable across any MonoBehaviour or ScriptableObject that uses that type. Custom Editors replace the entire Inspector for one class. EditorWindows are standalone tools."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Custom Inspector Editors",
+      "badge": "Editor Tools",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Custom Inspector Editors"
+        },
+        {
+          "type": "paragraph",
+          "value": "Custom Editors completely replace the default Inspector for a MonoBehaviour or ScriptableObject. They give you full control over the editing experience."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\n\n[CustomEditor(typeof(WeaponController))]\npublic class WeaponControllerEditor : Editor\n{\n    private SerializedProperty weaponDataProp;\n    private SerializedProperty firePointProp;\n    private SerializedProperty muzzleFlashProp;\n    private SerializedProperty recoilPatternProp;\n    private bool showDebugInfo = false;\n    private bool showPreview = true;\n\n    void OnEnable()\n    {\n        weaponDataProp = serializedObject.FindProperty(\"weaponData\");\n        firePointProp = serializedObject.FindProperty(\"firePoint\");\n        muzzleFlashProp = serializedObject.FindProperty(\"muzzleFlash\");\n        recoilPatternProp = serializedObject.FindProperty(\"recoilPattern\");\n    }\n\n    public override void OnInspectorGUI()\n    {\n        serializedObject.Update();\n        \n        EditorGUILayout.Space(10);\n        GUIStyle headerStyle = new GUIStyle(EditorStyles.largeLabel);\n        headerStyle.fontSize = 18;\n        headerStyle.fontStyle = FontStyle.Bold;\n        headerStyle.normal.textColor = new Color(0.2f, 0.6f, 1f);\n        EditorGUILayout.LabelField(\"Weapon Configuration\", headerStyle);\n        \n        EditorGUILayout.Space(5);\n        EditorGUILayout.PropertyField(weaponDataProp, new GUIContent(\"Weapon Data\", \"ScriptableObject containing base stats\"));\n        \n        WeaponData data = weaponDataProp.objectReferenceValue as WeaponData;\n        if (data != null)\n        {\n            EditorGUILayout.Space(5);\n            showPreview = EditorGUILayout.Foldout(showPreview, \"Stats Preview\", true);\n            if (showPreview)\n            {\n                EditorGUI.indentLevel++;\n                EditorGUILayout.LabelField($\"Damage: {data.damage}\");\n                EditorGUILayout.LabelField($\"Fire Rate: {data.fireRate:F2} shots/sec\");\n                EditorGUILayout.LabelField($\"Magazine: {data.magazineSize}\");\n                EditorGUILayout.LabelField($\"Range: {data.effectiveRange:F0}m\");\n                EditorGUI.indentLevel--;\n            }\n        }\n        \n        EditorGUILayout.Space(10);\n        EditorGUILayout.LabelField(\"References\", EditorStyles.boldLabel);\n        EditorGUILayout.PropertyField(firePointProp);\n        EditorGUILayout.PropertyField(muzzleFlashProp);\n        \n        EditorGUILayout.Space(10);\n        EditorGUILayout.LabelField(\"Recoil Pattern\", EditorStyles.boldLabel);\n        EditorGUILayout.PropertyField(recoilPatternProp, GUIContent.none, GUILayout.Height(100));\n        \n        EditorGUILayout.Space(10);\n        EditorGUILayout.LabelField(\"Quick Actions\", EditorStyles.boldLabel);\n        EditorGUILayout.BeginHorizontal();\n        if (GUILayout.Button(\"Auto-Find Fire Point\")) AutoFindFirePoint();\n        if (GUILayout.Button(\"Reset Recoil\")) ResetRecoilPattern();\n        EditorGUILayout.EndHorizontal();\n        \n        EditorGUILayout.Space(10);\n        showDebugInfo = EditorGUILayout.Foldout(showDebugInfo, \"Debug Info\", true);\n        if (showDebugInfo)\n        {\n            WeaponController weapon = (WeaponController)target;\n            EditorGUILayout.LabelField($\"Current Ammo: {weapon.CurrentAmmo}\");\n            EditorGUILayout.LabelField($\"Is Reloading: {weapon.IsReloading}\");\n            EditorGUILayout.LabelField($\"Last Fire Time: {weapon.LastFireTime:F2}\");\n            if (GUILayout.Button(\"Force Reload\")) weapon.ForceReload();\n        }\n        \n        serializedObject.ApplyModifiedProperties();\n        if (GUI.changed) EditorUtility.SetDirty(target);\n    }\n\n    void AutoFindFirePoint()\n    {\n        WeaponController weapon = (WeaponController)target;\n        Transform found = weapon.transform.Find(\"FirePoint\");\n        if (found == null) found = weapon.transform.Find(\"Muzzle\");\n        if (found == null) found = weapon.transform;\n        firePointProp.objectReferenceValue = found;\n        serializedObject.ApplyModifiedProperties();\n    }\n\n    void ResetRecoilPattern()\n    {\n        AnimationCurve curve = new AnimationCurve();\n        curve.AddKey(0f, 0f);\n        curve.AddKey(1f, 2f);\n        recoilPatternProp.animationCurveValue = curve;\n        serializedObject.ApplyModifiedProperties();\n    }\n}\n\npublic class WeaponController : MonoBehaviour\n{\n    [SerializeField] private WeaponData weaponData;\n    [SerializeField] private Transform firePoint;\n    [SerializeField] private ParticleSystem muzzleFlash;\n    [SerializeField] private AnimationCurve recoilPattern = AnimationCurve.Linear(0, 0, 1, 2);\n    public int CurrentAmmo { get; private set; }\n    public bool IsReloading { get; private set; }\n    public float LastFireTime { get; private set; }\n    public void ForceReload() { }\n}",
+          "output": "Custom Editor with styled headers, ScriptableObject preview, quick action buttons, debug foldout, and automatic scene dirty marking."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Multi-Object Editing Support"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\n\n[CustomEditor(typeof(EnemySpawner))]\n[CanEditMultipleObjects]\npublic class EnemySpawnerEditor : Editor\n{\n    private SerializedProperty spawnCountProp;\n    private SerializedProperty spawnRadiusProp;\n    private SerializedProperty enemyPrefabProp;\n\n    void OnEnable()\n    {\n        spawnCountProp = serializedObject.FindProperty(\"spawnCount\");\n        spawnRadiusProp = serializedObject.FindProperty(\"spawnRadius\");\n        enemyPrefabProp = serializedObject.FindProperty(\"enemyPrefab\");\n    }\n\n    public override void OnInspectorGUI()\n    {\n        serializedObject.Update();\n        \n        EditorGUILayout.PropertyField(enemyPrefabProp);\n        EditorGUILayout.PropertyField(spawnCountProp);\n        EditorGUILayout.PropertyField(spawnRadiusProp);\n        \n        EditorGUILayout.Space(10);\n        EditorGUILayout.HelpBox(\n            $\"Will spawn {spawnCountProp.intValue} enemies within {spawnRadiusProp.floatValue:F1} units.\",\n            MessageType.Info\n        );\n        \n        EditorGUILayout.Space(10);\n        if (GUILayout.Button(\"Spawn Preview Gizmos\"))\n        {\n            SceneView.RepaintAll();\n        }\n        \n        serializedObject.ApplyModifiedProperties();\n    }\n\n    void OnSceneGUI()\n    {\n        EnemySpawner spawner = (EnemySpawner)target;\n        Handles.color = new Color(1f, 0.5f, 0f, 0.3f);\n        Handles.DrawSolidDisc(spawner.transform.position, Vector3.up, spawner.spawnRadius);\n        Handles.color = Color.yellow;\n        Handles.DrawWireDisc(spawner.transform.position, Vector3.up, spawner.spawnRadius);\n    }\n}\n\npublic class EnemySpawner : MonoBehaviour\n{\n    [SerializeField] private GameObject enemyPrefab;\n    [SerializeField] private int spawnCount = 10;\n    [SerializeField] private float spawnRadius = 20f;\n}",
+          "output": "Custom Editor with multi-object editing, help boxes, scene view gizmos for visualizing spawn radius."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the difference between a PropertyDrawer and a Custom Editor?",
+          "options": [
+            "PropertyDrawers are faster than Custom Editors",
+            "PropertyDrawers customize a field type everywhere; Custom Editors replace the entire Inspector for one class",
+            "PropertyDrawers only work with structs; Custom Editors only work with classes",
+            "There is no difference"
+          ],
+          "correctAnswer": "PropertyDrawers customize a field type everywhere; Custom Editors replace the entire Inspector for one class",
+          "explanation": "PropertyDrawers are attached to types (structs/classes) and apply wherever that type is used as a field. Custom Editors are attached to specific MonoBehaviour or ScriptableObject classes and replace their entire Inspector view. They serve different purposes and can be used together."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: Custom Attributes for Validation & Workflow",
+      "badge": "Editor Tools",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Custom Attributes for Validation & Workflow"
+        },
+        {
+          "type": "paragraph",
+          "value": "Attributes are C# metadata that Unity reads to modify behavior. You can create custom attributes and property drawers to enforce team conventions and speed up workflow."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\nusing System;\n\n[AttributeUsage(AttributeTargets.Field)]\npublic class MinAttribute : PropertyAttribute\n{\n    public readonly float min;\n    public MinAttribute(float min) => this.min = min;\n}\n\n[AttributeUsage(AttributeTargets.Field)]\npublic class SceneNameAttribute : PropertyAttribute { }\n\n[AttributeUsage(AttributeTargets.Field)]\npublic class ReadOnlyInPlayModeAttribute : PropertyAttribute { }\n\n[CustomPropertyDrawer(typeof(MinAttribute))]\npublic class MinAttributeDrawer : PropertyDrawer\n{\n    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)\n    {\n        MinAttribute minAttr = (MinAttribute)attribute;\n        EditorGUI.PropertyField(position, property, label);\n        if (property.propertyType == SerializedPropertyType.Float)\n            property.floatValue = Mathf.Max(property.floatValue, minAttr.min);\n        else if (property.propertyType == SerializedPropertyType.Integer)\n            property.intValue = Mathf.Max(property.intValue, (int)minAttr.min);\n    }\n}\n\n[CustomPropertyDrawer(typeof(SceneNameAttribute))]\npublic class SceneNameDrawer : PropertyDrawer\n{\n    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)\n    {\n        string[] scenes = GetSceneNames();\n        int currentIndex = Array.IndexOf(scenes, property.stringValue);\n        if (currentIndex < 0) currentIndex = 0;\n        int selectedIndex = EditorGUI.Popup(position, label.text, currentIndex, scenes);\n        property.stringValue = scenes[selectedIndex];\n    }\n    \n    string[] GetSceneNames()\n    {\n        var scenes = new System.Collections.Generic.List<string>();\n        foreach (var scene in EditorBuildSettings.scenes)\n        {\n            string name = System.IO.Path.GetFileNameWithoutExtension(scene.path);\n            scenes.Add(name);\n        }\n        return scenes.Count > 0 ? scenes.ToArray() : new[] { \"No scenes in build\" };\n    }\n}\n\n[CustomPropertyDrawer(typeof(ReadOnlyInPlayModeAttribute))]\npublic class ReadOnlyInPlayModeDrawer : PropertyDrawer\n{\n    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)\n    {\n        bool wasEnabled = GUI.enabled;\n        if (Application.isPlaying) GUI.enabled = false;\n        EditorGUI.PropertyField(position, property, label);\n        GUI.enabled = wasEnabled;\n    }\n}",
+          "output": "Three custom attributes with property drawers: Min for value clamping, SceneName for dropdown selection, ReadOnlyInPlayMode for design-time protection."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Usage Example"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic class GameConfig : MonoBehaviour\n{\n    [Min(0)] public int startingHealth = 100;\n    [Min(0.1f)] public float respawnTime = 3f;\n    [SceneName] public string mainMenuScene = \"MainMenu\";\n    [SceneName] public string firstLevelScene = \"Level1\";\n    [ReadOnlyInPlayMode] [SerializeField] private string buildVersion = \"1.0.0\";\n    [Min(1)] [SerializeField] private int maxPlayers = 4;\n}\n\n// ============================================\n// BONUS: Tag Attribute\n// ============================================\n[AttributeUsage(AttributeTargets.Field)]\npublic class TagAttribute : PropertyAttribute { }\n\n#if UNITY_EDITOR\n[CustomPropertyDrawer(typeof(TagAttribute))]\npublic class TagDrawer : PropertyDrawer\n{\n    public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)\n    {\n        property.stringValue = EditorGUI.TagField(position, label, property.stringValue);\n    }\n}\n#endif\n\npublic class DamageZone : MonoBehaviour\n{\n    [Tag] public string targetTag = \"Player\";\n    [Min(1)] public int damagePerTick = 5;\n}",
+          "output": "GameConfig using all three custom attributes, plus a bonus Tag attribute with TagField drawer."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You want to create a custom dropdown in the Inspector that shows all scene names from Build Settings. Which approach is correct?",
+          "options": [
+            "Create a custom Editor class and override OnInspectorGUI for every MonoBehaviour that needs it",
+            "Create a [SceneName] PropertyAttribute and a CustomPropertyDrawer that reads EditorBuildSettings.scenes",
+            "Use a string field and validate it in OnValidate() with a warning message",
+            "Create a custom EditorWindow that lists scenes and copies the name to clipboard"
+          ],
+          "correctAnswer": "Create a [SceneName] PropertyAttribute and a CustomPropertyDrawer that reads EditorBuildSettings.scenes",
+          "explanation": "PropertyAttributes with PropertyDrawers are reusable across any field in any class. You write the drawer once, and any field marked with [SceneName] gets the dropdown automatically. Custom Editors require writing a new class for every MonoBehaviour. OnValidate only runs at runtime. EditorWindows are not integrated into the Inspector workflow."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 11: Editor Windows for Level Design Tools",
+      "badge": "Editor Tools",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Editor Windows for Level Design Tools"
+        },
+        {
+          "type": "paragraph",
+          "value": "Editor Windows are standalone tools inside Unity. They are perfect for batch operations, level design helpers, and data management that would be tedious in the Inspector."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\nusing System.Collections.Generic;\nusing System.Linq;\n\npublic class ObjectDistributorWindow : EditorWindow\n{\n    private GameObject prefabToDistribute;\n    private int count = 10;\n    private float radius = 20f;\n    private float minDistance = 2f;\n    private bool randomRotation = true;\n    private bool randomScale = false;\n    private Vector2 scaleRange = new Vector2(0.8f, 1.2f);\n    private LayerMask groundLayer;\n    private Vector3 center;\n    private bool useSelectionCenter = true;\n\n    [MenuItem(\"Tools/Level Design/Object Distributor\")]\n    public static void ShowWindow()\n    {\n        GetWindow<ObjectDistributorWindow>(\"Object Distributor\");\n    }\n\n    void OnGUI()\n    {\n        GUILayout.Label(\"Object Distributor\", EditorStyles.boldLabel);\n        EditorGUILayout.Space(5);\n        prefabToDistribute = (GameObject)EditorGUILayout.ObjectField(\"Prefab\", prefabToDistribute, typeof(GameObject), false);\n        count = EditorGUILayout.IntSlider(\"Count\", count, 1, 500);\n        radius = EditorGUILayout.Slider(\"Radius\", radius, 1f, 200f);\n        minDistance = EditorGUILayout.Slider(\"Min Distance\", minDistance, 0.1f, 10f);\n        randomRotation = EditorGUILayout.Toggle(\"Random Rotation\", randomRotation);\n        randomScale = EditorGUILayout.Toggle(\"Random Scale\", randomScale);\n        if (randomScale) EditorGUILayout.MinMaxSlider(ref scaleRange.x, ref scaleRange.y, 0.1f, 3f);\n        groundLayer = EditorGUILayout.LayerField(\"Ground Layer\", groundLayer);\n        useSelectionCenter = EditorGUILayout.Toggle(\"Use Selection Center\", useSelectionCenter);\n        if (!useSelectionCenter) center = EditorGUILayout.Vector3Field(\"Center\", center);\n        EditorGUILayout.Space(10);\n        GUI.backgroundColor = new Color(0.4f, 0.8f, 0.4f);\n        if (GUILayout.Button(\"Distribute Objects\", GUILayout.Height(40))) DistributeObjects();\n        GUI.backgroundColor = Color.white;\n        EditorGUILayout.Space(5);\n        GUI.backgroundColor = new Color(0.9f, 0.3f, 0.3f);\n        if (GUILayout.Button(\"Clear Last Distribution\", GUILayout.Height(30))) Undo.PerformUndo();\n        GUI.backgroundColor = Color.white;\n    }\n\n    void DistributeObjects()\n    {\n        if (prefabToDistribute == null)\n        {\n            EditorUtility.DisplayDialog(\"Error\", \"Please assign a prefab!\", \"OK\");\n            return;\n        }\n        if (useSelectionCenter && Selection.activeGameObject != null)\n            center = Selection.activeGameObject.transform.position;\n        List<Vector3> placedPositions = new List<Vector3>();\n        int attempts = 0;\n        int placed = 0;\n        Undo.SetCurrentGroupName(\"Distribute Objects\");\n        int group = Undo.GetCurrentGroup();\n        while (placed < count && attempts < count * 50)\n        {\n            attempts++;\n            Vector2 randomCircle = UnityEngine.Random.insideUnitCircle * radius;\n            Vector3 candidate = center + new Vector3(randomCircle.x, 100f, randomCircle.y);\n            if (Physics.Raycast(candidate, Vector3.down, out RaycastHit hit, 200f, groundLayer))\n            {\n                candidate.y = hit.point.y;\n                bool tooClose = placedPositions.Any(p => Vector3.Distance(p, candidate) < minDistance);\n                if (tooClose) continue;\n                GameObject instance = PrefabUtility.InstantiatePrefab(prefabToDistribute) as GameObject;\n                instance.transform.position = candidate;\n                if (randomRotation) instance.transform.rotation = Quaternion.Euler(0, UnityEngine.Random.Range(0f, 360f), 0);\n                if (randomScale)\n                {\n                    float s = UnityEngine.Random.Range(scaleRange.x, scaleRange.y);\n                    instance.transform.localScale = Vector3.one * s;\n                }\n                Undo.RegisterCreatedObjectUndo(instance, \"Distribute Object\");\n                placedPositions.Add(candidate);\n                placed++;\n            }\n        }\n        Undo.CollapseUndoOperations(group);\n        EditorUtility.DisplayDialog(\"Done\", $\"Placed {placed} objects.\", \"OK\");\n    }\n}",
+          "output": "Complete Editor Window for procedural object placement with undo support, ground raycasting, minimum distance enforcement, and randomization options."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Batch Rename Tool"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing UnityEditor;\n\npublic class BatchRenameWindow : EditorWindow\n{\n    private string prefix = \"Enemy_\";\n    private string suffix = \"\";\n    private int startIndex = 0;\n    private bool useSelection = true;\n\n    [MenuItem(\"Tools/Batch Rename\")]\n    public static void ShowWindow()\n    {\n        GetWindow<BatchRenameWindow>(\"Batch Rename\");\n    }\n\n    void OnGUI()\n    {\n        GUILayout.Label(\"Batch Rename Selected Objects\", EditorStyles.boldLabel);\n        EditorGUILayout.Space(5);\n        prefix = EditorGUILayout.TextField(\"Prefix\", prefix);\n        suffix = EditorGUILayout.TextField(\"Suffix\", suffix);\n        startIndex = EditorGUILayout.IntField(\"Start Index\", startIndex);\n        useSelection = EditorGUILayout.Toggle(\"Use Current Selection\", useSelection);\n        EditorGUILayout.Space(10);\n        if (GUILayout.Button(\"Rename\", GUILayout.Height(30)))\n        {\n            RenameObjects();\n        }\n    }\n\n    void RenameObjects()\n    {\n        GameObject[] targets = useSelection ? Selection.gameObjects : FindObjectsOfType<GameObject>();\n        Undo.RecordObjects(targets, \"Batch Rename\");\n        for (int i = 0; i < targets.Length; i++)\n        {\n            targets[i].name = $\"{prefix}{(startIndex + i):D3}{suffix}\";\n        }\n    }\n}",
+          "output": "Batch rename tool with prefix, suffix, index formatting, and undo support."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the key advantage of an EditorWindow over a Custom Inspector?",
+          "options": [
+            "EditorWindows are faster to render",
+            "EditorWindows are standalone tools that can operate on multiple objects and perform batch operations",
+            "EditorWindows can only be accessed via code",
+            "EditorWindows automatically save their state"
+          ],
+          "correctAnswer": "EditorWindows are standalone tools that can operate on multiple objects and perform batch operations",
+          "explanation": "EditorWindows are independent panels that can perform operations across the entire project or selection, not just one object. They are ideal for batch operations, level design tools, and data management that would be tedious in per-object Inspectors."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Job System Fundamentals",
+      "badge": "Performance",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Why Unity's Job System Matters"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's main thread handles rendering, input, and script execution. Heavy computation on the main thread causes frame drops. The Job System lets you write multithreaded code that runs safely on worker threads while integrating cleanly with Unity's engine loop."
+        },
+        {
+          "type": "paragraph",
+          "value": "Key concepts:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Jobs are structs that implement IJob or IJobParallelFor — they contain data and an Execute method",
+            "Job structs must be blittable (no managed types like classes, strings, or MonoBehaviours)",
+            "JobHandles track dependencies — jobs automatically wait for prerequisite jobs to complete",
+            "Burst Compiler compiles jobs to highly optimized native code using LLVM",
+            "NativeArray<T> is the primary data container — it is unmanaged memory that jobs can read/write"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing Unity.Collections;\nusing Unity.Jobs;\nusing Unity.Mathematics;\n\npublic struct MoveJob : IJobParallelFor\n{\n    [ReadOnly] public NativeArray<float3> velocities;\n    [ReadOnly] public float deltaTime;\n    public NativeArray<float3> positions;\n\n    public void Execute(int index)\n    {\n        positions[index] += velocities[index] * deltaTime;\n    }\n}\n\npublic class JobSystemDemo : MonoBehaviour\n{\n    [SerializeField] private int objectCount = 10000;\n    [SerializeField] private float moveSpeed = 5f;\n    \n    private NativeArray<float3> positions;\n    private NativeArray<float3> velocities;\n    private Transform[] transforms;\n\n    void Start()\n    {\n        positions = new NativeArray<float3>(objectCount, Allocator.Persistent);\n        velocities = new NativeArray<float3>(objectCount, Allocator.Persistent);\n        transforms = new Transform[objectCount];\n\n        for (int i = 0; i < objectCount; i++)\n        {\n            GameObject obj = GameObject.CreatePrimitive(PrimitiveType.Sphere);\n            Destroy(obj.GetComponent<Collider>());\n            obj.transform.position = UnityEngine.Random.insideUnitSphere * 50f;\n            transforms[i] = obj.transform;\n            positions[i] = obj.transform.position;\n            velocities[i] = UnityEngine.Random.insideUnitSphere * moveSpeed;\n        }\n    }\n\n    void Update()\n    {\n        MoveJob job = new MoveJob\n        {\n            positions = positions,\n            velocities = velocities,\n            deltaTime = Time.deltaTime\n        };\n        JobHandle handle = job.ScheduleParallel(objectCount, 64, default);\n        handle.Complete();\n\n        for (int i = 0; i < objectCount; i++)\n            transforms[i].position = positions[i];\n    }\n\n    void OnDestroy()\n    {\n        if (positions.IsCreated) positions.Dispose();\n        if (velocities.IsCreated) velocities.Dispose();\n    }\n}",
+          "output": "IJobParallelFor moves 10,000 objects across worker threads using NativeArrays, with proper memory disposal in OnDestroy."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "NativeArray Memory Management"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Collections;\n\n// Allocator types:\n// Persistent — lives until manually disposed (use for long-lived data)\n// Temp — fastest, lasts one frame, auto-disposed (use for short-lived jobs)\n// TempJob — lasts 4 frames, auto-disposed (use for jobs that span multiple frames)\n\nNativeArray<int> persistent = new NativeArray<int>(100, Allocator.Persistent);\nNativeArray<int> temp = new NativeArray<int>(100, Allocator.Temp);\nNativeArray<int> tempJob = new NativeArray<int>(100, Allocator.TempJob);\n\n// ALWAYS dispose Persistent arrays!\npersistent.Dispose();\n\n// Temp is auto-disposed but you can dispose early\ntemp.Dispose();\n\n// TempJob auto-disposes after 4 frames\ntempJob.Dispose();\n\n// Safety: NativeArray has IsCreated property\nif (persistent.IsCreated)\n    persistent.Dispose();",
+          "output": "NativeArray allocator types and disposal patterns for safe memory management in the Job System."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What must a job struct contain to be compatible with the Job System?",
+          "options": [
+            "It must inherit from MonoBehaviour",
+            "It must be a struct with only blittable types (no classes, strings, or MonoBehaviours)",
+            "It must use the [BurstCompile] attribute",
+            "It must implement IDisposable"
+          ],
+          "correctAnswer": "It must be a struct with only blittable types (no classes, strings, or MonoBehaviours)",
+          "explanation": "Job structs must be blittable because they are copied to worker thread memory. Managed types like classes, strings, and MonoBehaviours cannot be used. The [BurstCompile] attribute is optional but recommended for performance. IDisposable is not required."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: Job Dependencies & Chaining",
+      "badge": "Performance",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Job Dependencies & Chaining"
+        },
+        {
+          "type": "paragraph",
+          "value": "Jobs can depend on other jobs. Unity's JobHandle system ensures jobs execute in the correct order without manual synchronization primitives like locks or mutexes."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing Unity.Collections;\nusing Unity.Jobs;\nusing Unity.Mathematics;\n\npublic struct DistanceJob : IJobParallelFor\n{\n    [ReadOnly] public NativeArray<float3> positions;\n    [ReadOnly] public float3 target;\n    public NativeArray<float> distances;\n\n    public void Execute(int index)\n    {\n        float3 diff = positions[index] - target;\n        distances[index] = math.lengthsq(diff);\n    }\n}\n\npublic struct FindNearestJob : IJob\n{\n    [ReadOnly] public NativeArray<float> distances;\n    [ReadOnly] public NativeArray<float3> positions;\n    public NativeArray<int> nearestIndex;\n    public NativeArray<float> minDistance;\n\n    public void Execute()\n    {\n        float min = float.MaxValue;\n        int nearest = -1;\n        for (int i = 0; i < distances.Length; i++)\n        {\n            if (distances[i] < min)\n            {\n                min = distances[i];\n                nearest = i;\n            }\n        }\n        nearestIndex[0] = nearest;\n        minDistance[0] = math.sqrt(min);\n    }\n}\n\npublic class JobChainDemo : MonoBehaviour\n{\n    [SerializeField] private Transform target;\n    [SerializeField] private int objectCount = 5000;\n    \n    private NativeArray<float3> positions;\n    private NativeArray<float> distances;\n    private NativeArray<int> nearestIndex;\n    private NativeArray<float> minDistance;\n    private Transform[] transforms;\n\n    void Start()\n    {\n        positions = new NativeArray<float3>(objectCount, Allocator.Persistent);\n        distances = new NativeArray<float>(objectCount, Allocator.Persistent);\n        nearestIndex = new NativeArray<int>(1, Allocator.Persistent);\n        minDistance = new NativeArray<float>(1, Allocator.Persistent);\n        transforms = new Transform[objectCount];\n\n        for (int i = 0; i < objectCount; i++)\n        {\n            var obj = GameObject.CreatePrimitive(PrimitiveType.Cube);\n            Destroy(obj.GetComponent<Collider>());\n            obj.transform.position = UnityEngine.Random.insideUnitSphere * 30f;\n            transforms[i] = obj.transform;\n            positions[i] = obj.transform.position;\n        }\n    }\n\n    void Update()\n    {\n        float3 targetPos = target.position;\n        DistanceJob distanceJob = new DistanceJob\n        {\n            positions = positions,\n            target = targetPos,\n            distances = distances\n        };\n        JobHandle distanceHandle = distanceJob.ScheduleParallel(objectCount, 64, default);\n\n        FindNearestJob findJob = new FindNearestJob\n        {\n            distances = distances,\n            positions = positions,\n            nearestIndex = nearestIndex,\n            minDistance = minDistance\n        };\n        JobHandle findHandle = findJob.Schedule(distanceHandle);\n        findHandle.Complete();\n\n        int nearest = nearestIndex[0];\n        if (nearest >= 0)\n        {\n            transforms[nearest].GetComponent<Renderer>().material.color = Color.red;\n            for (int i = 0; i < objectCount; i++)\n                if (i != nearest)\n                    transforms[i].GetComponent<Renderer>().material.color = Color.white;\n        }\n    }\n\n    void OnDestroy()\n    {\n        positions.Dispose();\n        distances.Dispose();\n        nearestIndex.Dispose();\n        minDistance.Dispose();\n    }\n}",
+          "output": "Two-job dependency chain: parallel distance calculation followed by single-threaded minimum finding, with automatic synchronization via JobHandle passing."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Three-Job Pipeline: Sort then Process"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Collections;\nusing Unity.Jobs;\nusing Unity.Mathematics;\n\npublic struct SortJob : IJob\n{\n    public NativeArray<float> values;\n    public NativeArray<int> indices;\n\n    public void Execute()\n    {\n        // Simple bubble sort for demonstration\n        for (int i = 0; i < values.Length - 1; i++)\n        {\n            for (int j = 0; j < values.Length - i - 1; j++)\n            {\n                if (values[j] > values[j + 1])\n                {\n                    (values[j], values[j + 1]) = (values[j + 1], values[j]);\n                    (indices[j], indices[j + 1]) = (indices[j + 1], indices[j]);\n                }\n            }\n        }\n    }\n}\n\npublic struct ProcessTopNJob : IJobParallelFor\n{\n    [ReadOnly] public NativeArray<float> sortedValues;\n    [ReadOnly] public NativeArray<int> sortedIndices;\n    [WriteOnly] public NativeArray<float3> outputPositions;\n    public int topN;\n\n    public void Execute(int index)\n    {\n        if (index < topN)\n        {\n            // Process top N closest objects\n            outputPositions[index] = new float3(sortedValues[index], sortedIndices[index], 0);\n        }\n    }\n}\n\n// Usage:\n// JobHandle sortHandle = sortJob.Schedule(distanceHandle);\n// JobHandle processHandle = processJob.ScheduleParallel(topN, 32, sortHandle);\n// processHandle.Complete();",
+          "output": "Three-job pipeline: calculate distances, sort results, then process top N — each job depends on the previous via JobHandle."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How do you ensure Job B runs only after Job A completes?",
+          "options": [
+            "Use a lock/mutex between the jobs",
+            "Pass Job A's JobHandle to Job B's Schedule method",
+            "Call Complete() on Job A before scheduling Job B",
+            "Use a Coroutine to wait between them"
+          ],
+          "correctAnswer": "Pass Job A's JobHandle to Job B's Schedule method",
+          "explanation": "The Job System handles synchronization automatically. Pass the dependency JobHandle as the third parameter to Schedule() or ScheduleParallel(). Unity ensures the dependent job waits for its prerequisites. Calling Complete() blocks the main thread, which defeats the purpose of parallelism."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: ECS (Entity Component System) Fundamentals",
+      "badge": "Performance",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "ECS (Entity Component System) Fundamentals"
+        },
+        {
+          "type": "paragraph",
+          "value": "ECS is Unity's data-oriented architecture. Instead of MonoBehaviours on GameObjects, you have Entities (IDs), Components (pure data structs), and Systems (logic that processes component data)."
+        },
+        {
+          "type": "paragraph",
+          "value": "ECS advantages over OOP MonoBehaviour:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Cache-friendly memory layout — components stored in contiguous arrays, not scattered across heap",
+            "No virtual method overhead — systems process data in tight loops",
+            "Automatic multithreading — systems run in parallel where dependencies allow",
+            "Burst compilation — C# jobs compile to SIMD-optimized native code",
+            "Scales to 100,000+ entities — MonoBehaviour overhead becomes prohibitive"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing Unity.Entities;\nusing Unity.Transforms;\nusing Unity.Mathematics;\nusing Unity.Rendering;\n\npublic struct MovementData : IComponentData\n{\n    public float3 velocity;\n    public float speed;\n}\n\npublic struct RotationData : IComponentData\n{\n    public float rotationSpeed;\n}\n\npublic struct LifetimeData : IComponentData\n{\n    public float remainingTime;\n}\n\npublic partial struct MovementSystem : ISystem\n{\n    public void OnCreate(ref SystemState state) { }\n\n    public void OnUpdate(ref SystemState state)\n    {\n        float deltaTime = SystemAPI.Time.DeltaTime;\n        foreach (var (transform, movement) in \n            SystemAPI.Query<RefRW<LocalTransform>, RefRO<MovementData>>())\n        {\n            float3 displacement = movement.ValueRO.velocity * movement.ValueRO.speed * deltaTime;\n            transform.ValueRW.Position += displacement;\n        }\n    }\n\n    public void OnDestroy(ref SystemState state) { }\n}\n\npublic class EntitySpawner : MonoBehaviour\n{\n    [SerializeField] private Mesh mesh;\n    [SerializeField] private Material material;\n    [SerializeField] private int spawnCount = 10000;\n    [SerializeField] private float spawnRadius = 50f;\n\n    void Start()\n    {\n        EntityManager entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;\n        EntityArchetype archetype = entityManager.CreateArchetype(\n            typeof(LocalTransform),\n            typeof(LocalToWorld),\n            typeof(MovementData),\n            typeof(RotationData),\n            typeof(LifetimeData)\n        );\n\n        NativeArray<Entity> entities = entityManager.CreateEntity(archetype, spawnCount, Allocator.Temp);\n\n        for (int i = 0; i < spawnCount; i++)\n        {\n            Entity entity = entities[i];\n            entityManager.SetComponentData(entity, new LocalTransform\n            {\n                Position = UnityEngine.Random.insideUnitSphere * spawnRadius,\n                Rotation = quaternion.identity,\n                Scale = 1f\n            });\n            entityManager.SetComponentData(entity, new MovementData\n            {\n                velocity = UnityEngine.Random.insideUnitSphere,\n                speed = UnityEngine.Random.Range(2f, 8f)\n            });\n            entityManager.SetComponentData(entity, new RotationData\n            {\n                rotationSpeed = UnityEngine.Random.Range(10f, 90f)\n            });\n            entityManager.SetComponentData(entity, new LifetimeData\n            {\n                remainingTime = UnityEngine.Random.Range(5f, 15f)\n            });\n            entityManager.AddComponentData(entity, new RenderMeshArray(\n                new[] { material },\n                new[] { mesh }\n            ));\n        }\n        entities.Dispose();\n    }\n}",
+          "output": "Complete ECS setup: IComponentData structs, ISystem with entity queries, EntityManager spawning 10,000 entities with RenderMeshArray."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Burst-Compiled IJobEntity"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Burst;\nusing Unity.Entities;\nusing Unity.Mathematics;\nusing Unity.Transforms;\n\npublic partial struct RotationSystem : ISystem\n{\n    public void OnUpdate(ref SystemState state)\n    {\n        float deltaTime = SystemAPI.Time.DeltaTime;\n        new RotationJob { deltaTime = deltaTime }.ScheduleParallel();\n    }\n}\n\n[BurstCompile]\npublic partial struct RotationJob : IJobEntity\n{\n    public float deltaTime;\n\n    void Execute(ref LocalTransform transform, in RotationData rotation)\n    {\n        quaternion rot = quaternion.RotateY(rotation.rotationSpeed * deltaTime * math.PI / 180f);\n        transform.Rotation = math.mul(transform.Rotation, rot);\n    }\n}\n\n// ============================================\n// SPAWNING WITH BAKED ENTITIES\n// ============================================\npublic class BakedEntitySpawner : MonoBehaviour\n{\n    [SerializeField] private GameObject entityPrefab;\n    [SerializeField] private int count = 5000;\n\n    void Start()\n    {\n        var entityManager = World.DefaultGameObjectInjectionWorld.EntityManager;\n        \n        for (int i = 0; i < count; i++)\n        {\n            var entity = entityManager.Instantiate(entityPrefab);\n            entityManager.SetComponentData(entity, new LocalTransform\n            {\n                Position = UnityEngine.Random.insideUnitSphere * 30f,\n                Rotation = quaternion.identity,\n                Scale = 1f\n            });\n        }\n    }\n}",
+          "output": "Burst-compiled IJobEntity for parallel rotation processing, plus baked entity instantiation from prefabs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In ECS, what does an Entity represent?",
+          "options": [
+            "A MonoBehaviour with attached components",
+            "A lightweight ID that groups components together",
+            "A GameObject in the scene hierarchy",
+            "A C# class that inherits from Component"
+          ],
+          "correctAnswer": "A lightweight ID that groups components together",
+          "explanation": "In ECS, an Entity is just an integer ID. It has no data and no behavior of its own. Components (structs implementing IComponentData) hold the data, and Systems process entities that have specific combinations of components. This is fundamentally different from MonoBehaviour where the object IS the behavior."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 15: Burst Compiler & Mathematics Library",
+      "badge": "Performance",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Burst Compiler & Mathematics Library"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Burst Compiler transforms IL code into highly optimized native machine code. Combined with Unity.Mathematics, you get SIMD vectorization and cache-friendly operations."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing Unity.Burst;\nusing Unity.Collections;\nusing Unity.Jobs;\nusing Unity.Mathematics;\n\n[BurstCompile(CompileSynchronously = true)]\npublic struct SpatialHashJob : IJobParallelFor\n{\n    [ReadOnly] public NativeArray<float3> positions;\n    [ReadOnly] public float cellSize;\n    [WriteOnly] public NativeArray<int> cellHashes;\n\n    public void Execute(int index)\n    {\n        float3 pos = positions[index];\n        int3 cell = (int3)math.floor(pos / cellSize);\n        const int p1 = 73856093;\n        const int p2 = 19349663;\n        const int p3 = 83492791;\n        cellHashes[index] = (cell.x * p1) ^ (cell.y * p2) ^ (cell.z * p3);\n    }\n}\n\npublic class BurstComparison : MonoBehaviour\n{\n    [SerializeField] private int count = 100000;\n    \n    private NativeArray<float3> positions;\n    private NativeArray<float3> resultsBurst;\n    private Vector3[] managedArray;\n\n    void Start()\n    {\n        positions = new NativeArray<float3>(count, Allocator.Persistent);\n        resultsBurst = new NativeArray<float3>(count, Allocator.Persistent);\n        managedArray = new Vector3[count];\n\n        for (int i = 0; i < count; i++)\n            positions[i] = UnityEngine.Random.insideUnitSphere * 100f;\n    }\n\n    void Update()\n    {\n        var burstJob = new NormalizeJob\n        {\n            input = positions,\n            output = resultsBurst\n        };\n        var handle = burstJob.ScheduleParallel(count, 64, default);\n        handle.Complete();\n\n        for (int i = 0; i < count; i++)\n            managedArray[i] = positions[i].normalized;\n    }\n\n    [BurstCompile]\n    struct NormalizeJob : IJobParallelFor\n    {\n        [ReadOnly] public NativeArray<float3> input;\n        [WriteOnly] public NativeArray<float3> output;\n\n        public void Execute(int index)\n        {\n            output[index] = math.normalize(input[index]);\n        }\n    }\n\n    void OnDestroy()\n    {\n        positions.Dispose();\n        resultsBurst.Dispose();\n    }\n}",
+          "output": "BurstCompile attribute, Unity.Mathematics float3 types, spatial hashing with prime-based hashing, and SIMD-optimized vector normalization."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Unity.Mathematics Cheat Sheet"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Key Unity.Mathematics replacements:\n// Vector3  -> float3 (SIMD-friendly struct)\n// Vector2  -> float2\n// Quaternion -> quaternion\n// Mathf    -> math (static class with Burst-optimized methods)\n\n// Performance tips:\n// math.lengthsq() is faster than math.length() when comparing distances\n// math.dot(), math.cross(), math.normalize() all auto-vectorize with Burst\n// math.select() is a branchless conditional — faster than if/else in tight loops\n// math.clamp(), math.lerp(), math.saturate() are all SIMD-accelerated\n\n[BurstCompile]\nstruct PhysicsJob : IJobParallelFor\n{\n    [ReadOnly] public NativeArray<float3> positions;\n    [ReadOnly] public NativeArray<float3> velocities;\n    [ReadOnly] public float deltaTime;\n    [ReadOnly] public float3 gravity;\n    public NativeArray<float3> newPositions;\n    public NativeArray<float3> newVelocities;\n\n    public void Execute(int index)\n    {\n        float3 pos = positions[index];\n        float3 vel = velocities[index];\n        \n        vel += gravity * deltaTime;\n        pos += vel * deltaTime;\n        \n        // Ground collision — branchless\n        bool onGround = pos.y < 0f;\n        pos.y = math.select(pos.y, 0f, onGround);\n        vel.y = math.select(vel.y, 0f, onGround);\n        \n        newPositions[index] = pos;\n        newVelocities[index] = vel;\n    }\n}",
+          "output": "Unity.Mathematics replacements and Burst-optimized physics simulation with branchless conditional using math.select()."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "You have 50,000 projectiles that need their positions updated every frame with collision checks. Which approach gives the best performance?",
+          "options": [
+            "MonoBehaviour Update() on each projectile with GetComponent calls",
+            "Single MonoBehaviour with a List<Projectile> and foreach loop in Update()",
+            "IJobParallelFor with NativeArrays, BurstCompile, and Unity.Mathematics",
+            "Coroutine on each projectile with yield return null"
+          ],
+          "correctAnswer": "IJobParallelFor with NativeArrays, BurstCompile, and Unity.Mathematics",
+          "explanation": "MonoBehaviour Update() has massive overhead per object (virtual calls, cache misses). A List<Projectile> in a single MonoBehaviour is better but still single-threaded. Coroutines have even more overhead than Update(). IJobParallelFor distributes work across CPU cores, NativeArrays provide cache-friendly contiguous memory, BurstCompile generates SIMD-optimized machine code, and Unity.Mathematics replaces heavy Vector3 operations with lightweight float3 structs. This combination can process 50,000 entities 50-100x faster than MonoBehaviour approaches."
+        }
+      ]
     }
   ]
 }
