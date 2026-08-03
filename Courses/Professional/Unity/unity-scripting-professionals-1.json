@@ -1,0 +1,301 @@
+{
+  "id": "unity-csharp-scripting-engine-architecture-professional-part1",
+  "course": {
+    "title": "Unity C# Scripting & Engine Architecture: Professional Patterns, Systems & Engine Programming",
+    "description": "Parts 1-5 of 20: Advanced DI with Zenject, Command Pattern with undo/redo, Reactive Programming with UniRx, ECS deep dive with baking, and DOTS Physics with deterministic simulation.",
+    "category": "Game Development & Engine Architecture",
+    "level": "Professional",
+    "tags": [
+      "Unity",
+      "C#",
+      "Zenject",
+      "Reactive",
+      "ECS",
+      "DOTS",
+      "Physics",
+      "Deterministic"
+    ],
+    "parts_count": 20,
+    "parts_in_this_file": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "parts_remaining": [
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: Advanced Dependency Injection & Zenject/Extenject",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Beyond Manual DI: Zenject (Extenject)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Manual DI containers work for small projects, but production games need automatic binding, scene injection, sub-containers, and lifecycle management. Zenject (now Extenject, the community fork) is the industry-standard DI framework for Unity."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Automatic binding via attributes: [Inject], [InjectOptional], [Inject(Id = \"Player\")]",
+            "Scene installers wire dependencies without code changes",
+            "Sub-containers isolate systems (e.g., each level has its own container)",
+            "Factory bindings with runtime parameters",
+            "Memory pools integrated with DI for zero-allocation spawning"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Zenject;\nusing UnityEngine;\n\npublic class GameInstaller : MonoInstaller\n{\n    [SerializeField] private PlayerController playerPrefab;\n    [SerializeField] private EnemyFactory enemyFactory;\n    [SerializeField] private AudioManager audioManager;\n\n    public override void InstallBindings()\n    {\n        Container.Bind<IGameStateService>()\n            .To<GameStateManager>()\n            .AsSingle();\n\n        Container.Bind<IAudioService>()\n            .To<AudioManager>()\n            .FromInstance(audioManager)\n            .AsSingle();\n\n        Container.Bind<IAnalyticsService>()\n            .To<AnalyticsManager>()\n            .AsSingle()\n            .NonLazy();\n\n        Container.BindFactory<Vector3, EnemyType, EnemyController, EnemyController.Factory>()\n            .FromPoolableMemoryPool<Vector3, EnemyType, EnemyController, EnemyPool>(\n                poolBinder => poolBinder\n                    .WithInitialSize(50)\n                    .FromComponentInNewPrefab(enemyFactory.enemyPrefab)\n                    .UnderTransformGroup(\"Enemies\"));\n\n        Container.Bind<IPlayerController>()\n            .To<PlayerController>()\n            .FromComponentInNewPrefab(playerPrefab)\n            .AsSingle()\n            .WithGameObjectName(\"Player\");\n    }\n}\n\npublic class EnemyController : MonoBehaviour, IPoolable<Vector3, EnemyType, IMemoryPool>\n{\n    [Inject] private IGameStateService gameState;\n    [Inject] private IAudioService audio;\n    [InjectOptional] private IAnalyticsService analytics;\n\n    private EnemyType enemyType;\n    private IMemoryPool pool;\n    private AudioClip spawnSound;\n\n    [Inject]\n    public void Construct(EnemyData data, [Inject(Id = \"SpawnSFX\")] AudioClip spawnSound)\n    {\n        this.spawnSound = spawnSound;\n    }\n\n    public void OnSpawned(Vector3 position, EnemyType type, IMemoryPool pool)\n    {\n        this.enemyType = type;\n        this.pool = pool;\n        transform.position = position;\n        gameState.RegisterEnemy(this);\n        audio.PlaySFX(spawnSound);\n        analytics?.TrackEnemySpawned(type);\n    }\n\n    public void OnDespawned()\n    {\n        gameState.UnregisterEnemy(this);\n        pool.Despawn(this);\n    }\n\n    public void Die()\n    {\n        pool.Despawn(this);\n    }\n\n    public class Factory : PlaceholderFactory<Vector3, EnemyType, EnemyController> { }\n}\n\npublic class EnemyPool : MonoPoolableMemoryPool<Vector3, EnemyType, IMemoryPool, EnemyController> { }\n\npublic enum EnemyType { Grunt, Elite, Boss }\npublic interface IPlayerController { }\npublic interface IAnalyticsService { void TrackEnemySpawned(EnemyType type); }",
+          "output": "Zenject installer with singleton bindings, factory with memory pool, method injection with ID-qualified parameters, and IPoolable lifecycle."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Sub-Containers & Scene Contexts"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Zenject;\nusing UnityEngine;\n\npublic class ProjectInstaller : MonoInstaller\n{\n    public override void InstallBindings()\n    {\n        Container.Bind<ISaveSystem>()\n            .To<SaveSystem>()\n            .AsSingle()\n            .NonLazy();\n\n        Container.Bind<ISettingsService>()\n            .To<SettingsService>()\n            .AsSingle();\n    }\n}\n\npublic class LevelInstaller : MonoInstaller\n{\n    [SerializeField] private LevelConfig levelConfig;\n\n    public override void InstallBindings()\n    {\n        Container.Bind<LevelConfig>()\n            .FromInstance(levelConfig)\n            .AsSingle();\n\n        Container.Bind<WaveManager>()\n            .FromSubContainerResolve()\n            .ByMethod(InstallWaveSystem)\n            .AsSingle();\n    }\n\n    void InstallWaveSystem(DiContainer subContainer)\n    {\n        subContainer.Bind<WaveManager>().AsSingle();\n        subContainer.Bind<IWaveSpawner>().To<WaveSpawner>().AsSingle();\n        subContainer.Bind<int>().FromInstance(levelConfig.maxWaves).WhenInjectedInto<WaveManager>();\n    }\n}\n\npublic interface IWeaponService { void Fire(); }\n\npublic class WeaponService : IWeaponService\n{\n    public void Fire() { }\n}\n\npublic class LoggingWeaponService : IWeaponService\n{\n    [Inject] private IWeaponService wrapped;\n    [Inject] private IAnalyticsService analytics;\n\n    public void Fire()\n    {\n        analytics.TrackWeaponFired();\n        wrapped.Fire();\n    }\n}",
+          "output": "Project-level vs scene-level installers, sub-containers for isolated systems, and decorator pattern for cross-cutting concerns."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main advantage of using Zenject/Extenject over a manual DI container?",
+          "options": [
+            "Zenject runs faster at runtime",
+            "Zenject provides automatic binding, memory pools, sub-containers, and scene injection out of the box",
+            "Zenject requires less code to set up",
+            "Zenject is officially supported by Unity"
+          ],
+          "correctAnswer": "Zenject provides automatic binding, memory pools, sub-containers, and scene injection out of the box",
+          "explanation": "While a manual DI container teaches the fundamentals, Zenject adds production features: automatic [Inject] resolution, integrated memory pools (IPoolable), sub-containers for isolation, decorator bindings, and scene context installers. These are essential for large teams and complex projects but would take months to build manually."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Command Pattern, Undo/Redo & Action History",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Command Pattern for Reversible Operations"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Command Pattern encapsulates operations as objects, enabling undo/redo, action queuing, and macro recording. Essential for level editors, turn-based games, and any system requiring reversible state changes."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System;\nusing System.Collections.Generic;\nusing UnityEngine;\n\npublic interface ICommand\n{\n    void Execute();\n    void Undo();\n    string Description { get; }\n    float Timestamp { get; }\n}\n\npublic class MoveEntityCommand : ICommand\n{\n    private readonly Transform target;\n    private readonly Vector3 fromPosition;\n    private readonly Vector3 toPosition;\n    private readonly float timestamp;\n\n    public string Description => $\"Move {target.name} to {toPosition}\";\n    public float Timestamp => timestamp;\n\n    public MoveEntityCommand(Transform target, Vector3 toPosition)\n    {\n        this.target = target;\n        this.fromPosition = target.position;\n        this.toPosition = toPosition;\n        this.timestamp = Time.time;\n    }\n\n    public void Execute() => target.position = toPosition;\n    public void Undo() => target.position = fromPosition;\n}\n\npublic class DamageEntityCommand : ICommand\n{\n    private readonly IDamageable target;\n    private readonly int damageAmount;\n    private readonly float timestamp;\n    private int previousHealth;\n\n    public string Description => $\"Deal {damageAmount} damage to {target}\";\n    public float Timestamp => timestamp;\n\n    public DamageEntityCommand(IDamageable target, int damage)\n    {\n        this.target = target;\n        this.damageAmount = damage;\n        this.timestamp = Time.time;\n    }\n\n    public void Execute()\n    {\n        previousHealth = target.CurrentHealth;\n        target.TakeDamage(damageAmount);\n    }\n\n    public void Undo()\n    {\n        target.SetHealth(previousHealth);\n    }\n}\n\npublic class SpawnEntityCommand : ICommand\n{\n    private readonly GameObject prefab;\n    private readonly Vector3 position;\n    private readonly Quaternion rotation;\n    private readonly Transform parent;\n    private readonly float timestamp;\n    private GameObject spawnedInstance;\n\n    public string Description => $\"Spawn {prefab.name} at {position}\";\n    public float Timestamp => timestamp;\n    public GameObject SpawnedInstance => spawnedInstance;\n\n    public SpawnEntityCommand(GameObject prefab, Vector3 position, Quaternion rotation, Transform parent)\n    {\n        this.prefab = prefab;\n        this.position = position;\n        this.rotation = rotation;\n        this.parent = parent;\n        this.timestamp = Time.time;\n    }\n\n    public void Execute()\n    {\n        spawnedInstance = UnityEngine.Object.Instantiate(prefab, position, rotation, parent);\n    }\n\n    public void Undo()\n    {\n        if (spawnedInstance != null)\n            UnityEngine.Object.Destroy(spawnedInstance);\n    }\n}\n\npublic interface IDamageable\n{\n    int CurrentHealth { get; }\n    void TakeDamage(int amount);\n    void SetHealth(int health);\n}",
+          "output": "ICommand interface with Execute/Undo and three concrete commands: MoveEntity, DamageEntity, and SpawnEntity with full state capture."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Command History Manager"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System;\nusing System.Collections.Generic;\nusing UnityEngine;\n\npublic class CommandHistory : MonoBehaviour\n{\n    [SerializeField] private int maxHistorySize = 1000;\n    [SerializeField] private bool logCommands = true;\n\n    private readonly LinkedList<ICommand> history = new();\n    private LinkedListNode<ICommand> currentNode;\n\n    public event Action<ICommand> OnCommandExecuted;\n    public event Action<ICommand> OnCommandUndone;\n    public event Action<ICommand> OnCommandRedone;\n\n    public bool CanUndo => currentNode != null;\n    public bool CanRedo => currentNode?.Next != null;\n    public int HistoryCount => history.Count;\n\n    public void Execute(ICommand command)\n    {\n        if (currentNode != null && currentNode.Next != null)\n        {\n            var nodeToRemove = currentNode.Next;\n            while (nodeToRemove != null)\n            {\n                var next = nodeToRemove.Next;\n                history.Remove(nodeToRemove);\n                nodeToRemove = next;\n            }\n        }\n\n        command.Execute();\n        history.AddLast(command);\n        currentNode = history.Last;\n\n        while (history.Count > maxHistorySize)\n        {\n            history.RemoveFirst();\n        }\n\n        if (logCommands)\n            Debug.Log($\"[CMD] Executed: {command.Description}\");\n\n        OnCommandExecuted?.Invoke(command);\n    }\n\n    public void Undo()\n    {\n        if (!CanUndo) return;\n\n        currentNode.Value.Undo();\n        if (logCommands)\n            Debug.Log($\"[CMD] Undone: {currentNode.Value.Description}\");\n\n        var undoneCommand = currentNode.Value;\n        currentNode = currentNode.Previous;\n        OnCommandUndone?.Invoke(undoneCommand);\n    }\n\n    public void Redo()\n    {\n        if (!CanRedo) return;\n\n        currentNode = currentNode.Next ?? history.First;\n        currentNode.Value.Execute();\n        if (logCommands)\n            Debug.Log($\"[CMD] Redone: {currentNode.Value.Description}\");\n\n        OnCommandRedone?.Invoke(currentNode.Value);\n    }\n\n    public void Clear()\n    {\n        history.Clear();\n        currentNode = null;\n    }\n\n    public IEnumerable<ICommand> GetHistorySnapshot()\n    {\n        return new List<ICommand>(history);\n    }\n}\n\npublic class MacroCommand : ICommand\n{\n    private readonly List<ICommand> commands = new();\n    private readonly string name;\n    private readonly float timestamp;\n\n    public string Description => $\"Macro: {name} ({commands.Count} commands)\";\n    public float Timestamp => timestamp;\n\n    public MacroCommand(string name)\n    {\n        this.name = name;\n        this.timestamp = Time.time;\n    }\n\n    public void Add(ICommand command) => commands.Add(command);\n\n    public void Execute()\n    {\n        foreach (var cmd in commands)\n            cmd.Execute();\n    }\n\n    public void Undo()\n    {\n        for (int i = commands.Count - 1; i >= 0; i--)\n            commands[i].Undo();\n    }\n}\n\npublic class LevelEditorController : MonoBehaviour\n{\n    [SerializeField] private CommandHistory history;\n    [SerializeField] private GameObject selectedPrefab;\n\n    void Update()\n    {\n        if (Input.GetMouseButtonDown(0) && selectedPrefab != null)\n        {\n            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);\n            if (Physics.Raycast(ray, out RaycastHit hit))\n            {\n                var cmd = new SpawnEntityCommand(selectedPrefab, hit.point, Quaternion.identity, null);\n                history.Execute(cmd);\n            }\n        }\n\n        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Z))\n            history.Undo();\n\n        if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Y))\n            history.Redo();\n    }\n}",
+          "output": "CommandHistory with branching undo/redo, max size trimming, events, and MacroCommand for composite operations. Level editor controller demonstrates spawn + undo/redo hotkeys."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is the Command Pattern superior to directly modifying state for operations that need undo support?",
+          "options": [
+            "Commands run faster than direct state changes",
+            "Commands encapsulate both the operation and its reversal logic, making undo/redo trivial",
+            "Commands use less memory",
+            "Commands are required by Unity's API"
+          ],
+          "correctAnswer": "Commands encapsulate both the operation and its reversal logic, making undo/redo trivial",
+          "explanation": "The Command Pattern wraps an operation (Execute) and its inverse (Undo) in a single object. This means the history manager does not need to know what each command does — it just calls Execute() and Undo(). This enables features like undo/redo, action replay, macro recording, and branching history that would be impossible with direct state mutation."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Observer Pattern, Reactive Programming & UniRx",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Reactive Programming with UniRx"
+        },
+        {
+          "type": "paragraph",
+          "value": "UniRx brings Reactive Extensions (Rx) to Unity, enabling declarative, composable event streams. Instead of polling or callback hell, you chain operators that react to data changes automatically."
+        },
+        {
+          "type": "list",
+          "items": [
+            "IObservable<T> represents a stream of values over time",
+            "IObserver<T> subscribes to and reacts to those values",
+            "Operators like Where, Select, Throttle, Buffer, Merge compose streams",
+            "ReactiveProperty<T> is an observable variable that notifies on change",
+            "AsyncSubject, BehaviorSubject, ReplaySubject control stream behavior"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UniRx;\nusing UnityEngine;\nusing System;\n\npublic class ReactiveHealthSystem : MonoBehaviour\n{\n    public ReactiveProperty<int> Health { get; private set; } = new ReactiveProperty<int>(100);\n    public ReactiveProperty<int> MaxHealth { get; private set; } = new ReactiveProperty<int>(100);\n    \n    public IReadOnlyReactiveProperty<float> HealthPercent =>\n        Health.CombineLatest(MaxHealth, (h, max) => (float)h / max)\n              .ToReactiveProperty();\n\n    private readonly Subject<int> onDamaged = new Subject<int>();\n    public IObservable<int> OnDamaged => onDamaged;\n\n    private readonly AsyncSubject<Unit> onDeath = new AsyncSubject<Unit>();\n    public IObservable<Unit> OnDeath => onDeath;\n\n    void Start()\n    {\n        HealthPercent\n            .Throttle(TimeSpan.FromMilliseconds(16))\n            .Subscribe(percent =>\n            {\n                UIManager.Instance.UpdateHealthBar(percent);\n            })\n            .AddTo(this);\n\n        Health\n            .Where(h => h > 0 && h < 20)\n            .ThrottleFirst(TimeSpan.FromSeconds(2))\n            .Subscribe(_ =>\n            {\n                UIManager.Instance.ShowWarning(\"Low Health!\");\n            })\n            .AddTo(this);\n\n        Health\n            .Where(h => h <= 0)\n            .Take(1)\n            .Subscribe(_ =>\n            {\n                onDeath.OnNext(Unit.Default);\n                onDeath.OnCompleted();\n                Die();\n            })\n            .AddTo(this);\n\n        Observable.EveryUpdate()\n            .Where(_ => Input.GetKeyDown(KeyCode.Space))\n            .WithLatestFrom(Health, (_, h) => h)\n            .Where(h => h > 0)\n            .Subscribe(_ => Jump())\n            .AddTo(this);\n    }\n\n    public void TakeDamage(int damage)\n    {\n        Health.Value = Mathf.Max(0, Health.Value - damage);\n        onDamaged.OnNext(damage);\n    }\n\n    public void Heal(int amount)\n    {\n        Health.Value = Mathf.Min(MaxHealth.Value, Health.Value + amount);\n    }\n\n    void Die() { }\n    void Jump() { }\n}\n\npublic class UIManager : MonoBehaviour\n{\n    public static UIManager Instance { get; private set; }\n    void Awake() => Instance = this;\n    public void UpdateHealthBar(float percent) { }\n    public void ShowWarning(string message) { }\n}",
+          "output": "ReactiveHealthSystem with ReactiveProperty, computed HealthPercent, throttled UI updates, death detection with Take(1), and combined input/health streams."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Advanced Stream Composition"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UniRx;\nusing UnityEngine;\nusing System;\nusing System.Collections.Generic;\n\npublic class ReactiveGameState : MonoBehaviour\n{\n    public ReactiveProperty<int> Score { get; } = new ReactiveProperty<int>(0);\n    \n    private readonly Subject<Unit> onKill = new Subject<Unit>();\n    public IObservable<int> ComboCount => onKill\n        .Buffer(onKill.Throttle(TimeSpan.FromSeconds(2)))\n        .Select(kills => kills.Count)\n        .Where(count => count > 1);\n\n    private readonly Dictionary<string, ReactiveProperty<bool>> achievements = new();\n\n    void Start()\n    {\n        Score\n            .Throttle(TimeSpan.FromSeconds(1))\n            .Subscribe(score => SaveSystem.SaveScore(score))\n            .AddTo(this);\n\n        ComboCount\n            .Subscribe(combo =>\n            {\n                UIManager.Instance.ShowComboText($\"{combo}x COMBO!\");\n            })\n            .AddTo(this);\n\n        Observable.Merge(\n            Score.Where(s => s >= 1000).Select(_ => \"Score1000\"),\n            onKill.Buffer(TimeSpan.FromSeconds(5)).Where(k => k.Count >= 10).Select(_ => \"KillingSpree\")\n        )\n        .Distinct()\n        .Subscribe(achievementId => UnlockAchievement(achievementId))\n        .AddTo(this);\n\n        Observable.EveryUpdate()\n            .Buffer(TimeSpan.FromSeconds(1))\n            .Select(frames => frames.Count)\n            .Subscribe(fps => Debug.Log($\"FPS: {fps}\"))\n            .AddTo(this);\n    }\n\n    public void AddKill() => onKill.OnNext(Unit.Default);\n    public void AddScore(int points) => Score.Value += points;\n\n    void UnlockAchievement(string id)\n    {\n        if (!achievements.ContainsKey(id))\n            achievements[id] = new ReactiveProperty<bool>(false);\n        achievements[id].Value = true;\n        Debug.Log($\"Achievement unlocked: {id}\");\n    }\n}\n\npublic static class InputObservables\n{\n    public static IObservable<Vector2> MovementStream()\n    {\n        return Observable.EveryUpdate()\n            .Select(_ => new Vector2(Input.GetAxisRaw(\"Horizontal\"), Input.GetAxisRaw(\"Vertical\")))\n            .DistinctUntilChanged();\n    }\n\n    public static IObservable<bool> ButtonStream(string buttonName)\n    {\n        return Observable.EveryUpdate()\n            .Select(_ => Input.GetButton(buttonName))\n            .DistinctUntilChanged();\n    }\n\n    public static IObservable<Unit> ButtonDownStream(string buttonName)\n    {\n        return Observable.EveryUpdate()\n            .Where(_ => Input.GetButtonDown(buttonName))\n            .Select(_ => Unit.Default);\n    }\n}",
+          "output": "Advanced stream composition: debounced auto-save, combo counting with Buffer, merged achievement conditions, FPS counter, and custom input observables."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main benefit of using ReactiveProperty over a standard C# property with an event?",
+          "options": [
+            "ReactiveProperty uses less memory",
+            "ReactiveProperty composes with LINQ-like operators (Where, Select, Throttle) and auto-manages subscriptions",
+            "ReactiveProperty is faster for single assignments",
+            "ReactiveProperty is built into Unity"
+          ],
+          "correctAnswer": "ReactiveProperty composes with LINQ-like operators (Where, Select, Throttle) and auto-manages subscriptions",
+          "explanation": "A standard property with an event requires manual subscription management and imperative logic. ReactiveProperty is an IObservable that can be chained with operators like Where (filter), Throttle (rate limit), Buffer (window), and CombineLatest (merge streams). This enables declarative, composable reactive logic that is far more maintainable than callback spaghetti."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: ECS Deep Dive: Systems, Queries, Baking",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Advanced ECS: System Scheduling & Queries"
+        },
+        {
+          "type": "paragraph",
+          "value": "Production ECS requires understanding system scheduling, entity queries with change filtering, chunk iteration, and baking workflows for converting GameObjects to entities at build time."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Burst;\nusing Unity.Collections;\nusing Unity.Entities;\nusing Unity.Mathematics;\nusing Unity.Transforms;\nusing Unity.Rendering;\n\npublic struct Velocity : IComponentData\n{\n    public float3 Value;\n}\n\npublic struct Health : IComponentData, IEnableableComponent\n{\n    public float Current;\n    public float Max;\n}\n\npublic struct Team : ISharedComponentData\n{\n    public int Id;\n}\n\n[BurstCompile]\npublic partial struct MovementSystem : ISystem\n{\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        float deltaTime = SystemAPI.Time.DeltaTime;\n        \n        foreach (var (transform, velocity) in\n            SystemAPI.Query<RefRW<LocalTransform>, RefRO<Velocity>>()\n                .WithChangeFilter<LocalTransform>())\n        {\n            transform.ValueRW.Position += velocity.ValueRO.Value * deltaTime;\n        }\n    }\n}\n\n[BurstCompile]\npublic partial struct DamageSystem : ISystem\n{\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        var ecb = new EntityCommandBuffer(Allocator.Temp);\n        \n        foreach (var (health, entity) in\n            SystemAPI.Query<RefRW<Health>>().WithEntityAccess())\n        {\n            if (health.ValueRO.Current <= 0)\n            {\n                ecb.SetComponentEnabled<Health>(entity, false);\n                ecb.AddComponent<IsDeadTag>(entity);\n            }\n        }\n        \n        ecb.Playback(state.EntityManager);\n        ecb.Dispose();\n    }\n}\n\npublic struct IsDeadTag : IComponentData { }\n\n[BurstCompile]\npublic partial struct ChunkIterationSystem : ISystem\n{\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        var query = SystemAPI.QueryBuilder()\n            .WithAll<LocalTransform, Velocity, Health>()\n            .WithNone<IsDeadTag>()\n            .Build();\n\n        var chunks = query.ToArchetypeChunkArray(Allocator.Temp);\n        \n        var transformType = SystemAPI.GetComponentTypeHandle<LocalTransform>(false);\n        var velocityType = SystemAPI.GetComponentTypeHandle<Velocity>(true);\n        var healthType = SystemAPI.GetComponentTypeHandle<Health>(false);\n        \n        float deltaTime = SystemAPI.Time.DeltaTime;\n        \n        foreach (var chunk in chunks)\n        {\n            var transforms = chunk.GetNativeArray(ref transformType);\n            var velocities = chunk.GetNativeArray(ref velocityType);\n            var healths = chunk.GetNativeArray(ref healthType);\n            \n            for (int i = 0; i < chunk.Count; i++)\n            {\n                var transform = transforms[i];\n                var velocity = velocities[i];\n                var health = healths[i];\n                \n                transform.Position += velocity.Value * deltaTime;\n                health.Current -= deltaTime * 0.1f;\n                \n                transforms[i] = transform;\n                healths[i] = health;\n            }\n        }\n        \n        chunks.Dispose();\n    }\n}",
+          "output": "Advanced ECS patterns: change filtering, EntityCommandBuffer for deferred operations, and direct chunk iteration for maximum performance."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Baking: Converting GameObjects to Entities"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Entities;\nusing UnityEngine;\nusing Unity.Transforms;\nusing Unity.Mathematics;\n\npublic class EnemyAuthoring : MonoBehaviour\n{\n    public float moveSpeed = 5f;\n    public float health = 100f;\n    public int teamId = 0;\n    public GameObject weaponPrefab;\n}\n\npublic class EnemyBaker : Baker<EnemyAuthoring>\n{\n    public override void Bake(EnemyAuthoring authoring)\n    {\n        var entity = GetEntity(TransformUsageFlags.Dynamic);\n        \n        AddComponent(entity, new Velocity\n        {\n            Value = new float3(0, 0, authoring.moveSpeed)\n        });\n        \n        AddComponent(entity, new Health\n        {\n            Current = authoring.health,\n            Max = authoring.health\n        });\n        \n        AddSharedComponent(entity, new Team\n        {\n            Id = authoring.teamId\n        });\n        \n        AddBuffer<InventoryItem>(entity);\n        \n        if (authoring.weaponPrefab != null)\n        {\n            var weaponEntity = GetEntity(authoring.weaponPrefab, TransformUsageFlags.Dynamic);\n            AddComponent(entity, new WeaponReference\n            {\n                WeaponEntity = weaponEntity\n            });\n        }\n        \n        AddComponent<EnemyTag>(entity);\n    }\n}\n\npublic struct WeaponReference : IComponentData\n{\n    public Entity WeaponEntity;\n}\n\npublic struct EnemyTag : IComponentData { }\n\npublic struct InventoryItem : IBufferElementData\n{\n    public int ItemId;\n    public int Quantity;\n}\n\npublic partial struct SpawnBakedEnemySystem : ISystem\n{\n    public void OnCreate(ref SystemState state)\n    {\n        state.RequireForUpdate<EnemySpawnRequest>();\n    }\n\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        var ecb = new EntityCommandBuffer(Allocator.Temp);\n        var enemyPrefab = SystemAPI.GetSingletonEntity<EnemyTag>();\n        \n        foreach (var (request, entity) in\n            SystemAPI.Query<RefRO<EnemySpawnRequest>>().WithEntityAccess())\n        {\n            var newEnemy = ecb.Instantiate(enemyPrefab);\n            ecb.SetComponent(newEnemy, new LocalTransform\n            {\n                Position = request.ValueRO.Position,\n                Rotation = quaternion.identity,\n                Scale = 1f\n            });\n            ecb.DestroyEntity(entity);\n        }\n        \n        ecb.Playback(state.EntityManager);\n        ecb.Dispose();\n    }\n}\n\npublic struct EnemySpawnRequest : IComponentData\n{\n    public float3 Position;\n}",
+          "output": "Baker converting MonoBehaviour to ECS components at build time, including shared components, dynamic buffers, entity references, and runtime instantiation of baked prefabs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why use an EntityCommandBuffer instead of directly modifying entities during system iteration?",
+          "options": [
+            "EntityCommandBuffer is faster than direct modification",
+            "Entities cannot be created/destroyed during iteration; command buffers defer changes until after iteration completes",
+            "EntityCommandBuffer is required by the Burst compiler",
+            "EntityCommandBuffer automatically handles memory allocation"
+          ],
+          "correctAnswer": "Entities cannot be created/destroyed during iteration; command buffers defer changes until after iteration completes",
+          "explanation": "During system iteration, the archetype chunks are locked for reading. Creating or destroying entities would invalidate chunk pointers and corrupt memory. EntityCommandBuffer records all structural changes and applies them atomically after the system completes. This is essential for safe multithreaded ECS code."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: DOTS Physics & Deterministic Simulation",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Unity Physics (DOTS) vs PhysX"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity Physics is a DOTS-based physics engine that runs on the Job System with Burst compilation. Unlike PhysX (which is object-oriented and runs on the main thread), Unity Physics is data-oriented, multithreaded, and deterministic — critical for networked games and replay systems."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Deterministic: same inputs always produce same outputs across platforms",
+            "Multithreaded: broadphase and solver run on worker threads",
+            "Stateless: physics state is pure data, easy to serialize for rollback netcode",
+            "Custom colliders: Compound, Mesh, Convex, Capsule, Sphere, Box, Cylinder",
+            "No hidden state: everything is explicit IComponentData"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Burst;\nusing Unity.Collections;\nusing Unity.Entities;\nusing Unity.Mathematics;\nusing Unity.Physics;\nusing Unity.Physics.Systems;\nusing Unity.Transforms;\n\npublic struct PhysicsBody : IComponentData\n{\n    public float Mass;\n    public float3 Velocity;\n    public float3 AngularVelocity;\n    public bool IsKinematic;\n}\n\n[UpdateInGroup(typeof(PhysicsSimulationGroup))]\n[UpdateBefore(typeof(PhysicsSystemGroup))]\n[BurstCompile]\npublic partial struct CustomPhysicsSystem : ISystem\n{\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        float deltaTime = SystemAPI.Time.DeltaTime;\n        float3 gravity = new float3(0, -9.81f, 0);\n        \n        foreach (var (body, velocity, mass) in\n            SystemAPI.Query<RefRW<PhysicsBody>, RefRW<PhysicsVelocity>, RefRO<PhysicsMass>>())\n        {\n            if (body.ValueRO.IsKinematic) continue;\n            \n            float3 currentVel = velocity.ValueRO.Linear;\n            currentVel += gravity * deltaTime;\n            currentVel *= math.max(0f, 1f - 0.01f * deltaTime);\n            \n            velocity.ValueRW.Linear = currentVel;\n            body.ValueRW.Velocity = currentVel;\n        }\n    }\n}\n\n[BurstCompile]\npublic partial struct RaycastSystem : ISystem\n{\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();\n        var collisionWorld = physicsWorld.CollisionWorld;\n        \n        foreach (var (transform, raycaster) in\n            SystemAPI.Query<RefRO<LocalTransform>, RefRO<RaycasterData>>())\n        {\n            RaycastInput input = new RaycastInput\n            {\n                Start = transform.ValueRO.Position,\n                End = transform.ValueRO.Position + raycaster.ValueRO.Direction * raycaster.ValueRO.MaxDistance,\n                Filter = CollisionFilter.Default\n            };\n            \n            if (collisionWorld.CastRay(input, out RaycastHit hit))\n            {\n                Debug.Log($\"Hit entity: {hit.Entity} at distance {hit.Fraction}\");\n            }\n        }\n    }\n}\n\npublic struct RaycasterData : IComponentData\n{\n    public float3 Direction;\n    public float MaxDistance;\n}\n\n[UpdateInGroup(typeof(PhysicsSystemGroup))]\n[UpdateAfter(typeof(PhysicsSimulationGroup))]\npublic partial struct CollisionEventSystem : ISystem\n{\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        var physicsWorld = SystemAPI.GetSingleton<PhysicsWorldSingleton>();\n        var collisionEvents = physicsWorld.Simulation.CollisionEvents;\n        \n        foreach (var collisionEvent in collisionEvents)\n        {\n            Entity entityA = collisionEvent.EntityA;\n            Entity entityB = collisionEvent.EntityB;\n            \n            if (SystemAPI.HasComponent<DamageOnCollision>(entityA))\n            {\n                ApplyDamage(entityB, SystemAPI.GetComponent<DamageOnCollision>(entityA).Damage);\n            }\n            if (SystemAPI.HasComponent<DamageOnCollision>(entityB))\n            {\n                ApplyDamage(entityA, SystemAPI.GetComponent<DamageOnCollision>(entityB).Damage);\n            }\n        }\n    }\n\n    void ApplyDamage(Entity target, float damage)\n    {\n        if (SystemAPI.HasComponent<Health>(target))\n        {\n            var health = SystemAPI.GetComponentRW<Health>(target);\n            health.ValueRW.Current -= damage;\n        }\n    }\n}\n\npublic struct DamageOnCollision : IComponentData\n{\n    public float Damage;\n}",
+          "output": "Unity Physics system with custom gravity/drag, raycasting against the collision world, and collision event processing for damage application."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Deterministic Simulation & Replay"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using Unity.Entities;\nusing Unity.Collections;\nusing Unity.Mathematics;\nusing Unity.Physics;\nusing Unity.Transforms;\n\npublic struct SimulationSnapshot : IDisposable\n{\n    public NativeArray<float3> Positions;\n    public NativeArray<quaternion> Rotations;\n    public NativeArray<float3> Velocities;\n    public NativeArray<float3> AngularVelocities;\n    public float Time;\n    public uint Tick;\n\n    public SimulationSnapshot(int capacity, Allocator allocator)\n    {\n        Positions = new NativeArray<float3>(capacity, allocator);\n        Rotations = new NativeArray<quaternion>(capacity, allocator);\n        Velocities = new NativeArray<float3>(capacity, allocator);\n        AngularVelocities = new NativeArray<float3>(capacity, allocator);\n        Time = 0f;\n        Tick = 0;\n    }\n\n    public void Dispose()\n    {\n        if (Positions.IsCreated) Positions.Dispose();\n        if (Rotations.IsCreated) Rotations.Dispose();\n        if (Velocities.IsCreated) Velocities.Dispose();\n        if (AngularVelocities.IsCreated) AngularVelocities.Dispose();\n    }\n}\n\npublic partial struct PhysicsStateSerializer : ISystem\n{\n    private NativeList<SimulationSnapshot> stateHistory;\n    private const int MAX_HISTORY = 120;\n\n    public void OnCreate(ref SystemState state)\n    {\n        stateHistory = new NativeList<SimulationSnapshot>(MAX_HISTORY, Allocator.Persistent);\n    }\n\n    [BurstCompile]\n    public void OnUpdate(ref SystemState state)\n    {\n        var query = SystemAPI.QueryBuilder()\n            .WithAll<LocalTransform, PhysicsVelocity>()\n            .Build();\n        \n        var entities = query.ToEntityArray(Allocator.Temp);\n        var snapshot = new SimulationSnapshot(entities.Length, Allocator.Persistent);\n        \n        for (int i = 0; i < entities.Length; i++)\n        {\n            var transform = SystemAPI.GetComponent<LocalTransform>(entities[i]);\n            var velocity = SystemAPI.GetComponent<PhysicsVelocity>(entities[i]);\n            \n            snapshot.Positions[i] = transform.Position;\n            snapshot.Rotations[i] = transform.Rotation;\n            snapshot.Velocities[i] = velocity.Linear;\n            snapshot.AngularVelocities[i] = velocity.Angular;\n        }\n        \n        snapshot.Time = (float)SystemAPI.Time.ElapsedTime;\n        snapshot.Tick = (uint)(SystemAPI.Time.ElapsedTime * 60f);\n        \n        stateHistory.Add(snapshot);\n        \n        while (stateHistory.Length > MAX_HISTORY)\n        {\n            stateHistory[0].Dispose();\n            stateHistory.RemoveAt(0);\n        }\n        \n        entities.Dispose();\n    }\n\n    public void OnDestroy(ref SystemState state)\n    {\n        foreach (var snapshot in stateHistory)\n            snapshot.Dispose();\n        stateHistory.Dispose();\n    }\n\n    public void RestoreState(uint targetTick, ref SystemState state)\n    {\n        for (int i = stateHistory.Length - 1; i >= 0; i--)\n        {\n            if (stateHistory[i].Tick == targetTick)\n            {\n                var query = SystemAPI.QueryBuilder()\n                    .WithAll<LocalTransform, PhysicsVelocity>()\n                    .Build();\n                var entities = query.ToEntityArray(Allocator.Temp);\n                \n                for (int j = 0; j < entities.Length && j < stateHistory[i].Positions.Length; j++)\n                {\n                    var transform = SystemAPI.GetComponentRW<LocalTransform>(entities[j]);\n                    var velocity = SystemAPI.GetComponentRW<PhysicsVelocity>(entities[j]);\n                    \n                    transform.ValueRW.Position = stateHistory[i].Positions[j];\n                    transform.ValueRW.Rotation = stateHistory[i].Rotations[j];\n                    velocity.ValueRW.Linear = stateHistory[i].Velocities[j];\n                    velocity.ValueRW.Angular = stateHistory[i].AngularVelocities[j];\n                }\n                \n                entities.Dispose();\n                break;\n            }\n        }\n    }\n}\n\npublic partial struct FixedTickSystem : ISystem\n{\n    private float accumulator;\n    private const float FIXED_TIMESTEP = 1f / 60f;\n    private uint currentTick;\n\n    public void OnCreate(ref SystemState state)\n    {\n        accumulator = 0f;\n        currentTick = 0;\n    }\n\n    public void OnUpdate(ref SystemState state)\n    {\n        float deltaTime = SystemAPI.Time.DeltaTime;\n        accumulator += deltaTime;\n        \n        while (accumulator >= FIXED_TIMESTEP)\n        {\n            RunPhysicsStep(FIXED_TIMESTEP, currentTick);\n            accumulator -= FIXED_TIMESTEP;\n            currentTick++;\n        }\n    }\n\n    void RunPhysicsStep(float dt, uint tick)\n    {\n    }\n}",
+          "output": "Deterministic simulation with state snapshots for rollback netcode, fixed timestep physics, and history trimming for memory management."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is Unity Physics (DOTS) preferable to PhysX for networked multiplayer games?",
+          "options": [
+            "Unity Physics has better collision detection accuracy",
+            "Unity Physics is deterministic — same inputs produce same outputs, enabling rollback and replay",
+            "Unity Physics supports more collider shapes",
+            "Unity Physics is easier to configure in the Inspector"
+          ],
+          "correctAnswer": "Unity Physics is deterministic — same inputs produce same outputs, enabling rollback and replay",
+          "explanation": "Determinism is critical for networked games. With deterministic physics, all clients can simulate the same world state from the same inputs without sending physics state over the network. This enables rollback netcode and replay systems. PhysX is not deterministic across platforms or even runs. Unity Physics achieves determinism through fixed-point math, consistent iteration order, and stateless design."
+        }
+      ]
+    }
+  ]
+}
