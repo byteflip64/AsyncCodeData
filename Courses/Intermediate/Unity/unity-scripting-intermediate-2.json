@@ -1,0 +1,325 @@
+{
+  "id": "unity-csharp-scripting-engine-architecture-intermediate-part2",
+  "course": {
+    "title": "Unity C# Scripting & Engine Architecture: Advanced Patterns, Systems & Production Code",
+    "description": "An advanced deep-dive into Unity engine architecture for developers who have completed the beginner course. Covers event-driven architecture, ScriptableObject patterns, custom editors, the Job System, DOTS/ECS fundamentals, addressables, advanced optimization, and production-grade code architecture. By the end, you will architect scalable game systems, write editor tools, understand Unity's memory model, and build performance-critical code using modern Unity APIs.",
+    "category": "Game Development & Engine Architecture",
+    "level": "Intermediate",
+    "tags": [
+      "Unity",
+      "C#",
+      "Architecture",
+      "DOTS",
+      "ECS",
+      "Job System",
+      "ScriptableObjects",
+      "Editor Tools",
+      "Addressables",
+      "Memory Management",
+      "Production"
+    ],
+    "parts_count": 20,
+    "parts_in_this_file": 5,
+    "parts_remaining": 15
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: Clean Architecture Foundations",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Beyond MonoBehaviour: Clean Architecture"
+        },
+        {
+          "type": "paragraph",
+          "value": "The beginner course taught component-based design. At the intermediate level, you separate concerns further — business logic should not live in MonoBehaviours that are coupled to Unity's lifecycle."
+        },
+        {
+          "type": "paragraph",
+          "value": "Core principles of clean Unity architecture:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "**Single Responsibility** — Each class does one thing. A PlayerMovement class should not handle UI or audio.",
+            "**Dependency Inversion** — High-level modules depend on abstractions (interfaces), not concrete implementations.",
+            "**Composition over Inheritance** — Favor composing behaviors from smaller parts rather than deep inheritance chains.",
+            "**Separation of Concerns** — Split game logic, presentation, input, and data into distinct layers."
+          ]
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Service Locator Pattern"
+        },
+        {
+          "type": "paragraph",
+          "value": "Service Locator is a global registry of services. It is easy to implement but easy to abuse."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Easy to implement, easy to abuse",
+            "Hides dependencies — you cannot tell what a class needs by looking at its constructor",
+            "Hard to test — services are global state",
+            "Good for: small projects, rapid prototyping, truly global systems (Audio, Input)"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\nusing System.Collections.Generic;\n\n// ============================================\n// SERVICE LOCATOR PATTERN\n// ============================================\npublic static class ServiceLocator\n{\n    private static readonly Dictionary<System.Type, object> services = new();\n\n    public static void Register<T>(T service) where T : class\n    {\n        services[typeof(T)] = service;\n    }\n\n    public static T Get<T>() where T : class\n    {\n        if (services.TryGetValue(typeof(T), out object service))\n            return service as T;\n        \n        Debug.LogError($\"Service {typeof(T).Name} not registered!\");\n        return null;\n    }\n\n    public static void Unregister<T>() where T : class\n    {\n        services.Remove(typeof(T));\n    }\n}\n\n// Usage — hidden dependencies, hard to test\npublic class Enemy : MonoBehaviour\n{\n    [SerializeField] private AudioClip spawnSound;\n\n    void Start()\n    {\n        // Who knows what this class needs? You have to read the whole file.\n        var audio = ServiceLocator.Get<IAudioService>();\n        var gameState = ServiceLocator.Get<IGameStateService>();\n        audio.PlaySFX(spawnSound);\n        gameState.RegisterEnemy(this);\n    }\n}\n\npublic interface IAudioService { void PlaySFX(AudioClip clip); }\npublic interface IGameStateService { void RegisterEnemy(Enemy enemy); }",
+          "output": "Service Locator: global registry with hidden dependencies. Easy to set up but creates tight coupling to global state."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is Service Locator considered an anti-pattern in large projects?",
+          "options": [
+            "It is too slow at runtime",
+            "It hides dependencies, making code hard to test and maintain",
+            "It requires too many interfaces",
+            "It only works with MonoBehaviours"
+          ],
+          "correctAnswer": "It hides dependencies, making code hard to test and maintain",
+          "explanation": "Service Locator makes dependencies implicit. You cannot tell what a class needs by looking at its constructor. This makes unit testing impossible (you cannot mock dependencies) and maintenance difficult because changing one service can break classes you did not know used it."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Dependency Injection in Unity",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Dependency Injection (DI)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Dependency Injection is the opposite of Service Locator. Dependencies are passed in explicitly, not found globally."
+        },
+        {
+          "type": "list",
+          "items": [
+            "Dependencies are explicit — constructor tells you everything the class needs",
+            "Easy to mock for unit tests",
+            "More setup code, but pays off in large projects",
+            "Good for: complex systems, teams, long-term maintenance"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// ============================================\n// DEPENDENCY INJECTION PATTERN\n// ============================================\npublic interface IAudioService { void PlaySFX(AudioClip clip); }\npublic interface IGameStateService { void RegisterEnemy(Enemy enemy); }\n\npublic class Enemy : MonoBehaviour\n{\n    private IAudioService audio;\n    private IGameStateService gameState;\n    [SerializeField] private AudioClip spawnSound;\n\n    // Dependencies are EXPLICIT — you know exactly what this class needs\n    public void Initialize(IAudioService audio, IGameStateService gameState)\n    {\n        this.audio = audio;\n        this.gameState = gameState;\n    }\n\n    void Start()\n    {\n        audio.PlaySFX(spawnSound);\n        gameState.RegisterEnemy(this);\n    }\n}\n\n// Factory composes dependencies — this is where wiring happens\npublic class EnemyFactory : MonoBehaviour\n{\n    [SerializeField] private GameObject enemyPrefab;\n    [SerializeField] private AudioManager audioManager;\n\n    public Enemy CreateEnemy(Vector3 position)\n    {\n        GameObject instance = Instantiate(enemyPrefab, position, Quaternion.identity);\n        Enemy enemy = instance.GetComponent<Enemy>();\n        \n        // Inject dependencies at creation time\n        enemy.Initialize(audioManager, GameState.Instance);\n        return enemy;\n    }\n}\n\n// ============================================\n// CONSTRUCTOR INJECTION (NON-MONOBEHAVIOUR)\n// ============================================\npublic class DamageCalculator\n{\n    private readonly IArmorSystem armor;\n    private readonly ICriticalHitSystem crit;\n\n    public DamageCalculator(IArmorSystem armor, ICriticalHitSystem crit)\n    {\n        this.armor = armor;\n        this.crit = crit;\n    }\n\n    public int CalculateDamage(int baseDamage, DamageType type, TargetInfo target)\n    {\n        float multiplier = armor.GetDamageMultiplier(target, type);\n        bool isCrit = crit.RollForCritical(target);\n        \n        int finalDamage = Mathf.RoundToInt(baseDamage * multiplier);\n        if (isCrit) finalDamage *= 2;\n        \n        return finalDamage;\n    }\n}\n\npublic interface IArmorSystem { float GetDamageMultiplier(TargetInfo target, DamageType type); }\npublic interface ICriticalHitSystem { bool RollForCritical(TargetInfo target); }\npublic enum DamageType { Physical, Fire, Ice, Electric }\npublic struct TargetInfo { public float armorRating; public float level; }",
+          "output": "Dependency Injection: explicit constructor parameters, factory wiring for MonoBehaviours, and pure C# classes with constructor injection."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "DI Container: Manual Wiring"
+        },
+        {
+          "type": "paragraph",
+          "value": "For larger projects, a simple DI container can automate wiring without external libraries like Zenject."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System;\nusing System.Collections.Generic;\nusing UnityEngine;\n\n// Simple DI Container — no external dependencies\npublic class DIContainer\n{\n    private readonly Dictionary<Type, object> singletons = new();\n    private readonly Dictionary<Type, Func<object>> factories = new();\n\n    public void RegisterSingleton<T>(T instance) where T : class\n    {\n        singletons[typeof(T)] = instance;\n    }\n\n    public void RegisterFactory<T>(Func<T> factory) where T : class\n    {\n        factories[typeof(T)] = () => factory();\n    }\n\n    public T Resolve<T>() where T : class\n    {\n        Type type = typeof(T);\n        \n        if (singletons.TryGetValue(type, out object singleton))\n            return singleton as T;\n        \n        if (factories.TryGetValue(type, out Func<object> factory))\n            return factory() as T;\n        \n        throw new InvalidOperationException($\"No registration for {type.Name}\");\n    }\n}\n\n// Bootstrapper — wires everything at game start\npublic class GameBootstrapper : MonoBehaviour\n{\n    [SerializeField] private AudioManager audioManager;\n    [SerializeField] private GameStateManager gameState;\n    [SerializeField] private UIManager uiManager;\n\n    public static DIContainer Container { get; private set; }\n\n    void Awake()\n    {\n        Container = new DIContainer();\n        \n        // Register singletons\n        Container.RegisterSingleton<IAudioService>(audioManager);\n        Container.RegisterSingleton<IGameStateService>(gameState);\n        Container.RegisterSingleton<IUIService>(uiManager);\n        \n        // Register factories for transient objects\n        Container.RegisterFactory<DamageCalculator>(() => new DamageCalculator(\n            Container.Resolve<IArmorSystem>(),\n            Container.Resolve<ICriticalHitSystem>()\n        ));\n        \n        DontDestroyOnLoad(gameObject);\n    }\n}\n\npublic interface IUIService { void ShowDamageNumber(int damage, Vector3 worldPos); }",
+          "output": "Simple DI Container with singleton registration, factory registration, and a GameBootstrapper that wires everything at startup."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main advantage of Dependency Injection over Service Locator?",
+          "options": [
+            "DI runs faster at runtime",
+            "DI makes dependencies explicit and testable",
+            "DI requires less code to set up",
+            "DI works without MonoBehaviours"
+          ],
+          "correctAnswer": "DI makes dependencies explicit and testable",
+          "explanation": "The key advantage of DI is that dependencies are visible in constructors. This makes it obvious what a class needs, enables easy mocking in unit tests, and prevents hidden coupling to global state. Service Locator hides these dependencies."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Event Bus Pattern — Decoupled Communication",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Event Bus Pattern: Decoupled Communication"
+        },
+        {
+          "type": "paragraph",
+          "value": "Direct references between objects create tight coupling. The Event Bus lets objects communicate without knowing about each other."
+        },
+        {
+          "type": "paragraph",
+          "value": "When to use Event Bus vs direct references:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Use **direct references** for parent-child relationships and tightly coupled systems (Player → PlayerHealth)",
+            "Use **Event Bus** for cross-cutting concerns (EnemyDied → UI updates, score, achievements, spawn manager)",
+            "Use **C# events** on components for local notifications within a subsystem",
+            "Use **UnityEvents** (Inspector-configurable) for designer-friendly hooks"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System;\nusing UnityEngine;\n\n// ============================================\n// GENERIC EVENT BUS — TYPE-SAFE\n// ============================================\npublic static class EventBus<T> where T : IGameEvent\n{\n    public static event Action<T> OnEvent;\n\n    public static void Publish(T eventData)\n    {\n        OnEvent?.Invoke(eventData);\n    }\n\n    public static void Subscribe(Action<T> handler)\n    {\n        OnEvent += handler;\n    }\n\n    public static void Unsubscribe(Action<T> handler)\n    {\n        OnEvent -= handler;\n    }\n}\n\n// Marker interface for type safety\npublic interface IGameEvent { }\n\n// Event definitions\npublic struct EnemyDiedEvent : IGameEvent\n{\n    public Enemy Enemy;\n    public Vector3 Position;\n    public int ScoreValue;\n    public bool WasHeadshot;\n}\n\npublic struct PlayerDamagedEvent : IGameEvent\n{\n    public int DamageAmount;\n    public int CurrentHealth;\n    public int MaxHealth;\n    public Vector3 HitDirection;\n}\n\npublic struct LevelCompletedEvent : IGameEvent\n{\n    public int LevelNumber;\n    public float CompletionTime;\n    public int StarsEarned;\n}\n\n// ============================================\n// PUBLISHER — does not know who listens\n// ============================================\npublic class Enemy : MonoBehaviour, IDamageable\n{\n    [SerializeField] private int scoreValue = 100;\n\n    public void Die(bool wasHeadshot = false)\n    {\n        // Publish event — zero knowledge of subscribers\n        EventBus<EnemyDiedEvent>.Publish(new EnemyDiedEvent\n        {\n            Enemy = this,\n            Position = transform.position,\n            ScoreValue = wasHeadshot ? scoreValue * 2 : scoreValue,\n            WasHeadshot = wasHeadshot\n        });\n\n        Destroy(gameObject);\n    }\n}\n\npublic interface IDamageable { void Die(bool wasHeadshot = false); }",
+          "output": "Type-safe generic Event Bus with struct events and a publisher that knows nothing about subscribers."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Subscribers: Completely Decoupled"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// ============================================\n// SUBSCRIBERS — any number, completely decoupled\n// ============================================\npublic class ScoreManager : MonoBehaviour\n{\n    private int totalScore;\n\n    void OnEnable()\n    {\n        EventBus<EnemyDiedEvent>.Subscribe(OnEnemyDied);\n    }\n\n    void OnDisable()\n    {\n        EventBus<EnemyDiedEvent>.Unsubscribe(OnEnemyDied);\n    }\n\n    void OnEnemyDied(EnemyDiedEvent evt)\n    {\n        totalScore += evt.ScoreValue;\n        \n        if (evt.WasHeadshot)\n        {\n            ShowHeadshotBonus(evt.Position);\n        }\n    }\n\n    void ShowHeadshotBonus(Vector3 pos) { /* ... */ }\n}\n\npublic class AchievementTracker : MonoBehaviour\n{\n    private int enemiesKilled;\n\n    void OnEnable()\n    {\n        EventBus<EnemyDiedEvent>.Subscribe(OnEnemyDied);\n        EventBus<LevelCompletedEvent>.Subscribe(OnLevelCompleted);\n    }\n\n    void OnDisable()\n    {\n        EventBus<EnemyDiedEvent>.Unsubscribe(OnEnemyDied);\n        EventBus<LevelCompletedEvent>.Unsubscribe(OnLevelCompleted);\n    }\n\n    void OnEnemyDied(EnemyDiedEvent evt)\n    {\n        enemiesKilled++;\n        if (enemiesKilled >= 100)\n            UnlockAchievement(\"Centurion\");\n    }\n\n    void OnLevelCompleted(LevelCompletedEvent evt)\n    {\n        if (evt.StarsEarned == 3)\n            UnlockAchievement(\"Perfectionist\");\n    }\n\n    void UnlockAchievement(string id) { /* ... */ }\n}\n\npublic class SpawnManager : MonoBehaviour\n{\n    void OnEnable()\n    {\n        EventBus<EnemyDiedEvent>.Subscribe(OnEnemyDied);\n    }\n\n    void OnDisable()\n    {\n        EventBus<EnemyDiedEvent>.Unsubscribe(OnEnemyDied);\n    }\n\n    void OnEnemyDied(EnemyDiedEvent evt)\n    {\n        // Spawn loot at death position\n        if (Random.value < 0.3f)\n        {\n            SpawnLoot(evt.Position);\n        }\n    }\n\n    void SpawnLoot(Vector3 pos) { /* ... */ }\n}",
+          "output": "Multiple decoupled subscribers (ScoreManager, AchievementTracker, SpawnManager) responding to the same event without knowing about each other."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Your game has 15 different systems that need to respond when a player completes a level (UI, achievements, analytics, save system, next level unlock). What is the best architecture?",
+          "options": [
+            "Have the LevelManager hold direct references to all 15 systems and call their methods",
+            "Use an Event Bus where LevelManager publishes a LevelCompletedEvent and each system subscribes independently",
+            "Use a giant switch statement in LevelManager",
+            "Have each system poll LevelManager every frame to check if the level is done"
+          ],
+          "correctAnswer": "Use an Event Bus where LevelManager publishes a LevelCompletedEvent and each system subscribes independently",
+          "explanation": "Direct references create a maintenance nightmare — add a 16th system and you must modify LevelManager. A switch statement is unmaintainable. Polling wastes CPU. The Event Bus decouples the publisher from subscribers: LevelManager knows nothing about who listens, and new systems can subscribe without touching existing code. This is the core of event-driven architecture."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: State Machines for Complex Behaviors",
+      "badge": "Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "State Machines for Complex Behaviors"
+        },
+        {
+          "type": "paragraph",
+          "value": "Boolean flags (isAttacking, isStunned, isDead) quickly become unmanageable. A proper state machine enforces valid transitions and encapsulates state-specific logic."
+        },
+        {
+          "type": "paragraph",
+          "value": "Benefits of state machines:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Only valid state transitions are allowed — no accidental 'dead but attacking' bugs",
+            "Each state is self-contained — enter, update, exit logic is isolated",
+            "Easy to debug — you can log every state transition",
+            "Scalable — adding new states does not touch existing ones"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using System;\nusing System.Collections.Generic;\nusing UnityEngine;\n\n// ============================================\n// GENERIC STATE MACHINE\n// ============================================\npublic class StateMachine<T> where T : Enum\n{\n    public T CurrentState { get; private set; }\n    public T PreviousState { get; private set; }\n\n    private readonly Dictionary<T, State<T>> states = new();\n    private State<T> currentStateInstance;\n\n    public void AddState(T stateKey, State<T> state)\n    {\n        states[stateKey] = state;\n        state.StateMachine = this;\n    }\n\n    public void ChangeState(T newState)\n    {\n        if (!states.TryGetValue(newState, out State<T> nextState))\n        {\n            Debug.LogError($\"State {newState} not registered!\");\n            return;\n        }\n\n        // Exit current state\n        currentStateInstance?.OnExit();\n\n        // Transition\n        PreviousState = CurrentState;\n        CurrentState = newState;\n        currentStateInstance = nextState;\n\n        // Enter new state\n        currentStateInstance.OnEnter();\n    }\n\n    public void Update() => currentStateInstance?.OnUpdate();\n    public void FixedUpdate() => currentStateInstance?.OnFixedUpdate();\n}\n\npublic abstract class State<T> where T : Enum\n{\n    public StateMachine<T> StateMachine { get; set; }\n    public abstract void OnEnter();\n    public abstract void OnUpdate();\n    public abstract void OnFixedUpdate();\n    public abstract void OnExit();\n}",
+          "output": "Generic StateMachine<T> and State<T> base classes with typed state transitions and lifecycle hooks."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Enemy AI State Machine Implementation"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\npublic enum EnemyState { Idle, Patrol, Chase, Attack, Stunned, Dead }\n\npublic class EnemyAI : MonoBehaviour\n{\n    private StateMachine<EnemyState> stateMachine;\n    \n    [SerializeField] private float detectionRange = 15f;\n    [SerializeField] private float attackRange = 2f;\n    [SerializeField] private float patrolSpeed = 2f;\n    [SerializeField] private float chaseSpeed = 5f;\n\n    private Transform player;\n    private float stunTimer;\n    private float attackCooldown;\n    private int health = 100;\n    private Rigidbody rb;\n    private Animator animator;\n\n    void Awake()\n    {\n        player = GameObject.FindWithTag(\"Player\").transform;\n        \n        stateMachine = new StateMachine<EnemyState>();\n        \n        stateMachine.AddState(EnemyState.Idle, new IdleState(this));\n        stateMachine.AddState(EnemyState.Patrol, new PatrolState(this));\n        stateMachine.AddState(EnemyState.Chase, new ChaseState(this));\n        stateMachine.AddState(EnemyState.Attack, new AttackState(this));\n        stateMachine.AddState(EnemyState.Stunned, new StunnedState(this));\n        stateMachine.AddState(EnemyState.Dead, new DeadState(this));\n        \n        stateMachine.ChangeState(EnemyState.Idle);\n    }\n\n    void Start()\n    {\n        rb = GetComponent<Rigidbody>();\n        animator = GetComponent<Animator>();\n    }\n\n    void Update()\n    {\n        stateMachine.Update();\n        \n        // Global transition: death overrides any state\n        if (health <= 0 && stateMachine.CurrentState != EnemyState.Dead)\n        {\n            stateMachine.ChangeState(EnemyState.Dead);\n        }\n    }\n\n    void FixedUpdate() => stateMachine.FixedUpdate();\n\n    public void TakeDamage(int damage, float stunDuration = 0f)\n    {\n        health -= damage;\n        if (stunDuration > 0 && health > 0)\n        {\n            stunTimer = stunDuration;\n            stateMachine.ChangeState(EnemyState.Stunned);\n        }\n    }\n\n    // ============================================\n    // STATE IMPLEMENTATIONS\n    // ============================================\n    private class IdleState : State<EnemyState>\n    {\n        private EnemyAI ai;\n        private float waitTimer;\n        public IdleState(EnemyAI ai) => this.ai = ai;\n\n        public override void OnEnter() => waitTimer = Random.Range(1f, 3f);\n\n        public override void OnUpdate()\n        {\n            waitTimer -= Time.deltaTime;\n            float dist = Vector3.Distance(ai.transform.position, ai.player.position);\n            \n            if (dist < ai.detectionRange)\n            {\n                StateMachine.ChangeState(EnemyState.Chase);\n                return;\n            }\n            if (waitTimer <= 0)\n                StateMachine.ChangeState(EnemyState.Patrol);\n        }\n\n        public override void OnFixedUpdate() { }\n        public override void OnExit() { }\n    }\n\n    private class ChaseState : State<EnemyState>\n    {\n        private EnemyAI ai;\n        public ChaseState(EnemyAI ai) => this.ai = ai;\n\n        public override void OnEnter() { }\n\n        public override void OnUpdate()\n        {\n            float dist = Vector3.Distance(ai.transform.position, ai.player.position);\n            if (dist < ai.attackRange)\n            {\n                StateMachine.ChangeState(EnemyState.Attack);\n                return;\n            }\n            if (dist > ai.detectionRange * 1.5f)\n                StateMachine.ChangeState(EnemyState.Idle);\n        }\n\n        public override void OnFixedUpdate()\n        {\n            Vector3 dir = (ai.player.position - ai.transform.position).normalized;\n            ai.rb.velocity = dir * ai.chaseSpeed;\n        }\n\n        public override void OnExit() => ai.rb.velocity = Vector3.zero;\n    }\n\n    private class AttackState : State<EnemyState>\n    {\n        private EnemyAI ai;\n        private float attackTimer;\n        public AttackState(EnemyAI ai) => this.ai = ai;\n\n        public override void OnEnter() => attackTimer = 0f;\n\n        public override void OnUpdate()\n        {\n            attackTimer -= Time.deltaTime;\n            float dist = Vector3.Distance(ai.transform.position, ai.player.position);\n            \n            if (dist > ai.attackRange * 1.2f)\n            {\n                StateMachine.ChangeState(EnemyState.Chase);\n                return;\n            }\n            if (attackTimer <= 0)\n            {\n                ai.animator.SetTrigger(\"Attack\");\n                attackTimer = ai.attackCooldown;\n            }\n        }\n\n        public override void OnFixedUpdate() { }\n        public override void OnExit() { }\n    }\n\n    private class StunnedState : State<EnemyState>\n    {\n        private EnemyAI ai;\n        public StunnedState(EnemyAI ai) => this.ai = ai;\n\n        public override void OnEnter()\n        {\n            ai.animator.SetBool(\"Stunned\", true);\n            ai.rb.velocity = Vector3.zero;\n        }\n\n        public override void OnUpdate()\n        {\n            ai.stunTimer -= Time.deltaTime;\n            if (ai.stunTimer <= 0)\n                StateMachine.ChangeState(EnemyState.Chase);\n        }\n\n        public override void OnFixedUpdate() { }\n        public override void OnExit() => ai.animator.SetBool(\"Stunned\", false);\n    }\n\n    private class DeadState : State<EnemyState>\n    {\n        private EnemyAI ai;\n        public DeadState(EnemyAI ai) => this.ai = ai;\n\n        public override void OnEnter()\n        {\n            ai.animator.SetTrigger(\"Die\");\n            ai.rb.isKinematic = true;\n            ai.GetComponent<Collider>().enabled = false;\n            \n            EventBus<EnemyDiedEvent>.Publish(new EnemyDiedEvent\n            {\n                Enemy = ai,\n                Position = ai.transform.position,\n                ScoreValue = 100\n            });\n        }\n\n        public override void OnUpdate() { }\n        public override void OnFixedUpdate() { }\n        public override void OnExit() { }\n    }\n}",
+          "output": "Complete Enemy AI with 6 states, valid transitions, encapsulated per-state logic, and global health check that overrides any state."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the primary benefit of using a State Machine over boolean flags for AI behavior?",
+          "options": [
+            "State machines use less memory",
+            "State machines enforce valid transitions and prevent impossible state combinations",
+            "State machines are easier to serialize to JSON",
+            "State machines require less code"
+          ],
+          "correctAnswer": "State machines enforce valid transitions and prevent impossible state combinations",
+          "explanation": "Boolean flags allow any combination (e.g., isAttacking AND isDead simultaneously). A state machine enforces that only one state is active at a time and that transitions follow defined rules. This eliminates an entire class of bugs where objects are in logically impossible states."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: ScriptableObjects as Game Data",
+      "badge": "Data Architecture",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "ScriptableObjects as Game Data"
+        },
+        {
+          "type": "paragraph",
+          "value": "ScriptableObjects are data containers that live in your project, not in scenes. They are the foundation of data-driven design — separating 'what can exist' (data) from 'what currently exists' (runtime instances)."
+        },
+        {
+          "type": "paragraph",
+          "value": "Key advantages over MonoBehaviour data:"
+        },
+        {
+          "type": "list",
+          "items": [
+            "Shared across scenes — no duplication, no sync issues",
+            "Designer-friendly — non-programmers can balance stats via Inspector",
+            "Version control friendly — changes are in asset files, not scene files",
+            "Cannot be modified at runtime in builds (immutable reference data)",
+            "Instantiate with CreateInstance<T>() for runtime-modifiable copies"
+          ]
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n// ============================================\n// WEAPON DATA SCRIPTABLEOBJECT\n// ============================================\n[CreateAssetMenu(fileName = \"NewWeapon\", menuName = \"Game/Weapon\")]\npublic class WeaponData : ScriptableObject\n{\n    [Header(\"Identity\")]\n    public string weaponName;\n    public string description;\n    public Sprite icon;\n    public GameObject modelPrefab;\n\n    [Header(\"Combat Stats\")]\n    [Range(1, 200)] public int damage = 25;\n    [Range(0.01f, 5f)] public float fireRate = 0.1f;\n    [Range(1, 100)] public int magazineSize = 30;\n    [Range(0.1f, 10f)] public float reloadTime = 2f;\n    [Range(10f, 1000f)] public float effectiveRange = 100f;\n\n    [Header(\"Recoil Pattern\")]\n    public AnimationCurve verticalRecoil = AnimationCurve.Linear(0, 0, 1, 2);\n    public AnimationCurve horizontalRecoil = AnimationCurve.Linear(0, 0, 1, 0.5f);\n    public float recoilRecoverySpeed = 5f;\n\n    [Header(\"Spread\")]\n    public float baseSpread = 0.01f;\n    public float maxSpread = 0.1f;\n    public float spreadRecovery = 3f;\n    public float spreadPerShot = 0.005f;\n\n    [Header(\"Audio & Visual\")]\n    public AudioClip fireSound;\n    public AudioClip reloadSound;\n    public ParticleSystem muzzleFlashPrefab;\n    public TrailRenderer bulletTrailPrefab;\n    public GameObject impactEffectPrefab;\n\n    [Header(\"Rarity & Economy\")]\n    public Rarity rarity = Rarity.Common;\n    public int purchaseCost = 100;\n    public int upgradeCost = 50;\n}\n\npublic enum Rarity { Common, Uncommon, Rare, Epic, Legendary }",
+          "output": "WeaponData ScriptableObject with identity, combat stats, recoil curves, spread mechanics, audio/visual references, and rarity/economy data."
+        },
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Enemy Data & Loot Tables"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "using UnityEngine;\n\n[CreateAssetMenu(fileName = \"NewEnemy\", menuName = \"Game/Enemy\")]\npublic class EnemyData : ScriptableObject\n{\n    public string enemyName;\n    public GameObject prefab;\n    \n    [Header(\"Stats\")]\n    public int baseHealth = 100;\n    public float moveSpeed = 3f;\n    public float detectionRange = 15f;\n    public float attackRange = 2f;\n    public int damage = 10;\n    public float attackCooldown = 1f;\n    \n    [Header(\"AI Behavior\")]\n    public AIBehaviorType behaviorType = AIBehaviorType.Aggressive;\n    public bool canPatrol = true;\n    public bool canFlee = false;\n    public float fleeHealthThreshold = 0.2f;\n    \n    [Header(\"Loot\")]\n    public LootTable lootTable;\n    public float lootDropChance = 0.3f;\n    \n    [Header(\"Scaling\")]\n    public float healthPerLevel = 10f;\n    public float damagePerLevel = 2f;\n}\n\npublic enum AIBehaviorType { Passive, Aggressive, Defensive, Fleeing }\n\n// ============================================\n// LOOT TABLE\n// ============================================\n[CreateAssetMenu(fileName = \"LootTable\", menuName = \"Game/Loot Table\")]\npublic class LootTable : ScriptableObject\n{\n    [System.Serializable]\n    public class LootEntry\n    {\n        public ItemData item;\n        [Range(0, 100)] public float dropChance = 10f;\n        [Range(1, 10)] public int minQuantity = 1;\n        [Range(1, 10)] public int maxQuantity = 1;\n    }\n    \n    public LootEntry[] entries;\n    \n    public ItemData RollForLoot()\n    {\n        float roll = Random.Range(0f, 100f);\n        float cumulative = 0f;\n        \n        foreach (var entry in entries)\n        {\n            cumulative += entry.dropChance;\n            if (roll <= cumulative)\n                return entry.item;\n        }\n        \n        return null;\n    }\n}\n\n// ============================================\n// ITEM DATA\n// ============================================\n[CreateAssetMenu(fileName = \"NewItem\", menuName = \"Game/Item\")]\npublic class ItemData : ScriptableObject\n{\n    public string itemName;\n    public string description;\n    public Sprite icon;\n    public ItemType type;\n    public Rarity rarity;\n    public bool isStackable;\n    public int maxStackSize = 99;\n    public int sellValue;\n}\n\npublic enum ItemType { Weapon, Armor, Consumable, Material, KeyItem }",
+          "output": "EnemyData with AI behavior and scaling, LootTable with weighted random drops, and ItemData for inventory management."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why are ScriptableObjects better than storing data in MonoBehaviour components for game balancing?",
+          "options": [
+            "ScriptableObjects run faster at runtime",
+            "ScriptableObjects are shared assets editable outside scenes, making version control and balancing easier",
+            "ScriptableObjects can only be created by programmers",
+            "ScriptableObjects automatically sync data between all scenes"
+          ],
+          "correctAnswer": "ScriptableObjects are shared assets editable outside scenes, making version control and balancing easier",
+          "explanation": "ScriptableObjects live as asset files, not in scene files. This means designers can tweak values without opening scenes, changes are tracked in version control as small diffs (not massive scene file changes), and the same data asset can be referenced across multiple scenes without duplication."
+        }
+      ]
+    }
+  ]
+}
