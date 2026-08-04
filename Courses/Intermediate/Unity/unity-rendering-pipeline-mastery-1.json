@@ -1,0 +1,569 @@
+{
+  "id": "unity-rendering-pipeline-mastery",
+  "course": {
+    "title": "Unity Rendering Pipeline: From Pixels to Screen",
+    "description": "A comprehensive 30-part course demystifying Unity's rendering pipeline. Starts with what rendering actually means, walks through every stage of the pipeline, explains URP in depth, and covers Built-in RP, HDRP, SRP, and Scriptable Render Pipelines. Designed for Unity developers who want to truly understand how their scenes become pixels.",
+    "category": "Unity",
+    "level": "Beginner to Intermediate",
+    "tags": [
+      "Unity",
+      "Rendering",
+      "URP",
+      "Graphics",
+      "Pipeline",
+      "GPU"
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: What Is Rendering?",
+      "badge": "Foundation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Welcome to the World of Rendering"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rendering is the process of turning 3D data — meshes, materials, lights, cameras — into a 2D image on your screen. Every frame you see in a game, movie, or app goes through a rendering pipeline. Think of it like a factory assembly line: raw materials (3D models) enter one end, and a finished product (pixels on screen) comes out the other."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing 3D scene data flowing through a pipeline and becoming a 2D image on a monitor",
+          "caption": "Rendering transforms 3D scene data into the 2D image you see on screen"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Infographic — A horizontal pipeline showing: Left: 3D scene with cube, light, camera. Middle: a factory conveyor belt with labeled stages (Mesh → Transform → Rasterize → Shade → Output). Right: a monitor displaying the final image. Use bright, friendly colors. Include small icons for each stage."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Why Should Unity Developers Care?"
+        },
+        {
+          "type": "paragraph",
+          "value": "• **Performance** — understanding the pipeline helps you optimize: fewer draw calls, better batching, smarter shaders\n• **Debugging** — when something looks wrong (pink materials, black screens, z-fighting), you'll know exactly where to look\n• **Creative control** — custom shaders, post-processing, and visual effects all depend on pipeline knowledge\n• **Career growth** — rendering programmers and technical artists are among the highest-paid roles in game dev\n• **Smart decisions** — choosing the right render pipeline for your project saves months of work"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Split comparison: unoptimized scene with 500 draw calls vs optimized scene with 50 draw calls, same visual result",
+          "caption": "Understanding the pipeline lets you achieve the same visuals with dramatically better performance"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison — Left: complex scene with wireframe overlay showing 500 draw calls, red 'FPS: 15' counter, and performance profiler spikes. Right: same scene with batching applied, 50 draw calls, green 'FPS: 60' counter, smooth profiler. Label 'Before' and 'After'. Use Unity profiler styling."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Big Picture: CPU vs GPU"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rendering happens on TWO processors working together:\n\n**CPU (Central Processing Unit)** — decides WHAT to render, WHERE to render it, and in WHAT ORDER. It runs your C# scripts, culls invisible objects, sorts draw calls, and sends commands to the GPU.\n\n**GPU (Graphics Processing Unit)** — actually draws the pixels. It runs shaders, rasterizes triangles, samples textures, and writes colors to the screen. The GPU is massively parallel — it processes thousands of pixels simultaneously."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// The CPU decides what to render (C# side)\n// Unity does this automatically every frame, but you can see it:\nvoid Update()\n{\n    // This runs on the CPU - it decides position, rotation, scale\n    transform.Rotate(0, 10 * Time.deltaTime, 0);\n}\n\n// The GPU draws the pixels (shader side)\n// This HLSL code runs on the GPU for every vertex/pixel:\n// float4 vert(float4 pos : POSITION) : SV_POSITION\n// {\n//     return UnityObjectToClipPos(pos);\n// }",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the primary job of the rendering pipeline?",
+          "options": [
+            "To store game save data",
+            "To convert 3D scene data into a 2D screen image",
+            "To handle player keyboard input",
+            "To manage game physics calculations"
+          ],
+          "correctAnswer": "To convert 3D scene data into a 2D screen image",
+          "explanation": "Rendering takes all the 3D information in your scene (meshes, lights, materials) and produces the flat 2D image displayed on your monitor."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which processor actually draws the final pixels on screen?",
+          "options": [
+            "CPU",
+            "GPU",
+            "RAM",
+            "Hard Drive"
+          ],
+          "correctAnswer": "GPU",
+          "explanation": "The GPU (Graphics Processing Unit) runs shaders and rasterizes triangles to produce the final pixel colors. The CPU only prepares and sends the commands."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What does the CPU do in the rendering process? (One word: it ___ what to render)",
+          "correctAnswer": "decides",
+          "explanation": "The CPU decides WHAT to render, WHERE to render it, and in WHAT ORDER. It culls invisible objects, sorts draw calls, and sends commands to the GPU."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: The Frame: What Happens Every 16ms?",
+      "badge": "Foundation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "A Single Frame's Journey"
+        },
+        {
+          "type": "paragraph",
+          "value": "At 60 FPS, every frame has just 16.67 milliseconds to complete. Understanding what happens in that tiny window is the key to optimization. Let's follow a single frame from start to finish."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Timeline showing frame stages: Update → Culling → Sorting → Drawing → Present, with time allocations",
+          "caption": "A 60 FPS frame has ~16.67ms. Every millisecond counts."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Timeline — A horizontal bar divided into colored segments: 'Update (2ms)' in blue, 'Culling (1ms)' in green, 'Sorting (0.5ms)' in yellow, 'Drawing (10ms)' in orange, 'Present (3ms)' in red. Total = 16.67ms. Show a 60 FPS badge. Use a Gantt chart style with clear labels and percentages."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stage 1: Update (CPU)"
+        },
+        {
+          "type": "paragraph",
+          "value": "First, Unity runs all your C# scripts: `Update()`, `LateUpdate()`, animation systems, physics, and input handling. This is NOT rendering yet — it's just preparing the scene state. Objects move, rotate, and change properties based on your code."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// This all runs during the Update stage (CPU)\nvoid Update()\n{\n    // Move the player\n    transform.Translate(Input.GetAxis(\"Horizontal\") * speed * Time.deltaTime, 0, 0);\n    \n    // Animate a value\n    currentHealth = Mathf.Lerp(currentHealth, targetHealth, 0.1f);\n    \n    // Change material color\n    renderer.material.color = Color.Lerp(Color.red, Color.green, healthPercent);\n}\n\n// Note: None of this draws pixels yet! It just changes data.",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stage 2: Culling (CPU)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity checks every object in the scene and asks: 'Can the camera see this?' Objects behind the camera, too far away, or hidden behind walls are **culled** (skipped). This saves enormous GPU work. There are three types of culling:\n• **Frustum culling** — skip objects outside the camera's view cone\n• **Occlusion culling** — skip objects hidden behind other objects\n• **Layer culling** — skip objects on layers the camera doesn't render"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Top-down view showing camera frustum as a cone, objects inside are green (rendered), objects outside are red (culled)",
+          "caption": "Frustum culling: only objects inside the camera's view cone are rendered"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Top-Down Diagram — A camera icon at bottom with a triangular frustum (view cone) extending upward. Inside the cone: 3 green cubes labeled 'Rendered'. Outside the cone: 2 red cubes labeled 'Culled'. Include a small legend. Use a simple 2D map style with grid background."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stage 3: Sorting and Batching (CPU)"
+        },
+        {
+          "type": "paragraph",
+          "value": "After culling, Unity sorts the remaining objects. It groups objects that share the same material into **batches** — this means the GPU can draw them all in one go instead of switching materials constantly. Fewer batches = better performance."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// You can see batching in the Stats window (Game View → Stats)\n// Look for 'Batches' and 'Saved by batching'\n\n// Static batching: objects that never move\n// Mark objects as 'Static' in the Inspector\n\n// Dynamic batching: small moving objects (automatic in URP)\n// GPU Instancing: same mesh + same material, different transforms\n\n// SRP Batcher (URP): batches across different materials if shaders are the same",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stage 4: Drawing (GPU)"
+        },
+        {
+          "type": "paragraph",
+          "value": "This is where the GPU takes over. For each visible object, Unity sends a **draw call** — a command that says 'draw this mesh with this material.' The GPU then runs the vertex shader, rasterizes triangles, runs the fragment shader, and writes pixels to the screen. This stage usually takes the most time."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stage 5: Present (GPU → Monitor)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Finally, the completed frame is sent to the monitor. The GPU waits for the monitor's **refresh rate** (usually 60Hz or 144Hz) before displaying the new frame. If the GPU finishes early, it waits — this is called **VSync**. If it finishes late, you get a frame drop."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which stage removes objects the camera cannot see?",
+          "options": [
+            "Update",
+            "Culling",
+            "Drawing",
+            "Present"
+          ],
+          "correctAnswer": "Culling",
+          "explanation": "Culling is the stage where Unity checks which objects are visible to the camera and skips invisible ones. This happens on the CPU before any GPU work begins."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "At 60 FPS, how much time does each frame have to complete?",
+          "options": [
+            "33.3 milliseconds",
+            "16.67 milliseconds",
+            "8.33 milliseconds",
+            "100 milliseconds"
+          ],
+          "correctAnswer": "16.67 milliseconds",
+          "explanation": "1 second / 60 frames = 0.01667 seconds = 16.67 milliseconds per frame. If any stage takes longer, your frame rate drops."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the name of the command that tells the GPU to draw a specific mesh with a specific material?",
+          "correctAnswer": "draw call",
+          "explanation": "A draw call is the CPU command that tells the GPU to render a mesh using a specific material. Fewer draw calls generally mean better performance."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: What Is a Render Pipeline?",
+      "badge": "Foundation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Render Pipeline Explained"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **render pipeline** is Unity's system for deciding HOW to turn your scene into an image. It's the complete set of rules, steps, and algorithms that process your 3D data. Unity doesn't have just one way to render — it offers multiple pipelines because different projects need different approaches."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing three different pipelines (Built-in, URP, HDRP) as different factory assembly lines producing different quality outputs",
+          "caption": "Different render pipelines are like different factory lines — same input, different processes and outputs"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Three parallel conveyor belts labeled 'Built-in RP', 'URP', and 'HDRP'. Each starts with the same 3D scene input. Built-in belt is simple with few stages. URP belt is modern and balanced. HDRP belt is complex with many stages. Each outputs a different quality image. Use factory/assembly line metaphor with gears and stages."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Why Does Unity Have Multiple Pipelines?"
+        },
+        {
+          "type": "paragraph",
+          "value": "Think of render pipelines like car engines: a Formula 1 engine is amazing but terrible for a family sedan. Similarly:\n\n• **Mobile games** need lightweight, fast rendering (URP)\n• **High-end PC games** need photorealistic lighting (HDRP)\n• **Legacy projects** need backward compatibility (Built-in RP)\n• **Custom projects** need full control (Scriptable RP)\n\nNo single pipeline is best for everything. The right choice depends on your target platform, visual goals, and team size."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Four Unity Render Pipelines"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity currently offers four render pipelines:\n\n1. **Built-in Render Pipeline** — Unity's original pipeline. Works everywhere but is outdated. Still used in many legacy projects.\n\n2. **Universal Render Pipeline (URP)** — The modern default. Balanced quality and performance. Works on mobile, console, and PC.\n\n3. **High Definition Render Pipeline (HDRP)** — Photorealistic quality for high-end PC and console. Not for mobile.\n\n4. **Scriptable Render Pipeline (SRP)** — The framework that URP and HDRP are built on. Lets you build completely custom pipelines."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Four cards side by side showing Built-in, URP, HDRP, and SRP with platform icons and use cases",
+          "caption": "Unity's four render pipelines serve different needs and platforms"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Four Cards — Card 1: 'Built-in RP' with retro/legacy icon, platform icons (all platforms), label 'Legacy projects'. Card 2: 'URP' with modern icon, platform icons (mobile + console + PC), label 'Recommended default'. Card 3: 'HDRP' with photorealistic icon, platform icons (PC + console only), label 'High-end visuals'. Card 4: 'SRP' with code/gear icon, label 'Custom pipelines'. Each card has a small visual sample. Use Unity's brand colors."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "What Does a Pipeline Actually Do?"
+        },
+        {
+          "type": "paragraph",
+          "value": "At its core, every render pipeline performs the same fundamental steps, but with different algorithms and quality levels:\n\n1. **Setup** — configure camera, clear buffers, set render targets\n2. **Shadows** — render shadow maps from light perspectives\n3. **Culling** — determine visible objects\n4. **Rendering** — draw opaque objects, then transparent objects\n5. **Post-processing** — apply color grading, bloom, depth of field\n6. **UI** — draw canvas elements on top\n7. **Present** — send final image to screen\n\nURP, HDRP, and Built-in do these steps differently — that's what makes them distinct."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// In Unity, you choose your pipeline in Project Settings:\n// Edit → Project Settings → Graphics → Scriptable Render Pipeline Settings\n\n// URP Asset (recommended for new projects)\n// HDRP Asset (for high-end PC/console)\n// None = Built-in Render Pipeline (legacy)\n\n// You can also switch pipelines at runtime (advanced):\n// GraphicsSettings.defaultRenderPipeline = myURPAsset;",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which render pipeline is Unity's recommended default for new projects?",
+          "options": [
+            "Built-in Render Pipeline",
+            "Universal Render Pipeline (URP)",
+            "High Definition Render Pipeline (HDRP)",
+            "Scriptable Render Pipeline"
+          ],
+          "correctAnswer": "Universal Render Pipeline (URP)",
+          "explanation": "URP is Unity's modern, cross-platform pipeline that balances quality and performance. It's the default for new projects starting with Unity 2020+."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which pipeline is designed for photorealistic high-end PC and console games?",
+          "options": [
+            "Built-in Render Pipeline",
+            "Universal Render Pipeline (URP)",
+            "High Definition Render Pipeline (HDRP)",
+            "Lightweight Render Pipeline"
+          ],
+          "correctAnswer": "High Definition Render Pipeline (HDRP)",
+          "explanation": "HDRP is specifically designed for high-end platforms (PC, PlayStation 5, Xbox Series X) with features like ray tracing, volumetric lighting, and advanced materials."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the underlying framework that both URP and HDRP are built on?",
+          "correctAnswer": "SRP",
+          "explanation": "SRP (Scriptable Render Pipeline) is the C# framework/API that allows custom render pipelines. URP and HDRP are pre-built pipelines using this framework."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: The Built-in Render Pipeline (Legacy)",
+      "badge": "Legacy",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Unity's Original Pipeline"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Built-in Render Pipeline was Unity's only option for over a decade. It still exists today because millions of projects were built with it. Understanding how it works helps you appreciate why URP and HDRP were created — and why you should probably avoid starting new projects with it."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing Built-in RP flow: Forward Rendering path with multiple passes per light",
+          "caption": "Built-in RP uses Forward Rendering by default, processing lights one at a time per object"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Flowchart — A top-down flow showing: Camera → For each object → For each light affecting object → Render object with that light. Show a cube being rendered 3 times for 3 lights (red, green, blue arrows). Label 'Forward Rendering: one pass per light per object'. Use older, classic Unity styling."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Built-in RP Works"
+        },
+        {
+          "type": "paragraph",
+          "value": "Built-in RP uses **Forward Rendering** by default. Here's what happens:\n\n1. For each visible object in the scene...\n2. For each light that affects that object...\n3. Render the object again with that light's contribution\n\nThis means if you have 10 objects and 4 lights, you could have up to **40 draw calls** just for lighting! This is called the 'per-light-per-object' approach."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// In Built-in RP, you configure rendering in the Graphics Settings\n// Edit → Project Settings → Graphics\n\n// Built-in has two rendering paths:\n// 1. Forward (default) — one pass per light per object\n// 2. Deferred — stores surface data in G-buffers, then lights in screen space\n\n// You can see the rendering path on your camera:\nCamera.main.renderingPath = RenderingPath.Forward;\n// or\nCamera.main.renderingPath = RenderingPath.DeferredShading;",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Problems with Built-in RP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Built-in RP has several fundamental limitations that led to the creation of URP and HDRP:\n\n• **No SRP Batcher** — objects with different materials can't be batched efficiently\n• **Limited post-processing** — built-in post-processing is basic compared to URP's Volume system\n• **No custom render passes** — you can't easily inject custom rendering steps\n• **Shader complexity** — writing custom shaders requires learning multiple languages (CG, HLSL)\n• **Platform inconsistency** — features work differently across platforms\n• **No longer actively developed** — Unity focuses improvements on URP and HDRP"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "When to Still Use Built-in RP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Despite its age, Built-in RP still makes sense in specific situations:\n\n• **Legacy projects** — already built and working, migration cost is too high\n• **Specific asset compatibility** — some older assets only work with Built-in\n• **Simple 2D games** — where pipeline features don't matter\n• **Quick prototypes** — when you don't need modern rendering features\n\n**For all new projects, use URP.**"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Decision tree: New project? → Use URP. Legacy project? → Consider migration or stay on Built-in.",
+          "caption": "Use this decision tree to choose the right pipeline for your situation"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Decision Tree — Diamond 'Starting new project?' → Yes → 'Use URP' (green). No → Diamond 'Need modern features?' → Yes → 'Migrate to URP' (yellow). No → 'Stay on Built-in' (orange). Use simple flowchart styling with clear yes/no labels."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Built-in RP's Rendering Paths"
+        },
+        {
+          "type": "paragraph",
+          "value": "Built-in offers two rendering paths, chosen per-camera:\n\n**Forward Rendering** (default): Simple but scales poorly with many lights. Each light adds a rendering pass per object.\n\n**Deferred Rendering**: Stores surface properties (color, normal, depth) in G-buffers first, then applies all lights in screen space. Better for many lights but has limitations with transparency and anti-aliasing."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Built-in RP rendering paths explained\n\n// Forward Rendering:\n// Object A + 3 lights = 3 draw calls for Object A\n// Object B + 3 lights = 3 draw calls for Object B\n// Total: 6 draw calls for lighting alone\n\n// Deferred Rendering:\n// Pass 1: Render all objects to G-buffers (color, normal, depth)\n// Pass 2: Apply all lights in screen space (one pass per light, but per-pixel)\n// More efficient with many lights, but uses more memory\n\n// URP solves this with the Single Pass Forward renderer\n// which handles multiple lights in one pass",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main performance problem with Built-in RP's Forward Rendering?",
+          "options": [
+            "It uses too much VRAM",
+            "It renders each object once for every light affecting it",
+            "It doesn't support textures",
+            "It only works on mobile"
+          ],
+          "correctAnswer": "It renders each object once for every light affecting it",
+          "explanation": "Forward Rendering in Built-in RP processes one light at a time per object. With 10 objects and 4 lights, you get up to 40 lighting draw calls. This scales poorly as scene complexity grows."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of these is a valid reason to still use Built-in RP?",
+          "options": [
+            "It's the most modern pipeline",
+            "It has the best mobile performance",
+            "You have a legacy project already built with it",
+            "It supports ray tracing"
+          ],
+          "correctAnswer": "You have a legacy project already built with it",
+          "explanation": "Built-in RP is legacy. The only valid reasons to use it are existing projects, specific asset compatibility, or when migration cost exceeds benefit. For new projects, always use URP."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What does Deferred Rendering store in G-buffers before applying lights?",
+          "correctAnswer": "surface properties",
+          "explanation": "Deferred Rendering stores surface data (color, normal, depth, material properties) in G-buffers during a geometry pass, then applies all lights in screen space during a lighting pass."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: Introducing URP — The Modern Default",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Why URP Replaced Built-in RP"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Universal Render Pipeline (URP) was designed from the ground up to solve Built-in RP's problems. It's faster, more consistent across platforms, easier to customize, and receives all of Unity's new rendering features. If you're starting a new Unity project today, URP is the correct choice."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Side-by-side comparison: Built-in RP scene vs URP scene showing same content but URP looks better with better performance",
+          "caption": "URP delivers better visuals AND better performance compared to Built-in RP"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Split Screen — Left: 'Built-in RP' scene with flat lighting, basic shadows, and a 'Batches: 120' counter. Right: 'URP' scene with better lighting, soft shadows, post-processing, and a 'Batches: 45' counter. Both show the same 3D environment. Label performance metrics clearly. Use modern, clean visuals for URP side."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "What Makes URP Different?"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP is built on the **Scriptable Render Pipeline (SRP)** framework, which means it's written in C# and fully customizable. Key improvements over Built-in RP:\n\n• **SRP Batcher** — batches draw calls across different materials (as long as they use the same shader)\n• **Single Pass Forward** — handles multiple lights in one pass instead of one per light\n• **Consistent cross-platform** — same features work on mobile, console, and PC\n• **Modern post-processing** — integrated Volume system for effects like bloom, depth of field, color grading\n• **Shader Graph support** — visual shader editor works seamlessly with URP\n• **2D Renderer** — dedicated optimized path for 2D games with lights and shadows\n• **Decal Renderer** — project textures onto surfaces without extra geometry"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "URP's Single Pass Forward Rendering"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unlike Built-in's one-pass-per-light approach, URP uses **Single Pass Forward Rendering**. It collects all lights affecting an object and processes them in a single shader pass. This dramatically reduces draw calls."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// URP's Single Pass Forward (simplified concept)\n// Instead of:\n//   Pass 1: Object with Light 1\n//   Pass 2: Object with Light 2\n//   Pass 3: Object with Light 3\n\n// URP does:\n//   Pass 1: Object with Light 1 + Light 2 + Light 3 (all in one shader)\n\n// In URP shaders, you access all lights like this:\nLight mainLight = GetMainLight();           // Directional light\n// Additional lights are handled automatically in the shader loop\n// Unity limits additional lights per object (default: 4)",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up a URP Project"
+        },
+        {
+          "type": "paragraph",
+          "value": "When you create a new Unity project, choose the **URP** template. If you have an existing project, you can convert it through the Package Manager. URP requires two assets: a **URP Asset** (controls global settings) and a **Renderer Asset** (controls how the camera renders)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Unity editor screenshot showing URP Asset in Inspector with rendering settings, quality levels, and renderer list",
+          "caption": "The URP Asset controls global rendering settings for your entire project"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — Unity Inspector showing a URP Asset. Visible sections: 'Rendering' (URP Renderer List), 'Quality' (HDR, MSAA, Render Scale), 'Lighting' (Main Light, Additional Lights), 'Shadows' (Max Distance, Cascades). Use Unity's dark theme. Highlight key settings with annotation arrows."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// URP Project Structure:\n// Assets/Settings/UniversalRP-HighQuality.asset  ← Quality settings\n// Assets/Settings/UniversalRP-LowQuality.asset   ← Different quality level\n// Assets/Settings/ForwardRenderer.asset          ← Renderer configuration\n\n// You assign the URP Asset in:\n// Edit → Project Settings → Graphics → Scriptable Render Pipeline Settings\n\n// The Renderer Asset (ForwardRenderer) controls:\n// - What render passes exist (Opaque, Transparent, Post-processing)\n// - Renderer Features (custom injected passes)\n// - Default shader materials",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "URP's 2D Renderer"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP includes a dedicated **2D Renderer** optimized for 2D games. It provides:\n• **2D Lights** — point lights, global lights, and freeform lights that affect sprites\n• **2D Shadows** — cast and receive shadows from sprite shapes\n• **Sprite Normal Maps** — fake 3D depth on 2D sprites\n• **2D Post-processing** — same Volume system as 3D URP\n\nThis is a huge improvement over Built-in RP, which had no native 2D lighting system."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is URP's key performance advantage over Built-in Forward Rendering?",
+          "options": [
+            "It uses ray tracing by default",
+            "It processes multiple lights in a single pass per object",
+            "It doesn't render transparent objects",
+            "It uses less VRAM for textures"
+          ],
+          "correctAnswer": "It processes multiple lights in a single pass per object",
+          "explanation": "URP's Single Pass Forward Rendering handles all lights affecting an object in one shader pass, while Built-in RP requires one pass per light. This dramatically reduces draw calls."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What framework is URP built on top of?",
+          "options": [
+            "Built-in Render Pipeline",
+            "Scriptable Render Pipeline (SRP)",
+            "High Definition Render Pipeline",
+            "OpenGL Direct Mode"
+          ],
+          "correctAnswer": "Scriptable Render Pipeline (SRP)",
+          "explanation": "URP is built on the SRP framework, which is a C# API that allows complete customization of the rendering process. HDRP is also built on SRP."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Unity system batches draw calls across different materials in URP?",
+          "correctAnswer": "SRP Batcher",
+          "explanation": "The SRP Batcher is URP's draw call batching system. Unlike traditional batching, it can batch objects with different materials as long as they use the same shader variant, significantly reducing CPU overhead."
+        }
+      ]
+    }
+  ]
+}
