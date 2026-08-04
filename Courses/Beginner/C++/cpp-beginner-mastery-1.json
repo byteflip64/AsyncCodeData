@@ -1355,6 +1355,684 @@
           "explanation": "sizeof(array) gives total bytes, sizeof(array[0]) gives bytes per element. Dividing them gives the element count. This only works with actual arrays, not pointers."
         }
       ]
+    },
+    {
+      "partTitle": "Part 13: C-Style Strings",
+      "badge": "Strings",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "C-Style Strings: Character Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "Before C++ introduced the `std::string` class, C used character arrays to represent text. These are called **C-style strings** — null-terminated arrays of characters. Understanding them is essential because they still appear in system APIs, legacy code, and low-level programming."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Memory diagram showing 'Hello' as individual characters ending with null terminator \\0",
+          "caption": "C-style strings are character arrays ending with a null terminator \\0"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A horizontal row of memory cells showing: 'H'(72), 'e'(101), 'l'(108), 'l'(108), 'o'(111), '\\0'(0). Each cell labeled with character, ASCII value, and memory address. Highlight the null terminator in red as the sentinel value."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Declaring C-Style Strings"
+        },
+        {
+          "type": "paragraph",
+          "value": "A C-style string is a `char` array with a null character `'\\0'` at the end. The null terminator tells functions where the string ends. Without it, string functions will read past the array into unknown memory."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // Method 1: Initialize with string literal (compiler adds \\0)\n    char name1[] = \"Alice\";\n    \n    // Method 2: Explicit character array with \\0\n    char name2[6] = {'A', 'l', 'i', 'c', 'e', '\\0'};\n    \n    // Method 3: Fixed size (must be large enough!)\n    char name3[20] = \"Bob\";\n    \n    std::cout << \"name1: \" << name1 << std::endl;\n    std::cout << \"name2: \" << name2 << std::endl;\n    std::cout << \"name3: \" << name3 << std::endl;\n    \n    // Size includes the null terminator\n    std::cout << \"Size of name1: \" << sizeof(name1) << \" bytes\" << std::endl;\n    \n    return 0;\n}",
+          "output": "name1: Alice\nname2: Alice\nname3: Bob\nSize of name1: 6 bytes"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common C String Functions (cstring library)"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `<cstring>` library provides functions for working with C-style strings: `strlen()` for length, `strcpy()` for copying, `strcat()` for concatenation, `strcmp()` for comparison. These functions are dangerous — they don't check bounds and can cause buffer overflows."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <cstring>\n\nint main() {\n    char str1[20] = \"Hello\";\n    char str2[20] = \"World\";\n    char str3[40];\n    \n    // strlen - get length (not including \\0)\n    std::cout << \"Length of str1: \" << strlen(str1) << std::endl;\n    \n    // strcpy - copy string (DANGEROUS if destination too small!)\n    strcpy(str3, str1);\n    std::cout << \"After strcpy: \" << str3 << std::endl;\n    \n    // strcat - concatenate (DANGEROUS!)\n    strcat(str3, \" \");\n    strcat(str3, str2);\n    std::cout << \"After strcat: \" << str3 << std::endl;\n    \n    // strcmp - compare (0 means equal)\n    std::cout << \"Compare: \" << strcmp(str1, str2) << std::endl;\n    \n    return 0;\n}",
+          "output": "Length of str1: 5\nAfter strcpy: Hello\nAfter strcat: Hello World\nCompare: -15"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Danger: Buffer Overflows"
+        },
+        {
+          "type": "paragraph",
+          "value": "C-style strings are a major source of security vulnerabilities. `strcpy` and `strcat` don't check if the destination is large enough. If you copy 100 characters into a 10-character array, you overwrite adjacent memory — this is called a **buffer overflow** and is exploited by hackers."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <cstring>\n\nint main() {\n    char buffer[10];\n    \n    // SAFE: strncpy limits copy length\n    strncpy(buffer, \"Hello World!\", 9);\n    buffer[9] = '\\0';  // Ensure null termination!\n    \n    std::cout << \"Safe copy: \" << buffer << std::endl;\n    \n    // DANGEROUS: This would overflow!\n    // strcpy(buffer, \"This is way too long for the buffer\");\n    \n    return 0;\n}",
+          "output": "Safe copy: Hello Wor"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What character marks the end of a C-style string?",
+          "options": [
+            "'\\n'",
+            "'\\0'",
+            "'\\t'",
+            "'\\r'"
+          ],
+          "correctAnswer": "'\\0'",
+          "explanation": "The null character '\\0' (ASCII 0) marks the end of a C-style string. Without it, string functions don't know where the string ends."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why are strcpy() and strcat() considered dangerous?",
+          "options": [
+            "They are too slow",
+            "They don't check buffer sizes and can overflow",
+            "They don't work with numbers",
+            "They require extra memory"
+          ],
+          "correctAnswer": "They don't check buffer sizes and can overflow",
+          "explanation": "strcpy and strcat blindly copy data without checking if the destination array is large enough. This causes buffer overflows, a major security vulnerability."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which header file provides C-style string functions like strlen and strcpy?",
+          "correctAnswer": "cstring",
+          "explanation": "The <cstring> header (or <string.h> in C) provides functions for manipulating C-style strings like strlen, strcpy, strcat, and strcmp."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: std::string — The Modern Way",
+      "badge": "Strings",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "std::string: Safe and Powerful Text"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::string` is a C++ class that handles text safely and efficiently. Unlike C-style strings, `std::string` manages its own memory, grows dynamically, and provides bounds checking. It is the recommended way to work with text in modern C++."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Comparison showing C-style string as fixed-size char array vs std::string as dynamic object",
+          "caption": "std::string handles memory automatically — no need to worry about buffer sizes"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Left: C-style string as a fixed 10-char box with 'Hello\\0' inside, red warning for overflow. Right: std::string as a dynamic box that grows, green checkmark, showing 'Hello World!' comfortably fitting. Label 'Fixed size' vs 'Dynamic growth'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating and Using std::string"
+        },
+        {
+          "type": "paragraph",
+          "value": "Include `<string>` to use `std::string`. You can create strings from literals, other strings, or C-style strings. The string automatically manages memory and grows as needed."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    // Various ways to create strings\n    std::string s1 = \"Hello\";\n    std::string s2(\"World\");\n    std::string s3 = s1 + \" \" + s2;  // Concatenation\n    \n    std::cout << \"s1: \" << s1 << std::endl;\n    std::cout << \"s2: \" << s2 << std::endl;\n    std::cout << \"s3: \" << s3 << std::endl;\n    \n    // Length and capacity\n    std::cout << \"Length: \" << s3.length() << std::endl;\n    std::cout << \"Capacity: \" << s3.capacity() << std::endl;\n    \n    return 0;\n}",
+          "output": "s1: Hello\ns2: World\ns3: Hello World\nLength: 11\nCapacity: 15"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common String Methods"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::string` provides many useful methods: `length()` / `size()` for character count, `empty()` to check if empty, `substr(start, length)` to extract substrings, `find()` to search, `replace()` to substitute text, and `compare()` for ordering."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    std::string text = \"Hello, World!\";\n    \n    // Accessing characters\n    std::cout << \"First char: \" << text[0] << std::endl;\n    std::cout << \"Last char: \" << text[text.length() - 1] << std::endl;\n    \n    // Substring: substr(start_index, length)\n    std::cout << \"Substring: \" << text.substr(7, 5) << std::endl;\n    \n    // Find position of substring\n    size_t pos = text.find(\"World\");\n    std::cout << \"'World' found at index: \" << pos << std::endl;\n    \n    // Replace\n    text.replace(7, 5, \"C++\");\n    std::cout << \"After replace: \" << text << std::endl;\n    \n    return 0;\n}",
+          "output": "First char: H\nLast char: !\nSubstring: World\n'World' found at index: 7\nAfter replace: Hello, C++!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "String Comparison"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `==` for equality, `!=` for inequality, and `<`, `>` for lexicographic (dictionary) ordering. You can also use `compare()` for more control. Note: comparing with `==` is case-sensitive."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    std::string a = \"Apple\";\n    std::string b = \"Banana\";\n    std::string c = \"Apple\";\n    \n    std::cout << std::boolalpha;\n    std::cout << \"a == c: \" << (a == c) << std::endl;\n    std::cout << \"a == b: \" << (a == b) << std::endl;\n    std::cout << \"a < b: \" << (a < b) << std::endl;  // 'A' comes before 'B'\n    \n    // compare() returns: 0 (equal), negative (a < b), positive (a > b)\n    std::cout << \"compare: \" << a.compare(b) << std::endl;\n    \n    return 0;\n}",
+          "output": "a == c: true\na == b: false\na < b: true\ncompare: -1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Converting Between std::string and C-Style Strings"
+        },
+        {
+          "type": "paragraph",
+          "value": "Sometimes you need a C-style string (e.g., for legacy APIs). Use `.c_str()` to get a `const char*` pointer. To create a `std::string` from a C-style string, simply assign it."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n#include <cstring>\n\nint main() {\n    std::string cppString = \"Modern C++\";\n    \n    // Get C-style string pointer\n    const char* cString = cppString.c_str();\n    std::cout << \"C-style: \" << cString << std::endl;\n    \n    // C-style to std::string\n    char oldStyle[] = \"Legacy code\";\n    std::string modern = oldStyle;\n    std::cout << \"Modern: \" << modern << std::endl;\n    \n    return 0;\n}",
+          "output": "C-style: Modern C++\nModern: Legacy code"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main advantage of std::string over C-style strings?",
+          "options": [
+            "It uses less memory",
+            "It handles memory automatically and prevents buffer overflows",
+            "It is faster",
+            "It doesn't require any header"
+          ],
+          "correctAnswer": "It handles memory automatically and prevents buffer overflows",
+          "explanation": "std::string manages its own memory, grows dynamically, and provides bounds-safe operations. This eliminates the buffer overflow risks of C-style strings."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which method extracts a portion of a std::string?",
+          "options": [
+            "extract()",
+            "substring()",
+            "substr()",
+            "slice()"
+          ],
+          "correctAnswer": "substr()",
+          "explanation": "substr(start_index, length) returns a new string containing the specified portion. If length is omitted, it goes to the end."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which method returns a const char* pointer from a std::string?",
+          "correctAnswer": "c_str",
+          "explanation": "c_str() returns a const char* pointer to the internal C-style string representation. The pointer is valid only until the string is modified."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 15: Introduction to Pointers",
+      "badge": "Memory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Pointers: Your Gateway to Memory"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **pointer** is a variable that stores a memory address. Pointers are what make C++ a systems language — they let you directly manipulate memory, which is both powerful and dangerous. Understanding pointers is essential for dynamic memory, arrays, functions, and object-oriented programming."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing a pointer variable containing a memory address that points to an integer value in RAM",
+          "caption": "A pointer stores a memory address, not the actual value"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Two boxes. Left: 'Pointer ptr' containing hex address '0x7ffd...'. Arrow from ptr to right box. Right box: 'int num = 42' at address '0x7ffd...'. Label arrow 'points to'. Use distinct colors for pointer (blue) and data (green). Show memory addresses clearly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Declaring and Using Pointers"
+        },
+        {
+          "type": "paragraph",
+          "value": "Declare a pointer with `type* name`. Use `&` (address-of operator) to get a variable's address. Use `*` (dereference operator) to access the value at the address. The `*` has two meanings: in declaration it creates a pointer, in usage it dereferences."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int num = 42;\n    \n    // Declare a pointer to int\n    int* ptr = &num;  // ptr stores the address of num\n    \n    std::cout << \"Value of num: \" << num << std::endl;\n    std::cout << \"Address of num: \" << &num << std::endl;\n    std::cout << \"Value of ptr: \" << ptr << std::endl;\n    std::cout << \"Value at ptr: \" << *ptr << std::endl;  // Dereference\n    \n    // Modify through pointer\n    *ptr = 100;\n    std::cout << \"num after *ptr = 100: \" << num << std::endl;\n    \n    return 0;\n}",
+          "output": "Value of num: 42\nAddress of num: 0x7ffd1234abcd\nValue of ptr: 0x7ffd1234abcd\nValue at ptr: 42\nnum after *ptr = 100: 100"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Null Pointers"
+        },
+        {
+          "type": "paragraph",
+          "value": "A null pointer points to nothing. Use `nullptr` (C++11) instead of `NULL` or `0`. Always check if a pointer is null before dereferencing it, or your program will crash with a segmentation fault."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int* ptr1 = nullptr;  // Modern C++ way\n    int* ptr2 = NULL;     // Old C way (avoid)\n    int* ptr3 = 0;        // Also old way (avoid)\n    \n    std::cout << \"ptr1 is null: \" << (ptr1 == nullptr) << std::endl;\n    \n    // SAFE: Check before dereferencing\n    if (ptr1 != nullptr) {\n        std::cout << *ptr1 << std::endl;\n    } else {\n        std::cout << \"Pointer is null, cannot dereference!\" << std::endl;\n    }\n    \n    // DANGEROUS: This would crash!\n    // std::cout << *ptr1;  // SEGMENTATION FAULT!\n    \n    return 0;\n}",
+          "output": "ptr1 is null: 1\nPointer is null, cannot dereference!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Pointers and Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "In C++, an array name is essentially a pointer to its first element. Pointer arithmetic lets you navigate through arrays: `ptr + 1` moves to the next element (not the next byte!). This is called **pointer arithmetic** and is fundamental to how C++ handles arrays internally."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int* ptr = arr;  // Points to first element\n    \n    // Array indexing and pointer arithmetic are equivalent\n    std::cout << \"arr[0]: \" << arr[0] << \", *ptr: \" << *ptr << std::endl;\n    std::cout << \"arr[1]: \" << arr[1] << \", *(ptr+1): \" << *(ptr + 1) << std::endl;\n    \n    // Loop using pointer arithmetic\n    std::cout << \"Using pointer: \";\n    for (int i = 0; i < 5; i++) {\n        std::cout << *(ptr + i) << \" \";\n    }\n    std::cout << std::endl;\n    \n    // ptr++ moves to next element\n    std::cout << \"ptr++ traversal: \";\n    for (int i = 0; i < 5; i++) {\n        std::cout << *ptr << \" \";\n        ptr++;\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "arr[0]: 10, *ptr: 10\narr[1]: 20, *(ptr+1): 20\nUsing pointer: 10 20 30 40 50 \nptr++ traversal: 10 20 30 40 50"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Pointer Types and Sizes"
+        },
+        {
+          "type": "paragraph",
+          "value": "All pointers on a given system have the same size (typically 4 bytes on 32-bit, 8 bytes on 64-bit), regardless of what they point to. However, pointer arithmetic depends on the type — adding 1 to an `int*` moves 4 bytes, while adding 1 to a `double*` moves 8 bytes."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int* iptr;\n    double* dptr;\n    char* cptr;\n    \n    std::cout << \"Size of int*: \" << sizeof(iptr) << \" bytes\" << std::endl;\n    std::cout << \"Size of double*: \" << sizeof(dptr) << \" bytes\" << std::endl;\n    std::cout << \"Size of char*: \" << sizeof(cptr) << \" bytes\" << std::endl;\n    \n    int arr[] = {10, 20, 30};\n    int* p = arr;\n    \n    std::cout << \"\\nPointer arithmetic:\" << std::endl;\n    std::cout << \"p address: \" << p << std::endl;\n    std::cout << \"p+1 address: \" << (p + 1) << std::endl;\n    std::cout << \"Difference: \" << sizeof(int) << \" bytes\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Size of int*: 8 bytes\nSize of double*: 8 bytes\nSize of char*: 8 bytes\n\nPointer arithmetic:\np address: 0x7ffd1234abcd\np+1 address: 0x7ffd1234abd1\nDifference: 4 bytes"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the * operator do when used with a pointer variable?",
+          "options": [
+            "Multiplies two values",
+            "Gets the address of a variable",
+            "Accesses the value at the address (dereference)",
+            "Creates a pointer"
+          ],
+          "correctAnswer": "Accesses the value at the address (dereference)",
+          "explanation": "When used on an existing pointer (not in declaration), *ptr dereferences the pointer — it accesses the value stored at the memory address ptr holds."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the modern C++ way to create a null pointer?",
+          "options": [
+            "NULL",
+            "0",
+            "nullptr",
+            "void*"
+          ],
+          "correctAnswer": "nullptr",
+          "explanation": "nullptr (introduced in C++11) is the type-safe way to create a null pointer. NULL and 0 are legacy from C and can cause type ambiguity."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator gets the memory address of a variable?",
+          "correctAnswer": "&",
+          "explanation": "The & operator (address-of) returns the memory address of a variable. int* ptr = &num; stores num's address in ptr."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 16: References",
+      "badge": "Memory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "References: Aliases for Variables"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **reference** is an alias — another name for an existing variable. Unlike pointers, references cannot be null, cannot be reassigned to refer to a different variable, and don't require dereferencing. They provide a safer alternative to pointers for many use cases."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing variable 'num' and reference 'ref' both pointing to the same memory location",
+          "caption": "A reference is just another name for the same memory location"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — One memory box labeled 'int num = 42' at address 0x1000. Two labels pointing to the same box: 'num' and 'ref'. Arrow from both labels to the same box. Caption: 'Two names, one memory location'. Use same-color arrows to emphasize they point to identical data."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating References"
+        },
+        {
+          "type": "paragraph",
+          "value": "Declare a reference with `type& name = variable`. The `&` in declaration creates a reference. Once initialized, a reference cannot be changed to refer to another variable. It must be initialized when declared."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int num = 42;\n    \n    // Create a reference to num\n    int& ref = num;  // ref is now an alias for num\n    \n    std::cout << \"num: \" << num << std::endl;\n    std::cout << \"ref: \" << ref << std::endl;\n    \n    // Modify through reference\n    ref = 100;\n    std::cout << \"After ref = 100:\" << std::endl;\n    std::cout << \"num: \" << num << std::endl;\n    std::cout << \"ref: \" << ref << std::endl;\n    \n    // Both have the same address\n    std::cout << \"Address of num: \" << &num << std::endl;\n    std::cout << \"Address of ref: \" << &ref << std::endl;\n    \n    return 0;\n}",
+          "output": "num: 42\nref: 42\nAfter ref = 100:\nnum: 100\nref: 100\nAddress of num: 0x7ffd1234abcd\nAddress of ref: 0x7ffd1234abcd"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "References vs Pointers"
+        },
+        {
+          "type": "paragraph",
+          "value": "**References:** Must be initialized, cannot be null, cannot be reassigned, no dereferencing needed, safer.\n**Pointers:** Can be uninitialized, can be null, can be reassigned, require dereferencing, more flexible but dangerous.\n\nUse references when you want an alias that cannot be null. Use pointers when you need nullability, reassignment, or pointer arithmetic."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int value = 50;\n    \n    // Pointer: can be null, can be reassigned\n    int* ptr = &value;\n    ptr = nullptr;  // OK\n    \n    // Reference: must bind to something, cannot be null\n    int& ref = value;\n    // int& badRef;     // ERROR: must initialize!\n    // ref = nullptr;   // ERROR: cannot be null!\n    \n    // Using them\n    std::cout << \"Pointer needs *: \" << *ptr << std::endl;  // Dereference\n    std::cout << \"Reference just works: \" << ref << std::endl;  // No * needed\n    \n    return 0;\n}",
+          "output": "Pointer needs *: 50\nReference just works: 50"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "const References"
+        },
+        {
+          "type": "paragraph",
+          "value": "A `const` reference lets you read a variable without copying it, while preventing modification. This is extremely common in function parameters — it passes large objects efficiently without the overhead of copying or the risk of accidental modification."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    std::string message = \"Hello, World!\";\n    \n    // const reference: read-only alias\n    const std::string& ref = message;\n    \n    std::cout << \"Via const ref: \" << ref << std::endl;\n    \n    // This would cause a compile error:\n    // ref = \"New text\";  // ERROR: cannot modify const reference\n    \n    // But the original can still be modified\n    message = \"Modified\";\n    std::cout << \"After original change: \" << ref << std::endl;\n    \n    return 0;\n}",
+          "output": "Via const ref: Hello, World!\nAfter original change: Modified"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which statement about references is TRUE?",
+          "options": [
+            "References can be null",
+            "References can be reassigned to another variable",
+            "References must be initialized when declared",
+            "References require the * operator to access values"
+          ],
+          "correctAnswer": "References must be initialized when declared",
+          "explanation": "References must be initialized at declaration, cannot be null, cannot be reassigned, and don't need dereferencing. These are the key differences from pointers."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main advantage of passing by const reference?",
+          "options": [
+            "It makes the function faster by avoiding copy overhead",
+            "It allows the function to modify the original",
+            "It creates a copy of the object",
+            "It prevents the function from being called"
+          ],
+          "correctAnswer": "It makes the function faster by avoiding copy overhead",
+          "explanation": "Passing by const reference avoids copying large objects (saving time and memory) while preventing the function from accidentally modifying the original."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which symbol is used to declare a reference in C++?",
+          "correctAnswer": "&",
+          "explanation": "The & symbol in a declaration creates a reference: int& ref = num;. Note: & is also the address-of operator, but context determines which meaning applies."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Dynamic Memory Allocation",
+      "badge": "Memory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Managing Memory at Runtime"
+        },
+        {
+          "type": "paragraph",
+          "value": "So far, all variables have been **stack-allocated** — their size is known at compile time and they are automatically destroyed when they go out of scope. But what if you don't know how much memory you need until runtime? **Dynamic memory** lets you allocate memory from the **heap** during program execution."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Memory diagram showing stack vs heap with new allocating on heap and stack variables auto-destroyed",
+          "caption": "Stack memory is automatic; heap memory is manual — you allocate and free it yourself"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Two vertical sections. Left: 'Stack' showing automatic variables (int x = 5) with arrows showing auto-cleanup when function returns. Right: 'Heap' showing new int(42) with manual allocation and delete. Use red X for memory leak if delete is forgotten. Label 'Automatic' vs 'Manual'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "new and delete"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `new` to allocate memory on the heap. It returns a pointer to the allocated memory. Use `delete` to free that memory when you're done. Forgetting `delete` causes a **memory leak** — the memory stays allocated but unreachable."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // Allocate a single int on the heap\n    int* ptr = new int(42);  // Allocate and initialize\n    \n    std::cout << \"Value: \" << *ptr << std::endl;\n    std::cout << \"Address: \" << ptr << std::endl;\n    \n    // Free the memory\n    delete ptr;\n    \n    // Good practice: set to nullptr after delete\n    ptr = nullptr;\n    \n    return 0;\n}",
+          "output": "Value: 42\nAddress: 0x55a3b2c4a2a0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Dynamic Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `new type[size]` to allocate an array dynamically. Use `delete[]` (with brackets) to free it. Mismatching `new[]` with `delete` (without brackets) causes undefined behavior."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int size;\n    std::cout << \"Enter array size: \";\n    std::cin >> size;\n    \n    // Allocate dynamic array\n    int* arr = new int[size];\n    \n    // Fill the array\n    for (int i = 0; i < size; i++) {\n        arr[i] = i * 10;\n    }\n    \n    // Print\n    std::cout << \"Array: \";\n    for (int i = 0; i < size; i++) {\n        std::cout << arr[i] << \" \";\n    }\n    std::cout << std::endl;\n    \n    // MUST use delete[] for arrays!\n    delete[] arr;\n    arr = nullptr;\n    \n    return 0;\n}",
+          "output": "Enter array size: 5\nArray: 0 10 20 30 40"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Memory Leaks: The Silent Killer"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **memory leak** occurs when you allocate memory with `new` but forget to `delete` it. The memory remains allocated but you lose the pointer to it. Over time, this can exhaust system memory and crash your program. Always pair every `new` with a `delete`."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nvoid leakyFunction() {\n    int* data = new int[1000];\n    // Do some work...\n    // Oops! Forgot delete[] data;\n    // Memory leak! 4000 bytes lost forever\n}\n\nvoid safeFunction() {\n    int* data = new int[1000];\n    // Do some work...\n    delete[] data;  // Clean up!\n    data = nullptr;\n}\n\nint main() {\n    // Each call leaks memory\n    for (int i = 0; i < 100000; i++) {\n        // leakyFunction();  // DON'T DO THIS!\n        safeFunction();      // Good practice\n    }\n    \n    std::cout << \"Memory managed safely!\" << std::endl;\n    return 0;\n}",
+          "output": "Memory managed safely!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stack vs Heap: When to Use Each"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Stack:** Fast allocation/deallocation, automatic cleanup, limited size (~1-8 MB), fixed size at compile time. Use for small, short-lived variables.\n\n**Heap:** Slower allocation, manual cleanup, virtually unlimited (system RAM), size determined at runtime. Use for large objects, variable-size data, or objects that must outlive their creating scope."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // Stack: automatic, fast, limited\n    int stackVar = 10;\n    int stackArr[100];\n    \n    // Heap: manual, flexible, larger\n    int* heapVar = new int(10);\n    int* heapArr = new int[1000];\n    \n    std::cout << \"Stack variable: \" << stackVar << std::endl;\n    std::cout << \"Heap variable: \" << *heapVar << std::endl;\n    \n    // Stack cleans up automatically\n    // Heap must be freed manually\n    delete heapVar;\n    delete[] heapArr;\n    \n    return 0;\n}",
+          "output": "Stack variable: 10\nHeap variable: 10"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you use delete instead of delete[] on a dynamically allocated array?",
+          "options": [
+            "Nothing, it works fine",
+            "Undefined behavior — may corrupt memory",
+            "The array is automatically resized",
+            "A compile error occurs"
+          ],
+          "correctAnswer": "Undefined behavior — may corrupt memory",
+          "explanation": "delete[] knows how many elements to destroy. Using delete on an array only destroys the first element and may corrupt the heap. Always match new[] with delete[]."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is a memory leak?",
+          "options": [
+            "When memory gets wet",
+            "When allocated memory is never freed and becomes unreachable",
+            "When a pointer points to null",
+            "When the stack overflows"
+          ],
+          "correctAnswer": "When allocated memory is never freed and becomes unreachable",
+          "explanation": "A memory leak occurs when you allocate memory with new but lose the pointer without calling delete. The memory stays allocated but can never be used or freed."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator allocates memory on the heap in C++?",
+          "correctAnswer": "new",
+          "explanation": "The new operator allocates memory on the heap and returns a pointer to it. It must be paired with delete (or delete[] for arrays) to prevent memory leaks."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Functions — Define and Call",
+      "badge": "Functions",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Writing Reusable Code"
+        },
+        {
+          "type": "paragraph",
+          "value": "A function is a reusable block of code that performs a specific task. Functions keep your code organized, reduce repetition, and make debugging easier. In C++, you define functions with a return type, name, parameters, and body."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Anatomy of a C++ function showing return type, name, parameters, and body labeled",
+          "caption": "Every function has a return type, name, parameters, and body"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Annotated Diagram — A C++ function shown with callout labels: 'int' (return type), 'addNumbers' (function name), '(int a, int b)' (parameters), '{ return a + b; }' (body). Include a small flow: Input → [Function] → Output. Use syntax highlighting style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Defining and Calling Functions"
+        },
+        {
+          "type": "paragraph",
+          "value": "A function definition includes the return type, name, parameter list, and body. If the function doesn't return anything, use `void`. Call a function by writing its name followed by parentheses with arguments."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\n// Function declaration (prototype)\nint add(int a, int b);\nvoid greet();\n\nint main() {\n    greet();\n    \n    int result = add(5, 3);\n    std::cout << \"5 + 3 = \" << result << std::endl;\n    \n    std::cout << \"10 + 20 = \" << add(10, 20) << std::endl;\n    \n    return 0;\n}\n\n// Function definitions\nvoid greet() {\n    std::cout << \"Hello from a function!\" << std::endl;\n}\n\nint add(int a, int b) {\n    return a + b;\n}",
+          "output": "Hello from a function!\n5 + 3 = 8\n10 + 20 = 30"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Pass by Value vs Pass by Reference"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Pass by value:** The function receives a copy. Changes don't affect the original.\n**Pass by reference:** The function receives the original variable. Changes affect the original.\n**Pass by const reference:** The function receives the original but cannot modify it. Efficient for large objects."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nvoid passByValue(int x) {\n    x = 100;  // Only changes the local copy\n}\n\nvoid passByReference(int& x) {\n    x = 100;  // Changes the original!\n}\n\nvoid passByConstRef(const int& x) {\n    // x = 100;  // ERROR: cannot modify const reference\n    std::cout << \"Value is: \" << x << std::endl;\n}\n\nint main() {\n    int num = 50;\n    \n    std::cout << \"Original: \" << num << std::endl;\n    \n    passByValue(num);\n    std::cout << \"After passByValue: \" << num << std::endl;\n    \n    passByReference(num);\n    std::cout << \"After passByReference: \" << num << std::endl;\n    \n    passByConstRef(num);\n    \n    return 0;\n}",
+          "output": "Original: 50\nAfter passByValue: 50\nAfter passByReference: 100\nValue is: 100"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Default Parameters"
+        },
+        {
+          "type": "paragraph",
+          "value": "You can provide default values for function parameters. If the caller doesn't provide an argument, the default is used. Default parameters must come after non-default parameters in the parameter list."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nvoid greetUser(std::string name, std::string greeting = \"Hello\") {\n    std::cout << greeting << \", \" << name << \"!\" << std::endl;\n}\n\nint power(int base, int exponent = 2) {\n    int result = 1;\n    for (int i = 0; i < exponent; i++) {\n        result *= base;\n    }\n    return result;\n}\n\nint main() {\n    greetUser(\"Alice\");                    // Uses default greeting\n    greetUser(\"Bob\", \"Hi\");              // Custom greeting\n    \n    std::cout << \"3^2 = \" << power(3) << std::endl;      // Default exponent = 2\n    std::cout << \"2^5 = \" << power(2, 5) << std::endl;   // Custom exponent\n    \n    return 0;\n}",
+          "output": "Hello, Alice!\nHi, Bob!\n3^2 = 9\n2^5 = 32"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Function Overloading"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ allows multiple functions with the same name but different parameter lists. This is called **function overloading**. The compiler chooses the right function based on the arguments you pass. The return type alone does NOT distinguish overloaded functions."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\n// Overloaded print functions\nvoid print(int value) {\n    std::cout << \"Integer: \" << value << std::endl;\n}\n\nvoid print(double value) {\n    std::cout << \"Double: \" << value << std::endl;\n}\n\nvoid print(const std::string& value) {\n    std::cout << \"String: \" << value << std::endl;\n}\n\nvoid print(int a, int b) {\n    std::cout << \"Two integers: \" << a << \", \" << b << std::endl;\n}\n\nint main() {\n    print(42);\n    print(3.14);\n    print(\"Hello\");\n    print(10, 20);\n    \n    return 0;\n}",
+          "output": "Integer: 42\nDouble: 3.14\nString: Hello\nTwo integers: 10, 20"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens when you pass a variable by value to a function?",
+          "options": [
+            "The function modifies the original variable",
+            "The function receives a copy; original is unchanged",
+            "The function receives a pointer to the variable",
+            "A compile error occurs"
+          ],
+          "correctAnswer": "The function receives a copy; original is unchanged",
+          "explanation": "Pass by value creates a copy of the argument. Changes inside the function only affect the copy, not the original variable."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of the following is required for function overloading?",
+          "options": [
+            "Different return types",
+            "Different parameter lists",
+            "Different function names",
+            "Different access modifiers"
+          ],
+          "correctAnswer": "Different parameter lists",
+          "explanation": "Function overloading requires different parameter types, counts, or order. Return type alone cannot distinguish overloaded functions."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword is used for functions that don't return a value?",
+          "correctAnswer": "void",
+          "explanation": "void is the return type for functions that don't return anything. void functions perform actions but don't produce a result."
+        }
+      ]
     }
   ]
 }
