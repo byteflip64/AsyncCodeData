@@ -1164,6 +1164,493 @@
           "explanation": "The struct keyword defines a structure — a custom type with named fields that package related data together."
         }
       ]
+    },
+    {
+      "partTitle": "Part 11: Struct Methods and Associated Functions",
+      "badge": "Structs",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Adding Behavior to Structs"
+        },
+        {
+          "type": "paragraph",
+          "value": "Methods are functions defined within the context of a struct. They specify the behavior that instances of the struct can perform. Unlike regular functions, methods are called on an instance using dot notation."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Defining Methods with impl"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct Rectangle {\n    width: u32,\n    height: u32,\n}\n\nimpl Rectangle {\n    // Method: takes &self (immutable borrow)\n    fn area(&self) -> u32 {\n        self.width * self.height\n    }\n    \n    // Method: checks if the rectangle can hold another\n    fn can_hold(&self, other: &Rectangle) -> bool {\n        self.width > other.width && self.height > other.height\n    }\n}\n\nfn main() {\n    let rect1 = Rectangle { width: 30, height: 50 };\n    let rect2 = Rectangle { width: 10, height: 40 };\n    \n    println!(\"Area: {}\", rect1.area());\n    println!(\"Can hold rect2: {}\", rect1.can_hold(&rect2));\n}",
+          "output": "Area: 1500\nCan hold rect2: true"
+        },
+        {
+          "type": "paragraph",
+          "value": "Methods are defined inside an impl block. The first parameter is always self (or &self, or &mut self). &self is a shorthand for self: &Self, borrowing the instance immutably. self without & would take ownership."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Associated Functions (Constructors)"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct Rectangle {\n    width: u32,\n    height: u32,\n}\n\nimpl Rectangle {\n    // Associated function: no self parameter\n    fn square(size: u32) -> Rectangle {\n        Rectangle {\n            width: size,\n            height: size,\n        }\n    }\n    \n    fn area(&self) -> u32 {\n        self.width * self.height\n    }\n}\n\nfn main() {\n    let sq = Rectangle::square(10);\n    println!(\"Square area: {}\", sq.area());\n}",
+          "output": "Square area: 100"
+        },
+        {
+          "type": "paragraph",
+          "value": "Associated functions don't take self as a parameter. They are called using the struct name and :: (double colon). They are commonly used as constructors. Multiple impl blocks for the same struct are allowed."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Mutable Methods"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct Counter {\n    count: u32,\n}\n\nimpl Counter {\n    fn new() -> Counter {\n        Counter { count: 0 }\n    }\n    \n    fn increment(&mut self) {\n        self.count += 1;\n    }\n    \n    fn get_count(&self) -> u32 {\n        self.count\n    }\n}\n\nfn main() {\n    let mut counter = Counter::new();\n    counter.increment();\n    counter.increment();\n    println!(\"Count: {}\", counter.get_count());\n}",
+          "output": "Count: 2"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the difference between a method and an associated function?",
+          "options": [
+            "Methods are faster",
+            "Methods take self; associated functions do not",
+            "Associated functions are private",
+            "There is no difference"
+          ],
+          "correctAnswer": "Methods take self; associated functions do not",
+          "explanation": "Methods have self as their first parameter and are called with dot notation. Associated functions lack self and are called with ::."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which operator calls an associated function?",
+          "options": [
+            ".",
+            "::",
+            "->",
+            "#"
+          ],
+          "correctAnswer": "::",
+          "explanation": "The double colon :: is used to call associated functions: Rectangle::square(10)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword begins a block of method definitions for a struct?",
+          "correctAnswer": "impl",
+          "explanation": "The impl keyword introduces an implementation block where methods and associated functions for a type are defined."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Enums and Pattern Matching",
+      "badge": "Enums",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Enums: Defining Variants"
+        },
+        {
+          "type": "paragraph",
+          "value": "An enum (enumeration) defines a type by enumerating its possible variants. Rust's enums are algebraic data types — each variant can hold different amounts and types of data. They are far more powerful than enums in C or Java."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Basic Enum Definition"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "enum Direction {\n    North,\n    South,\n    East,\n    West,\n}\n\nfn main() {\n    let dir = Direction::North;\n    \n    match dir {\n        Direction::North => println!(\"Going North!\"),\n        Direction::South => println!(\"Going South!\"),\n        Direction::East => println!(\"Going East!\"),\n        Direction::West => println!(\"Going West!\"),\n    }\n}",
+          "output": "Going North!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Enums with Data"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "enum Message {\n    Quit,\n    Move { x: i32, y: i32 },\n    Write(String),\n    ChangeColor(i32, i32, i32),\n}\n\nfn main() {\n    let msg1 = Message::Quit;\n    let msg2 = Message::Move { x: 10, y: 20 };\n    let msg3 = Message::Write(String::from(\"hello\"));\n    let msg4 = Message::ChangeColor(255, 0, 0);\n    \n    process_message(msg2);\n}\n\nfn process_message(msg: Message) {\n    match msg {\n        Message::Quit => println!(\"Quit\"),\n        Message::Move { x, y } => println!(\"Move to ({}, {})\", x, y),\n        Message::Write(text) => println!(\"Write: {}\", text),\n        Message::ChangeColor(r, g, b) => println!(\"Color: {},{},{}\", r, g, b),\n    }\n}",
+          "output": "Move to (10, 20)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Each variant can hold different data types. Quit has no data, Move has named fields (like a struct), Write has a single String, and ChangeColor has three i32 values. This makes enums incredibly expressive for modeling state and messages."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Option Enum"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let some_number = Some(5);\n    let some_string = Some(\"hello\");\n    let absent_number: Option<i32> = None;\n    \n    match some_number {\n        Some(n) => println!(\"Got: {}\", n),\n        None => println!(\"Nothing\"),\n    }\n    \n    match absent_number {\n        Some(n) => println!(\"Got: {}\", n),\n        None => println!(\"No number present\"),\n    }\n}",
+          "output": "Got: 5\nNo number present"
+        },
+        {
+          "type": "paragraph",
+          "value": "Option<T> is an enum defined in the standard library: Some(T) or None. It replaces null in other languages. Because Option is part of the type system, the compiler forces you to handle both cases. You cannot use a Some value without first checking."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Result Enum"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "enum Result<T, E> {\n    Ok(T),\n    Err(E),\n}\n\nfn divide(a: f64, b: f64) -> Result<f64, String> {\n    if b == 0.0 {\n        Err(String::from(\"Cannot divide by zero\"))\n    } else {\n        Ok(a / b)\n    }\n}\n\nfn main() {\n    match divide(10.0, 2.0) {\n        Ok(result) => println!(\"Result: {}\", result),\n        Err(msg) => println!(\"Error: {}\", msg),\n    }\n    \n    match divide(10.0, 0.0) {\n        Ok(result) => println!(\"Result: {}\", result),\n        Err(msg) => println!(\"Error: {}\", msg),\n    }\n}",
+          "output": "Result: 5\nError: Cannot divide by zero"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the Option enum replace in Rust?",
+          "options": [
+            "Exceptions",
+            "Null pointers",
+            "Global variables",
+            "Inheritance"
+          ],
+          "correctAnswer": "Null pointers",
+          "explanation": "Option<T> with Some and None variants replaces null. The compiler forces you to handle both cases, preventing null pointer errors."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Can enum variants hold different types of data?",
+          "options": [
+            "No, all variants must be the same",
+            "Yes, each variant can have its own data",
+            "Only if they implement Copy",
+            "Only in generic enums"
+          ],
+          "correctAnswer": "Yes, each variant can have its own data",
+          "explanation": "Rust enums are algebraic data types. Each variant can hold different amounts and types of data, including named fields."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword defines an enumeration in Rust?",
+          "correctAnswer": "enum",
+          "explanation": "The enum keyword defines an enumeration — a type that can be one of several variants."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: The match Expression in Depth",
+      "badge": "Pattern Matching",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Mastering Pattern Matching"
+        },
+        {
+          "type": "paragraph",
+          "value": "match is Rust's primary pattern matching construct. It compares a value against a series of patterns and executes code based on which pattern matches. Patterns can be literal values, variable names, wildcards, ranges, and more."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Binding Values in Patterns"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "enum Coin {\n    Penny,\n    Nickel,\n    Dime,\n    Quarter(String),  // State name\n}\n\nfn value_in_cents(coin: Coin) -> u8 {\n    match coin {\n        Coin::Penny => {\n            println!(\"Lucky penny!\");\n            1\n        }\n        Coin::Nickel => 5,\n        Coin::Dime => 10,\n        Coin::Quarter(state) => {\n            println!(\"State quarter from {}!\", state);\n            25\n        }\n    }\n}\n\nfn main() {\n    let coin = Coin::Quarter(String::from(\"Alaska\"));\n    println!(\"Value: {} cents\", value_in_cents(coin));\n}",
+          "output": "State quarter from Alaska!\nValue: 25 cents"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Matching with Option<T>"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn plus_one(x: Option<i32>) -> Option<i32> {\n    match x {\n        None => None,\n        Some(i) => Some(i + 1),\n    }\n}\n\nfn main() {\n    let five = Some(5);\n    let six = plus_one(five);\n    let none = plus_one(None);\n    \n    println!(\"five: {:?}\", five);\n    println!(\"six: {:?}\", six);\n    println!(\"none: {:?}\", none);\n}",
+          "output": "five: Some(5)\nsix: Some(6)\nnone: None"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Matches Are Exhaustive"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let some_value = Some(3);\n    \n    // This would NOT compile without the _ arm:\n    // match some_value {\n    //     Some(3) => println!(\"three\"),\n    // }\n    \n    match some_value {\n        Some(3) => println!(\"three\"),\n        Some(n) => println!(\"other number: {}\", n),\n        None => println!(\"no value\"),\n    }\n}",
+          "output": "three"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust requires match expressions to be exhaustive — every possible value must have a matching arm. The compiler will reject code that doesn't handle all cases. The _ pattern matches any value and is commonly used as a catch-all."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Destructuring in match"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct Point {\n    x: i32,\n    y: i32,\n}\n\nfn main() {\n    let p = Point { x: 0, y: 7 };\n    \n    match p {\n        Point { x, y: 0 } => println!(\"On the x axis at {}\", x),\n        Point { x: 0, y } => println!(\"On the y axis at {}\", y),\n        Point { x, y } => println!(\"At ({}, {})\", x, y),\n    }\n}",
+          "output": "On the y axis at 7"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if a match expression doesn't cover all possible cases?",
+          "options": [
+            "It panics at runtime",
+            "The compiler rejects it",
+            "It returns None automatically",
+            "It skips unmatched cases"
+          ],
+          "correctAnswer": "The compiler rejects it",
+          "explanation": "Rust requires exhaustive matches. The compiler will not compile code that doesn't handle all possible patterns."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What pattern matches any value in a match arm?",
+          "options": [
+            "*",
+            "_",
+            "?",
+            "any"
+          ],
+          "correctAnswer": "_",
+          "explanation": "The underscore _ is a wildcard pattern that matches any value but does not bind it to a variable."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the name of the pattern that binds a value from an enum variant?",
+          "correctAnswer": "destructuring",
+          "explanation": "Destructuring extracts values from enum variants, structs, or tuples by matching their structure in a pattern."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: if let and while let",
+      "badge": "Pattern Matching",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Concise Pattern Matching"
+        },
+        {
+          "type": "paragraph",
+          "value": "When you only care about one pattern and want to ignore the rest, if let and while let provide a more concise alternative to match. They reduce boilerplate while maintaining safety."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "if let for Single Patterns"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let some_value = Some(3);\n    \n    // Using match (verbose for single pattern)\n    match some_value {\n        Some(3) => println!(\"three\"),\n        _ => (),\n    }\n    \n    // Using if let (concise)\n    if let Some(3) = some_value {\n        println!(\"three\");\n    }\n    \n    // if let with else\n    let favorite = Some(\"Rust\");\n    if let Some(lang) = favorite {\n        println!(\"Favorite: {}\", lang);\n    } else {\n        println!(\"No favorite\");\n    }\n}",
+          "output": "three\nthree\nFavorite: Rust"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "while let for Loops"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let mut stack = Vec::new();\n    stack.push(1);\n    stack.push(2);\n    stack.push(3);\n    \n    // Pop until empty\n    while let Some(top) = stack.pop() {\n        println!(\"{}\", top);\n    }\n}",
+          "output": "3\n2\n1"
+        },
+        {
+          "type": "paragraph",
+          "value": "while let continues looping as long as the pattern matches. Here, stack.pop() returns Some(value) while the stack has elements, and None when empty. The loop stops when the pattern no longer matches."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "let else (Rust 1.65+)"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn get_count(config: &str) -> Option<u32> {\n    config.parse().ok()\n}\n\nfn main() {\n    let config = \"42\";\n    \n    // let else: pattern match with early return on failure\n    let Some(count) = get_count(config) else {\n        println!(\"Invalid count\");\n        return;\n    };\n    \n    println!(\"Count: {}\", count);\n}",
+          "output": "Count: 42"
+        },
+        {
+          "type": "paragraph",
+          "value": "let else combines pattern matching with early returns. If the pattern doesn't match, the else block runs (typically returning or breaking). If it matches, the variable is available in the following code."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When should you use if let instead of match?",
+          "options": [
+            "When you need to handle all cases",
+            "When you only care about one pattern",
+            "When performance is critical",
+            "When matching enums with many variants"
+          ],
+          "correctAnswer": "When you only care about one pattern",
+          "explanation": "if let is syntactic sugar for a match with a single pattern and a catch-all that does nothing. Use it for cleaner code when only one case matters."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does while let do?",
+          "options": [
+            "Runs once if the pattern matches",
+            "Loops while the pattern continues to match",
+            "Creates an infinite loop",
+            "Breaks out of nested loops"
+          ],
+          "correctAnswer": "Loops while the pattern continues to match",
+          "explanation": "while let evaluates the expression each iteration. If the pattern matches, the loop body runs. If not, the loop exits."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What construct combines pattern matching with an else block for early returns?",
+          "correctAnswer": "let else",
+          "explanation": "let else (stabilized in Rust 1.65) lets you extract a value from a pattern or execute an else block if the pattern doesn't match."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 15: Packages, Crates, and Modules",
+      "badge": "Modules",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Organizing Rust Code"
+        },
+        {
+          "type": "paragraph",
+          "value": "As projects grow, you need to organize code into logical units. Rust provides a module system with packages, crates, modules, and paths to manage code organization and visibility."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Packages and Crates"
+        },
+        {
+          "type": "paragraph",
+          "value": "A package is a Cargo project with a Cargo.toml file. A crate is a compilation unit — either a binary crate (has a main.rs with a main function) or a library crate (has a lib.rs). A package can contain multiple binary crates and at most one library crate."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Defining Modules"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "// In src/lib.rs or src/main.rs\n\nmod front_of_house {\n    pub mod hosting {\n        pub fn add_to_waitlist() {}\n        fn seat_at_table() {}\n    }\n    \n    mod serving {\n        fn take_order() {}\n        fn serve_order() {}\n        fn take_payment() {}\n    }\n}\n\npub fn eat_at_restaurant() {\n    // Absolute path\n    crate::front_of_house::hosting::add_to_waitlist();\n    \n    // Relative path\n    front_of_house::hosting::add_to_waitlist();\n}",
+          "output": ""
+        },
+        {
+          "type": "paragraph",
+          "value": "Modules are defined with the mod keyword. By default, everything in a module is private. Use pub to make items public. Paths use :: to navigate the module tree. crate:: starts from the root; relative paths start from the current module."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The use Keyword"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "mod front_of_house {\n    pub mod hosting {\n        pub fn add_to_waitlist() {}\n    }\n}\n\n// Bring hosting into scope\nuse crate::front_of_house::hosting;\n\npub fn eat_at_restaurant() {\n    hosting::add_to_waitlist();  // Shorter path\n}\n\n// Or bring the function directly\nuse crate::front_of_house::hosting::add_to_waitlist;\n\npub fn eat_at_restaurant2() {\n    add_to_waitlist();  // Even shorter\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Re-exporting with pub use"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "mod front_of_house {\n    pub mod hosting {\n        pub fn add_to_waitlist() {}\n    }\n}\n\n// Re-export: external code can use hosting too\npub use crate::front_of_house::hosting;\n\npub fn eat_at_restaurant() {\n    hosting::add_to_waitlist();\n}",
+          "output": ""
+        },
+        {
+          "type": "paragraph",
+          "value": "pub use re-exports an item so that external code can use it as if it were defined in the current module. This is useful for creating a clean public API that differs from the internal module structure."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Module File Structure"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "// src/main.rs\nmod front_of_house;  // Looks for front_of_house.rs or front_of_house/mod.rs\n\nfn main() {\n    front_of_house::hosting::add_to_waitlist();\n}\n\n// src/front_of_house.rs\npub mod hosting;\n\n// src/front_of_house/hosting.rs\npub fn add_to_waitlist() {}",
+          "output": ""
+        },
+        {
+          "type": "paragraph",
+          "value": "When a module grows large, you can split it into files. mod front_of_house; tells Rust to look for front_of_house.rs or front_of_house/mod.rs. Nested modules follow the same pattern."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the default visibility of items in a module?",
+          "options": [
+            "Public",
+            "Private",
+            "Protected",
+            "Internal"
+          ],
+          "correctAnswer": "Private",
+          "explanation": "All items in a module are private by default. You must explicitly use pub to make them accessible from outside the module."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does pub use do?",
+          "options": [
+            "Makes the module public",
+            "Re-exports an item for external use",
+            "Creates a new module",
+            "Imports all public items"
+          ],
+          "correctAnswer": "Re-exports an item for external use",
+          "explanation": "pub use re-exports an item so external code can access it through the current module's namespace."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword brings a module path into scope for shorter access?",
+          "correctAnswer": "use",
+          "explanation": "The use keyword creates shortcuts to module paths, similar to import in other languages."
+        }
+      ]
     }
   ]
 }
