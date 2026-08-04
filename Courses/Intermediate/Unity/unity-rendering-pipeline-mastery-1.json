@@ -1253,6 +1253,668 @@
           "explanation": "The Render() method is the entry point in every custom SRP. It receives a ScriptableRenderContext and an array of cameras, and your implementation decides how to cull, sort, and draw the scene."
         }
       ]
+    },
+    {
+      "partTitle": "Part 12: Custom Render Passes in URP — Extending the Pipeline",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Why Write Custom Render Passes?"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP's built-in passes handle the standard rendering workflow, but real projects often need custom effects that URP doesn't provide out of the box. **Renderer Features** let you inject your own render passes into URP's pipeline without modifying URP's source code. This is how you add effects like:\\n\\n• Custom post-processing (outline, pixelation, glitch effects)\\n• Render textures for minimaps or security cameras\\n• Special object rendering (X-ray vision, thermal vision)\\n• Screen-space effects (ambient occlusion, custom depth effects)\\n• Multi-pass rendering for stylized looks (toon shading, sketch rendering)\\n\\nRenderer Features are the bridge between 'using URP' and 'customizing URP.'"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing URP pipeline with custom Renderer Feature injected between Opaque and Transparent passes",
+          "caption": "Renderer Features let you inject custom passes at specific points in URP's render order"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Pipeline Extension — Standard URP pass stack with a highlighted 'Custom Pass' block inserted between Opaque and Transparent. Label 'Renderer Feature Injection Point'. Show before/after render target state. Use a clean, technical diagram style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Renderer Features Work"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **Renderer Feature** is a ScriptableObject that you add to your Renderer Asset. It contains one or more **ScriptableRenderPass** classes that define what to render and when.\\n\\nThe process works like this:\\n\\n1. **Create a Renderer Feature** class that inherits from `ScriptableRendererFeature`\\n2. **Override `AddRenderPasses()`** — this is where you tell URP when to run your pass\\n3. **Create a ScriptableRenderPass** class that inherits from `ScriptableRenderPass`\\n4. **Override `Execute()`** — this is where you write your custom rendering code\\n5. **Add the Renderer Feature** to your Renderer Asset in the Inspector\\n\\nURP will then call your pass at the specified point in the frame."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Step 1: Create the Renderer Feature\\nusing UnityEngine;\\nusing UnityEngine.Rendering;\\nusing UnityEngine.Rendering.Universal;\\n\\npublic class CustomOutlineFeature : ScriptableRendererFeature\\n{\\n    // Settings exposed in the Inspector\\n    [System.Serializable]\\n    public class OutlineSettings\\n    {\\n        public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingOpaques;\\n        public Material outlineMaterial;\\n    }\\n    \\n    public OutlineSettings settings = new OutlineSettings();\\n    private OutlinePass outlinePass;\\n\\n    // Called when the feature is created\\n    public override void Create()\\n    {\\n        outlinePass = new OutlinePass(settings);\\n    }\\n\\n    // Called every frame to add passes to the renderer\\n    public override void AddRenderPasses(\\n        ScriptableRenderer renderer, \\n        ref RenderingData renderingData)\\n    {\\n        // Inject our custom pass into the pipeline\\n        renderer.EnqueuePass(outlinePass);\\n    }\\n}"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The ScriptableRenderPass Class"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `ScriptableRenderPass` class is where the actual rendering happens. You override several methods:\\n\\n• **`Configure()`** — set up render targets, clear flags, and state before execution\\n• **`Execute()`** — the main method where you issue draw commands, blit textures, run compute shaders\\n• **`FrameCleanup()`** — clean up temporary resources after the frame\\n\\nThe `Execute()` method receives a `CommandBuffer` that you fill with GPU commands. These commands are batched and submitted to the GPU later."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Step 2: Create the Render Pass\\npublic class OutlinePass : ScriptableRenderPass\\n{\\n    private OutlineSettings settings;\\n    private RenderTargetIdentifier source;\\n    private RenderTargetHandle tempTexture;\\n\\n    public OutlinePass(OutlineSettings settings)\\n    {\\n        this.settings = settings;\\n        // When in the pipeline this pass runs\\n        renderPassEvent = settings.renderPassEvent;\\n        tempTexture.Init(\\\"_TempOutlineTexture\\\");\\n    }\\n\\n    public override void Execute(\\n        ScriptableRenderContext context, \\n        ref RenderingData renderingData)\\n    {\\n        CommandBuffer cmd = CommandBufferPool.Get(\\\"Outline Pass\\\");\\n        \\n        // Get the camera's color buffer\\n        RenderTargetIdentifier cameraColorTarget = \\n            renderingData.cameraData.renderer.cameraColorTarget;\\n        \\n        // Create a temporary render texture\\n        RenderTextureDescriptor descriptor = \\n            renderingData.cameraData.cameraTargetDescriptor;\\n        cmd.GetTemporaryRT(tempTexture.id, descriptor);\\n        \\n        // Blit from camera target to temp texture using our material\\n        // The shader in the material does the outline effect\\n        cmd.Blit(cameraColorTarget, tempTexture.Identifier(), \\n                 settings.outlineMaterial);\\n        \\n        // Blit back to camera target\\n        cmd.Blit(tempTexture.Identifier(), cameraColorTarget);\\n        \\n        // Execute and clean up\\n        context.ExecuteCommandBuffer(cmd);\\n        CommandBufferPool.Release(cmd);\\n    }\\n\\n    public override void FrameCleanup(CommandBuffer cmd)\\n    {\\n        cmd.ReleaseTemporaryRT(tempTexture.id);\\n    }\\n}"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Render Pass Events — Where to Inject Your Pass"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `RenderPassEvent` enum controls WHERE in the pipeline your pass runs. Choosing the right event is critical for correct results:\\n\\n• **`BeforeRendering`** — before anything else. Use for setup or clearing.\\n• **`BeforeRenderingShadows`** — before shadow maps are rendered.\\n• **`AfterRenderingShadows`** — after shadows, before opaque objects.\\n• **`BeforeRenderingOpaques`** — before opaque geometry.\\n• **`AfterRenderingOpaques`** — after opaque, before skybox/transparent. Good for post-processing that only needs opaque objects.\\n• **`BeforeRenderingSkybox`** — before the skybox renders.\\n• **`AfterRenderingSkybox`** — after skybox, before transparent.\\n• **`BeforeRenderingTransparents`** — before transparent objects.\\n• **`AfterRenderingTransparents`** — after everything 3D, before post-processing.\\n• **`BeforeRenderingPostProcessing`** — before built-in post-processing.\\n• **`AfterRenderingPostProcessing`** — after all post-processing. Good for final UI overlays or effects.\\n• **`AfterRendering`** — absolutely last. Use for debug overlays."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Timeline showing RenderPassEvent options placed along URP's pass order with labels for each injection point",
+          "caption": "RenderPassEvent lets you choose exactly where your custom pass executes in the frame"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Timeline — Horizontal bar showing URP pass order with vertical markers at injection points. Labels: 'BeforeRendering', 'AfterRenderingShadows', 'AfterRenderingOpaques', 'AfterRenderingSkybox', 'AfterRenderingTransparents', 'AfterRenderingPostProcessing'. Each marker has a small example use case. Use a ruler/timeline style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Use Cases for Custom Passes"
+        },
+        {
+          "type": "paragraph",
+          "value": "Here are practical examples of what developers build with Renderer Features:\\n\\n**1. Object Outline / Selection Highlight**\\nRender selected objects to a mask texture, then run a fullscreen shader that detects edges and draws a colored outline.\\n\\n**2. Security Camera / Minimap**\\nRender the scene from a second camera to a Render Texture, then display that texture on a UI element or in-world monitor.\\n\\n**3. Thermal / Night Vision**\\nReplace the final color output with a custom shader that remaps colors based on temperature or brightness values.\\n\\n**4. Custom Ambient Occlusion**\\nSample the depth buffer in a screen-space pass to darken crevices and corners where ambient light would be blocked.\\n\\n**5. Stylized Rendering**\\nApply a post-processing pass that quantizes colors, adds cross-hatching, or creates a watercolor effect over the entire scene."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Adding a Renderer Feature to your URP setup:\\n//\\n// 1. Create the C# scripts (RendererFeature + RenderPass)\\n// 2. Select your Renderer Asset in the Project window\\n// 3. In the Inspector, click 'Add Renderer Feature'\\n// 4. Choose your custom feature from the list\\n// 5. Configure settings in the Inspector (materials, events, etc.)\\n//\\n// Your feature is now active for all cameras using that Renderer!\\n//\\n// You can have multiple Renderer Features on one Renderer.\\n// They execute in the order they appear in the list.\\n//\\n// To disable a feature temporarily, uncheck the checkbox\\n// next to it in the Renderer Asset Inspector."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What class do you inherit from to create a custom Renderer Feature in URP?",
+          "options": [
+            "MonoBehaviour",
+            "ScriptableRendererFeature",
+            "ScriptableRenderPass",
+            "RenderPipelineAsset"
+          ],
+          "correctAnswer": "ScriptableRendererFeature",
+          "explanation": "You create a custom Renderer Feature by inheriting from ScriptableRendererFeature. This class acts as the container that URP recognizes and can add to a Renderer Asset. The actual rendering logic goes in a separate ScriptableRenderPass class."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which RenderPassEvent would you use to run a pass AFTER all opaque objects but BEFORE the skybox?",
+          "options": [
+            "BeforeRenderingOpaques",
+            "AfterRenderingOpaques",
+            "BeforeRenderingSkybox",
+            "AfterRenderingTransparents"
+          ],
+          "correctAnswer": "AfterRenderingOpaques",
+          "explanation": "AfterRenderingOpaques runs immediately after all opaque geometry is drawn but before the skybox and transparent objects. This is the ideal injection point for effects that need the opaque scene as input, like custom ambient occlusion or outline effects."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method in ScriptableRenderPass do you override to write the actual rendering commands? (One word)",
+          "correctAnswer": "Execute",
+          "explanation": "The Execute() method is where you write your custom rendering logic in a ScriptableRenderPass. You fill a CommandBuffer with GPU commands (draw calls, blits, compute dispatches) and then submit it to the ScriptableRenderContext."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: Shaders in URP — How They Fit Into the Pipeline",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Shaders: The GPU's Instructions"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **shader** is a small program that runs on the GPU. Every object you see on screen goes through at least one shader. Shaders are the bridge between your 3D data (meshes, textures, materials) and the final pixels on screen. Understanding how shaders work in URP is essential because they are the most direct way to control rendering."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing vertex shader transforming mesh vertices, then fragment shader coloring pixels, with arrows showing data flow",
+          "caption": "Shaders run in two stages: Vertex Shader (geometry) → Fragment Shader (pixels)"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Pipeline Diagram — Left: 3D mesh with vertices labeled 'Vertex Shader' (transforms positions, calculates normals). Arrow to middle: rasterized triangles with fragments labeled 'Fragment Shader' (samples textures, applies lighting). Arrow to right: final colored pixels on screen. Use a clean, educational style with labeled data flows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Two Shader Stages"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every object in URP goes through at least two shader stages:\n\n**Vertex Shader** — Runs once for every vertex of the mesh. Its job is to:\n• Transform the vertex from local space to clip space (so it appears on screen in the right place)\n• Pass data to the fragment shader (normals, UVs, colors, world position)\n\n**Fragment Shader** (also called Pixel Shader) — Runs once for every pixel covered by the mesh. Its job is to:\n• Sample textures (albedo, normal, metallic, etc.)\n• Calculate lighting (diffuse, specular, shadows)\n• Output the final color for that pixel\n\nThe vertex shader runs far fewer times than the fragment shader. A mesh with 1,000 vertices might cover 100,000 pixels on screen — the fragment shader runs 100x more often. This is why fragment shaders are usually the performance bottleneck."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Simplified URP Lit shader structure\nShader \"Custom/URP_Lite\"\n{\n    Properties\n    {\n        _BaseMap(\"Albedo\", 2D) = \"white\" {}\n        _BaseColor(\"Color\", Color) = (1,1,1,1)\n        _Smoothness(\"Smoothness\", Range(0,1)) = 0.5\n    }\n    \n    SubShader\n    {\n        Tags { \"RenderType\"=\"Opaque\" \"RenderPipeline\"=\"UniversalPipeline\" }\n        \n        Pass\n        {\n            Name \"ForwardLit\"\n            Tags { \"LightMode\"=\"UniversalForward\" }\n            \n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n            \n            // VERTEX SHADER\n            float4 vert(float3 pos : POSITION, float2 uv : TEXCOORD0) : SV_POSITION\n            {\n                // Transform local position to clip space\n                return TransformObjectToHClip(pos);\n            }\n            \n            // FRAGMENT SHADER\n            float4 frag(float4 pos : SV_POSITION) : SV_Target\n            {\n                // Return a solid color (simplified)\n                return float4(1, 0, 0, 1); // Red\n            }\n            ENDHLSL\n        }\n    }\n}"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "URP Shader Library"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP provides a rich **Shader Library** — a collection of HLSL files that handle common rendering tasks. Instead of writing everything from scratch, you include these files and use their functions:\n\n• **`Core.hlsl`** — basic transforms, matrices, common math\n• **`Lighting.hlsl`** — light data access, lighting calculations\n• **`Shadows.hlsl`** — shadow sampling, cascade handling\n• **`SurfaceData.hlsl`** — material property structs\n• **`DeclareDepthTexture.hlsl`** — depth buffer sampling\n• **`DeclareOpaqueTexture.hlsl`** — opaque color buffer sampling\n\nThese libraries ensure your shader works correctly across all platforms and integrates properly with URP's lighting and shadow systems."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Common URP shader library includes and functions\n\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n\n// Core.hlsl provides:\n// TransformObjectToHClip(position)     → local to clip space\n// TransformObjectToWorld(position)     → local to world space\n// TransformWorldToView(position)       → world to view space\n// GetVertexNormalInputs(normal)        → normal in world/tangent space\n\n// Lighting.hlsl provides:\n// GetMainLight()                       → main directional light data\n// GetAdditionalLightCount()            → number of additional lights\n// GetAdditionalLight(index, position)  → specific additional light\n// SampleShadowMap(shadowCoord)         → shadow attenuation\n\n// Example: Get the main light in a fragment shader\nLight mainLight = GetMainLight();\nfloat3 lightDir = mainLight.direction;\nfloat3 lightColor = mainLight.color;\nfloat shadow = mainLight.shadowAttenuation;"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Shader Keywords and Variants"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP uses **shader keywords** to create different versions (variants) of the same shader. This lets one shader handle multiple configurations without runtime branching:\n\n• **`_MAIN_LIGHT_SHADOWS`** — enables main light shadow sampling\n• **`_ADDITIONAL_LIGHTS`** — enables per-pixel additional lights\n• **`_ADDITIONAL_LIGHTS_VERTEX`** — enables per-vertex additional lights\n• **`_NORMALMAP`** — enables normal map sampling\n• **`_EMISSION`** — enables emission\n• **`_RECEIVE_SHADOWS`** — enables shadow receiving\n\nUnity compiles all needed variants at build time. At runtime, it picks the correct variant based on URP settings and material properties. This is faster than runtime if-statements because the GPU executes the same code for all pixels in a draw call."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing one shader source branching into multiple compiled variants based on keywords like shadows, normal maps, additional lights",
+          "caption": "Shader keywords create pre-compiled variants for different feature combinations"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Branching Diagram — One 'Shader Source' box at top. Arrows branch down to multiple 'Compiled Variant' boxes: 'No Shadows, No Normal Map', 'Shadows Only', 'Normal Map Only', 'Shadows + Normal Map + Additional Lights'. Label 'Compiled at Build Time'. Use a tree/flowchart style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "URP's Built-in Shaders"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP comes with several built-in shaders you should know:\n\n• **Lit** — The standard PBR shader. Supports albedo, normal, metallic, smoothness, occlusion, emission. Use this for most objects.\n• **Simple Lit** — A simpler lighting model (Blinn-Phong instead of PBR). Faster but less realistic.\n• **Unlit** — No lighting at all. Just albedo color/texture. Fastest option.\n• **Particles Lit / Unlit** — Optimized for particle systems with soft particles and flipbook blending.\n• **Terrain Lit** — Supports Unity's terrain system with splat maps.\n• **Baked Lit** — For objects that only use baked lighting (no real-time lights). Very fast.\n• **Sprite Lit / Unlit** — For 2D sprites with 2D lighting support.\n\nChoosing the right built-in shader is the first step to good performance. Don't use Lit if Unlit is sufficient."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which shader stage runs once for every PIXEL covered by a mesh?",
+          "options": [
+            "Vertex Shader",
+            "Fragment Shader",
+            "Geometry Shader",
+            "Compute Shader"
+          ],
+          "correctAnswer": "Fragment Shader",
+          "explanation": "The Fragment Shader (also called Pixel Shader) runs once for every pixel covered by the mesh's triangles. It samples textures, calculates lighting, and outputs the final color. This stage typically runs far more times than the vertex shader."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the purpose of shader keywords in URP?",
+          "options": [
+            "To make shaders run faster by skipping unused code at runtime",
+            "To add comments to shader code",
+            "To change shader properties in the Inspector",
+            "To assign shaders to specific layers"
+          ],
+          "correctAnswer": "To make shaders run faster by skipping unused code at runtime",
+          "explanation": "Shader keywords create pre-compiled shader variants. At runtime, Unity picks the variant that matches the current settings (shadows on/off, normal maps on/off, etc.). This avoids expensive runtime branching in GPU code."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What URP include file provides functions for accessing light data and calculating lighting? (One word, ends with .hlsl)",
+          "correctAnswer": "Lighting.hlsl",
+          "explanation": "Lighting.hlsl is the URP shader library file that provides functions like GetMainLight(), GetAdditionalLight(), and lighting calculation utilities. It's included in URP shaders that need real-time lighting."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: Post-Processing in URP — The Volume System",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "What Is Post-Processing?"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Post-processing** is the final stage of rendering where effects are applied to the entire screen after all 3D objects are drawn. Think of it like Instagram filters for your game — it takes the completed frame and modifies colors, adds blur, adjusts contrast, or creates atmospheric effects. In URP, post-processing is handled through the **Volume** system."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Before/after comparison: raw 3D render vs same render with bloom, color grading, and depth of field applied",
+          "caption": "Post-processing transforms a raw render into a polished, cinematic image"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Split Screen — Left: 'Raw Render' showing flat colors, harsh edges, no atmosphere. Right: 'With Post-Processing' showing warm color grading, soft bloom on lights, depth of field blur on background, vignette. Same scene, dramatically different mood. Label each side clearly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "URP's Volume System"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP uses **Volumes** to control post-processing and environment settings. A Volume is a component that holds a collection of **Volume Overrides** — individual effect settings. There are two types:\n\n**Global Volume** — Affects the entire scene. Add this to an empty GameObject with no collider. Use it for settings that should apply everywhere: color grading, bloom, ambient occlusion.\n\n**Local Volume** — Only affects the camera when it's inside a trigger collider. Use this for zone-based effects: a dark cave with different fog, a bright outdoor area with different exposure, a toxic zone with color distortion.\n\nMultiple volumes can blend together based on priority and weight."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Setting up a Global Volume for post-processing:\n//\n// 1. Create empty GameObject → name it 'Global Volume'\n// 2. Add Component → Volume\n// 3. Check 'Is Global'\n// 4. Create a Volume Profile (asset) or assign existing one\n// 5. Click 'Add Override' → choose effects like Bloom, Color Adjustments, etc.\n//\n// Setting up a Local Volume:\n//\n// 1. Create empty GameObject → add Box Collider (set as Trigger)\n// 2. Add Component → Volume\n// 3. UNCHECK 'Is Global'\n// 4. Assign a Volume Profile with different settings\n// 5. When camera enters the trigger, effects blend in\n//\n// Priority determines which volume wins when multiple overlap.\n// Higher priority = takes precedence."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Key Post-Processing Effects in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Here are the most important post-processing effects available in URP:\n\n**Bloom** — Makes bright areas glow and bleed into neighboring pixels. Essential for making lights feel bright and magical.\n\n**Color Adjustments** — Contrast, saturation, hue shift. The 'Instagram filter' of your game.\n\n**Color Curves** — Fine-tune specific brightness ranges (shadows, midtones, highlights) independently.\n\n**Depth of Field** — Blurs objects based on their distance from the camera's focus point. Creates cinematic focus effects.\n\n**Chromatic Aberration** — Color fringing at screen edges. Subtle effect that adds realism or stylized distortion.\n\n**Film Grain** — Adds noise texture for a cinematic film look.\n\n**Vignette** — Darkens screen edges, drawing attention to the center.\n\n**Motion Blur** — Blurs objects based on their screen-space velocity.\n\n**Panini Projection** — Corrects perspective distortion at wide FOVs."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Grid showing each post-processing effect individually: bloom, depth of field, chromatic aberration, vignette, film grain, motion blur",
+          "caption": "Each post-processing effect serves a different visual purpose"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Effect Grid — 2x3 grid showing the same base scene with one effect applied per panel. Top row: Bloom (glowing lights), Color Grading (warm tones), Depth of Field (blurred background). Bottom row: Chromatic Aberration (color fringing), Vignette (dark edges), Motion Blur (streaking). Label each panel. Use consistent base image."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Post-Processing Works Under the Hood"
+        },
+        {
+          "type": "paragraph",
+          "value": "Post-processing in URP works through a series of **fullscreen passes** — the entire screen is rendered as a single quad (two triangles covering the whole viewport), and a shader processes every pixel:\n\n1. **Capture** — The completed frame (color buffer) is copied to a temporary texture\n2. **Effect Chain** — Each enabled effect runs as a separate pass, reading from the previous texture and writing to a new one\n3. **Blit Back** — The final result is copied back to the screen buffer\n\nMost effects use **ping-pong rendering** — two temporary textures are swapped back and forth as input and output for each pass. This avoids overwriting data that the next pass still needs.\n\nSome effects (like Bloom) require multiple passes: first a bright-pass filter, then multiple downsample and blur passes, then upsample and combine."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Post-processing performance tips:\n//\n// 1. Disable unused effects — each effect costs GPU time\n//    In the Volume Profile, uncheck effects you don't need\n//\n// 2. Lower bloom quality — Bloom → Dirt Texture resolution,\n//    number of iterations. Fewer iterations = faster but less smooth.\n//\n// 3. Avoid Depth of Field on mobile — it's very expensive\n//\n// 4. Use HDR — Post-processing works best with HDR enabled\n//    (URP Asset → Quality → HDR). Without HDR, bloom can't\n//    detect truly bright areas.\n//\n// 5. Check the Frame Debugger — see exactly how many\n//    post-processing passes URP is running\n//\n// 6. Custom post-processing via Renderer Features\n//    (covered in Part 12) for effects URP doesn't provide."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What component does URP use to organize post-processing effects?",
+          "options": [
+            "Camera component",
+            "Volume component",
+            "Light component",
+            "Render Texture"
+          ],
+          "correctAnswer": "Volume component",
+          "explanation": "URP uses the Volume component to group and control post-processing effects. Volumes can be Global (affecting the whole scene) or Local (affecting only when the camera is inside a trigger zone). Each Volume holds a Volume Profile with specific effect overrides."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which post-processing effect makes bright areas glow and bleed into neighboring pixels?",
+          "options": [
+            "Vignette",
+            "Bloom",
+            "Depth of Field",
+            "Chromatic Aberration"
+          ],
+          "correctAnswer": "Bloom",
+          "explanation": "Bloom detects bright areas in the image and makes them glow by blurring and adding them back to the original image. It's one of the most commonly used post-processing effects for making lights feel bright and atmospheric."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What type of Volume affects the entire scene regardless of camera position? (One word)",
+          "correctAnswer": "Global",
+          "explanation": "A Global Volume affects the entire scene. It's created by adding a Volume component to a GameObject and checking the 'Is Global' checkbox. Local Volumes, by contrast, only apply when the camera is inside their trigger collider."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 15: Batching and Draw Calls — The Performance Foundation",
+      "badge": "Performance",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Why Fewer Draw Calls = Better Performance"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **draw call** is the CPU telling the GPU to render something. Every time Unity says 'draw this mesh with this material,' that's one draw call. The problem? The CPU and GPU need to synchronize for each draw call, and that synchronization has overhead.\n\nImagine you're a manager (CPU) giving tasks to a factory worker (GPU). If you hand over one piece of paper at a time and wait for the worker to finish before giving the next, work slows down. **Batching** is the solution: group similar tasks together and hand them over in bulk.\n\nIn rendering terms: batching combines multiple objects into a single draw call, reducing CPU-GPU communication overhead."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Comparison: 100 individual draw calls vs 1 batched draw call showing CPU and GPU timeline",
+          "caption": "Batching reduces the number of times the CPU must talk to the GPU"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Timeline Comparison — Top: 'Without Batching' showing 10 separate CPU→GPU arrows with gaps between them. Label '10 Draw Calls'. Bottom: 'With Batching' showing 1 thick CPU→GPU arrow. Label '1 Draw Call'. Include time axis showing batched version completes faster. Use clean, technical diagram style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Types of Batching in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP supports several batching techniques, each with different requirements and benefits:\n\n**1. SRP Batcher** (URP's main batching system)\n• Objects with different materials CAN be batched (if same shader)\n• Enabled by default\n• Works with dynamic (moving) objects\n• Best for scenes with many objects sharing the same shader\n\n**2. Static Batching**\n• Objects must be marked as Static in the Inspector\n• Objects must share the same material\n• Unity combines meshes at build time\n• Best for environment geometry that never moves\n\n**3. GPU Instancing**\n• Objects must share the same mesh AND material\n• Each object can have different transform (position, rotation, scale)\n• GPU draws all instances in one call\n• Best for repeated objects: grass, trees, rocks, enemies\n\n**4. Dynamic Batching** (legacy, mostly replaced by SRP Batcher)\n• Small meshes only (< 300 vertices)\n• Objects must share the same material\n• CPU combines meshes every frame\n• Usually worse than SRP Batcher — disable it if using URP"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Checking batching in Unity:\n//\n// Game View → Stats (click 'Stats' button in top-right)\n// Look for:\n// - Batches: total draw calls this frame\n// - Saved by batching: how many draw calls were eliminated\n// - SetPass calls: how many times the GPU switched shader/material\n//\n// Frame Debugger (Window → Analysis → Frame Debugger)\n// Shows every draw call and whether it was batched\n// Look for 'SRP Batch' entries vs individual 'Draw Mesh' entries\n//\n// Profiler (Window → Analysis → Profiler)\n// CPU → Rendering module shows time spent on draw calls\n//\n// Tips to maximize batching:\n// - Use the same shader for as many objects as possible\n// - Use MaterialPropertyBlock sparingly (breaks SRP Batcher)\n// - Mark static environment objects as Static\n// - Use GPU Instancing for repeated objects\n// - Combine meshes in your 3D tool for objects that never separate"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Understanding SetPass Calls"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **SetPass Call** happens when the GPU must switch its rendering state — change shader, material, render target, or blend mode. SetPass calls are expensive because the GPU must flush its pipeline and reconfigure.\n\nEven if you have few draw calls, many SetPass calls can still hurt performance. The goal is to minimize BOTH:\n\n• **Reduce draw calls** through batching\n• **Reduce SetPass calls** by grouping objects that use the same material/shader\n\nIn the Game View Stats window, if Batches is low but SetPass calls is high, your problem is state switching, not draw call count."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing how changing materials between objects causes SetPass calls, while keeping same material allows batching",
+          "caption": "Switching materials forces SetPass calls, which break batching"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison — Top row: 5 cubes each with different colored materials. Arrows show 'SetPass Call' between each cube. Label '5 Draw Calls, 5 SetPass Calls'. Bottom row: 5 cubes all with same green material. One arrow. Label '1 Draw Call, 1 SetPass Call'. Use simple 3D cube icons."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "GPU Instancing in Practice"
+        },
+        {
+          "type": "paragraph",
+          "value": "GPU Instancing is one of the most powerful batching techniques for repeated objects. Here's how to use it:\n\n**In a shader:** Add `#pragma multi_compile_instancing` and use `UNITY_INSTANCING_BUFFER_START/END` macros.\n\n**In C#:** Use `Graphics.DrawMeshInstanced()` or enable instancing on the material (Material → Enable Instancing checkbox).\n\n**In URP:** The Lit shader supports instancing by default. Just check 'Enable GPU Instancing' on the material.\n\n**Limitations:**\n• All instances share the same mesh and material\n• Each instance can have different transform via `unity_ObjectToWorld` matrix\n• Custom per-instance data (like color) requires shader modifications\n• Maximum 1023 instances per `DrawMeshInstanced` call (use `DrawMeshInstancedIndirect` for more)"
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// GPU Instancing example in C#\npublic class GrassSpawner : MonoBehaviour\n{\n    public Mesh grassMesh;\n    public Material grassMaterial;\n    private Matrix4x4[] matrices = new Matrix4x4[1023];\n    \n    void Update()\n    {\n        // Fill matrices with transforms for each grass blade\n        for (int i = 0; i < 1023; i++)\n        {\n            Vector3 pos = new Vector3(\n                Random.Range(-50f, 50f), 0, Random.Range(-50f, 50f));\n            matrices[i] = Matrix4x4.TRS(pos, Quaternion.identity, Vector3.one);\n        }\n        \n        // Draw all 1023 grass blades in ONE draw call!\n        Graphics.DrawMeshInstanced(\n            grassMesh, 0, grassMaterial, matrices);\n    }\n}\n\n// Compare to non-instanced:\n// for (int i = 0; i < 1023; i++)\n//     Graphics.DrawMesh(grassMesh, matrices[i], grassMaterial, 0);\n// This would be 1023 draw calls!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which batching method in URP allows objects with DIFFERENT materials to be batched together?",
+          "options": [
+            "Static Batching",
+            "GPU Instancing",
+            "SRP Batcher",
+            "Dynamic Batching"
+          ],
+          "correctAnswer": "SRP Batcher",
+          "explanation": "The SRP Batcher can batch objects with different materials as long as they use the same shader variant. It keeps shader data persistent in GPU memory and only updates the material properties that changed between objects."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does a SetPass Call represent?",
+          "options": [
+            "The number of pixels drawn on screen",
+            "A change in GPU rendering state (shader, material, blend mode)",
+            "The time between frames",
+            "The number of vertices in a mesh"
+          ],
+          "correctAnswer": "A change in GPU rendering state (shader, material, blend mode)",
+          "explanation": "A SetPass Call occurs when the GPU must switch its rendering state — changing shader, material, render target, or blend mode. Each switch has overhead because the GPU pipeline must flush and reconfigure."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Unity window shows real-time stats including Batches, SetPass Calls, and Saved by Batching? (Two words)",
+          "correctAnswer": "Game View",
+          "explanation": "The Game View's Stats panel (click the 'Stats' button in the top-right of the Game View) shows real-time rendering statistics including Batches, SetPass Calls, Triangles, Vertices, and how many draw calls were Saved by Batching."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 16: Transparency, Sorting, and the Painter's Algorithm",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Why Transparency Is Hard"
+        },
+        {
+          "type": "paragraph",
+          "value": "Transparent objects (glass, water, particles, UI) are one of the most expensive and tricky aspects of real-time rendering. Unlike opaque objects, which completely block what's behind them, transparent objects must **blend** their color with the background. This creates two major problems:\n\n1. **Order dependency** — transparent objects must be drawn from back to front. If you draw a transparent window before the building behind it, the building will overwrite the window.\n\n2. **No depth writing** — transparent objects usually don't write to the depth buffer (or the depth buffer would block everything behind them). This means every transparent pixel must be shaded, even if it's completely covered by another transparent object closer to the camera."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing correct back-to-front transparent rendering vs incorrect front-to-back rendering with visual artifacts",
+          "caption": "Transparent objects must be sorted and drawn in the correct order"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison — Left: 'Correct (Back to Front)' showing three transparent colored planes properly blended. Right: 'Incorrect (Front to Back)' showing the same planes with wrong blending, nearest plane blocking others. Use colored glass panes as example. Label sorting order with arrows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How URP Handles Transparent Objects"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP's Forward Renderer handles transparency in the **Transparent Pass**, which runs after all opaque objects and the skybox:\n\n1. **Sort transparent objects by depth** — URP calculates each object's distance from the camera and sorts them from farthest to nearest\n2. **Draw back-to-front** — Each transparent object is drawn in sorted order, blending its color with whatever is already in the color buffer\n3. **Alpha blending** — The shader uses the alpha channel to control how much of the object's color vs. the background color appears\n\nThis is called the **Painter's Algorithm** — like painting on canvas, you paint background layers first and foreground layers last."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Standard alpha blending in a URP shader\n// This is what happens in the fragment shader for transparent objects\n\n// Sample the texture (includes alpha channel)\nfloat4 texColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);\n\n// Apply material color\nfloat4 finalColor = texColor * _BaseColor;\n\n// The alpha value controls transparency\n// 1.0 = fully opaque, 0.0 = fully transparent\n//\n// URP handles the actual blending in the render state:\n// Blend SrcAlpha OneMinusSrcAlpha\n//\n// This means:\n// FinalColor = (ObjectColor * ObjectAlpha) + (BackgroundColor * (1 - ObjectAlpha))\n//\n// Example: Object is 50% transparent red (1, 0, 0, 0.5)\n// Background is white (1, 1, 1)\n// Result = (red * 0.5) + (white * 0.5) = pink (1, 0.5, 0.5)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Transparency Problems"
+        },
+        {
+          "type": "paragraph",
+          "value": "Here are the transparency issues you'll encounter most often:\n\n**Sorting artifacts** — When transparent objects intersect or have similar depths, the sort order can be wrong. URP sorts by object center point, not per-pixel, so a large transparent panel might sort incorrectly against a small object inside it.\n\n**Overdraw** — Every transparent pixel draws on top of existing pixels. 10 layers of transparent particles means 10x the fragment shader work for those screen pixels. This is why particle effects can destroy performance.\n\n**Alpha testing vs Alpha blending** — Alpha testing (cutout) uses a hard threshold (alpha > 0.5 = draw, else discard). It's faster because discarded pixels skip shading entirely, but edges are jagged. Alpha blending is smoother but more expensive.\n\n**Z-fighting with transparent objects** — When two transparent surfaces are at nearly the same depth, they can flicker as the sort order changes frame to frame."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing overdraw visualization: screen filled with red where many transparent layers overlap",
+          "caption": "Overdraw from transparent objects is a major performance killer"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Overdraw Visualization — A scene with many transparent particles. Overlay heatmap showing red (high overdraw) where particles overlap. Label 'Overdraw: 8x' in red zones, 'Overdraw: 1x' in green zones. Include a legend. Use a game scene with fire/smoke particles as example."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Performance Tips for Transparency"
+        },
+        {
+          "type": "paragraph",
+          "value": "To keep transparency performant:\n\n• **Use alpha testing (cutout) when possible** — For fences, leaves, chain-link. Much faster than blending.\n• **Minimize transparent overlap** — Don't stack 50 particle systems in the same screen area.\n• **Use the Opaque queue when possible** — If an object is 95% opaque, use the opaque queue with alpha testing instead of true transparency.\n• **Reduce transparent object count** — Combine particle systems, use larger sprites instead of many small ones.\n• **Disable shadows on transparent objects** — Transparent objects casting shadows is expensive and often unnecessary.\n• **Use the Frame Debugger** — Check how many transparent draw calls you have and where overdraw is worst.\n• **Consider dithered transparency** — A fake transparency using a noise pattern and alpha testing. Looks decent and is much faster."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Shader queue controls render order in URP:\n//\n// Tags { \"Queue\" = \"Geometry\" }     → Opaque queue (drawn first)\n// Tags { \"Queue\" = \"AlphaTest\" }     → Alpha tested/cutout (after opaque)\n// Tags { \"Queue\" = \"Transparent\" }  → Transparent queue (drawn last)\n//\n// Within each queue, objects are sorted:\n// - Opaque: front-to-back (closest first, for early-z optimization)\n// - Transparent: back-to-front (farthest first, for correct blending)\n//\n// You can also use custom queue offsets:\n// Tags { \"Queue\" = \"Transparent+100\" } → drawn after other transparent objects\n//\n// In the Material Inspector, you can see and change the Render Queue.\n// Lower numbers = drawn earlier.\n// Background (1000) → Geometry (2000) → AlphaTest (2450) →\n// Transparent (3000) → Overlay (4000)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In which order does URP draw transparent objects?",
+          "options": [
+            "Front to back (nearest first)",
+            "Back to front (farthest first)",
+            "Random order",
+            "Alphabetical by object name"
+          ],
+          "correctAnswer": "Back to front (farthest first)",
+          "explanation": "Transparent objects must be drawn from back to front (farthest from camera first) so that each object's color blends correctly with the background already in the color buffer. This is the Painter's Algorithm."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is 'overdraw' in the context of transparent rendering?",
+          "options": [
+            "Drawing objects outside the camera frustum",
+            "Drawing multiple transparent layers on top of the same screen pixels",
+            "Rendering at a higher resolution than the screen",
+            "Using too many vertices in a mesh"
+          ],
+          "correctAnswer": "Drawing multiple transparent layers on top of the same screen pixels",
+          "explanation": "Overdraw occurs when multiple transparent objects cover the same screen pixel, causing the GPU to run the fragment shader multiple times for that pixel. Heavy overdraw (like dense particle effects) is a major performance bottleneck."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What faster alternative to alpha blending uses a hard threshold to discard pixels? (Two words)",
+          "correctAnswer": "alpha testing",
+          "explanation": "Alpha testing (or alpha cutout) discards pixels below an alpha threshold instead of blending them. It's much faster than alpha blending because discarded pixels skip shading entirely, but it produces hard edges instead of smooth transparency."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Render Textures and Camera Stacking",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Rendering to a Texture Instead of the Screen"
+        },
+        {
+          "type": "paragraph",
+          "value": "So far we've talked about rendering directly to the screen. But sometimes you need to render to a **Render Texture** — a texture in GPU memory that holds an image. You can then use that texture for other purposes: display it on a UI element, project it in-world, use it as input for a shader effect, or process it further.\n\nCommon uses for Render Textures:\n• **Minimaps** — render the world from above at low resolution\n• **Security cameras** — render a secondary camera view to a monitor\n• **Reflections** — render the scene from a mirror's perspective\n• **Portal effects** — render what's on the other side of a portal\n• **Custom post-processing** — capture the frame, process it, display it"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing camera rendering to Render Texture, then that texture applied to UI Raw Image and in-world monitor mesh",
+          "caption": "Render Textures let you capture camera output and reuse it anywhere"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Flow Diagram — Camera icon → 'Render Texture' box → splits to two paths: Path 1 → UI Canvas with Raw Image showing the texture. Path 2 → 3D TV monitor mesh in world showing the texture. Label 'One render, multiple uses'. Use clean, illustrative style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up a Render Texture in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Creating a Render Texture in Unity is straightforward:\n\n1. **Create the asset** — Right-click in Project window → Create → Render Texture. Set resolution and format.\n2. **Assign to a Camera** — On a Camera component, set Output Target to 'Texture' and assign your Render Texture.\n3. **Use the texture** — Assign it to a material, UI RawImage, or shader property.\n\nIn URP, cameras can render to Render Textures just like the screen. The camera uses the same Renderer and passes, but writes to your texture instead of the display."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Creating and using a Render Texture in code\npublic class SecurityCamera : MonoBehaviour\n{\n    public Camera securityCam;\n    public Material monitorMaterial;\n    private RenderTexture renderTex;\n    \n    void Start()\n    {\n        // Create a 512x512 render texture\n        renderTex = new RenderTexture(512, 512, 16);\n        renderTex.name = \"SecurityCameraFeed\";\n        \n        // Assign to camera\n        securityCam.targetTexture = renderTex;\n        \n        // Assign to monitor material\n        monitorMaterial.mainTexture = renderTex;\n    }\n    \n    void OnDestroy()\n    {\n        // Clean up GPU memory\n        renderTex.Release();\n        Destroy(renderTex);\n    }\n}\n\n// The camera now renders every frame to renderTex,\n// and the monitor displays that texture in real-time."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Camera Stacking in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Camera Stacking** lets you combine the output of multiple cameras into a single final image. Unlike Render Textures (which capture to a separate texture), camera stacking layers cameras directly on top of each other.\n\nIn URP, you set up camera stacking like this:\n\n1. **Base Camera** — The main camera that renders first. This is the 'bottom layer.'\n2. **Overlay Cameras** — Additional cameras that render on top of the base camera's output.\n\nUse cases:\n• **UI camera** — A separate camera that only renders UI at a different FOV or with different post-processing\n• **Weapon camera** — A close-up camera for first-person weapons that avoids clipping with walls\n• **Effect camera** — A camera that renders only specific layers with special effects\n• **Split-screen** — Multiple base cameras for local multiplayer"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing Base Camera rendering world, then Overlay Camera rendering weapon on top, combined into final image",
+          "caption": "Camera stacking layers multiple camera outputs into one final frame"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Layer Stack — Bottom layer: 'Base Camera' showing 3D world scene. Middle: arrow 'Stack'. Top layer: 'Overlay Camera' showing weapon model. Final combined image on right showing weapon overlaid on world. Label 'Camera Stacking'. Use a clean, game-scene example."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up Camera Stacking"
+        },
+        {
+          "type": "paragraph",
+          "value": "To set up camera stacking in URP:\n\n1. Create your **Base Camera** (main game camera)\n   - Set Render Type to 'Base'\n   - This camera renders first and clears the screen\n\n2. Create an **Overlay Camera**\n   - Set Render Type to 'Overlay'\n   - Set Culling Mask to only render specific layers (e.g., 'Weapons')\n   - Adjust near/far clip planes as needed\n\n3. Add the Overlay to the Base\n   - On the Base Camera, find 'Stack' list\n   - Click '+' and add your Overlay Camera\n\nThe Overlay Camera renders after the Base Camera, using the Base's output as its background. You can have multiple overlays — they render in the order listed."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Camera stacking setup in URP:\n//\n// Base Camera (main game view):\n//   Camera component → Render Type: Base\n//   Culling Mask: Everything except 'Weapons' layer\n//   Post-processing: enabled\n//\n// Overlay Camera (weapon view):\n//   Camera component → Render Type: Overlay\n//   Culling Mask: Only 'Weapons' layer\n//   Clear Flags: Don't Clear (keeps base camera output)\n//   Near Clip Plane: 0.01 (very close for weapon model)\n//   Far Clip Plane: 1.0 (only renders weapon)\n//   Post-processing: disabled (use base camera's)\n//\n// On Base Camera → Stack section:\n//   Add Overlay Camera to the list\n//\n// Result: Base camera renders world. Overlay camera renders\n// weapon on top. Weapon never clips through walls because\n// it has its own near/far planes and doesn't render the world.\n//\n// Performance note: Each camera in the stack is a full render.\n// Keep overlay cameras simple — avoid shadows, post-processing,\n// and complex culling on overlay cameras."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Render Texture vs Camera Stack: When to Use Which"
+        },
+        {
+          "type": "paragraph",
+          "value": "Both techniques solve similar problems but have different trade-offs:\n\n**Use Render Textures when:**\n• You need to display the output on a surface in the world (monitor, mirror, portal)\n• You need to process the image in a shader before displaying it\n• You need the same camera output in multiple places\n• You want to control resolution independently (e.g., low-res minimap)\n\n**Use Camera Stacking when:**\n• You want to layer different camera views directly (weapon, UI)\n• You don't need the intermediate texture for other purposes\n• You want simpler setup without managing Render Texture assets\n• Performance is less critical (stacking is usually faster than Render Texture + blit)\n\n**Key difference:** Camera stacking writes directly to the same output. Render Textures capture to a separate GPU texture that must be sampled later."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main purpose of a Render Texture?",
+          "options": [
+            "To increase screen resolution",
+            "To capture camera output to a GPU texture for reuse",
+            "To disable post-processing",
+            "To batch multiple meshes together"
+          ],
+          "correctAnswer": "To capture camera output to a GPU texture for reuse",
+          "explanation": "A Render Texture is a GPU texture that a camera renders into instead of the screen. You can then use that texture on materials, UI elements, or as input to shader effects. It's essential for effects like mirrors, security cameras, and minimaps."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In URP Camera Stacking, what Render Type should the main game camera use?",
+          "options": [
+            "Overlay",
+            "Base",
+            "Render Texture",
+            "Perspective"
+          ],
+          "correctAnswer": "Base",
+          "explanation": "In camera stacking, the main camera that renders first and provides the background is the 'Base' camera. Additional cameras that render on top of it are 'Overlay' cameras. The Base camera must be set to Render Type: Base."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What camera property do you set to make a camera render into a Render Texture instead of the screen? (Two words)",
+          "correctAnswer": "target texture",
+          "explanation": "The Camera.targetTexture property assigns a Render Texture for the camera to render into. When set, the camera outputs to that texture instead of the screen. Set it to null to render to the screen again."
+        }
+      ]
     }
   ]
 }
