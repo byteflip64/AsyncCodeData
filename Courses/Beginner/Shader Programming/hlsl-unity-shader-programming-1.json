@@ -550,6 +550,1343 @@
           "explanation": "_Time is a built-in float4 where _Time.y gives elapsed time in seconds. It's essential for creating animated shader effects."
         }
       ]
+    },
+    {
+      "partTitle": "Part 6: Lighting Fundamentals",
+      "badge": "Lighting",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Light in Shaders"
+        },
+        {
+          "type": "paragraph",
+          "value": "Lighting is what transforms flat, colored shapes into believable 3D objects. In shaders, lighting calculations determine how bright each pixel should be based on the light source direction, surface normal, and view angle. The two most fundamental lighting models are **Lambert (diffuse)** and **Blinn-Phong (specular)**."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing light ray hitting surface: diffuse reflection scatters, specular reflects at angle",
+          "caption": "Diffuse light scatters in all directions; specular light reflects at a mirror angle"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A 3D surface with a light ray hitting it from the top-left. Show two reflection paths: 1) Diffuse — multiple arrows scattering in all directions from the impact point (matte look). 2) Specular — a single sharp reflection arrow at the mirror angle (shiny highlight). Label 'Normal' as a perpendicular line from the surface. Use warm yellow for light, cool blue for surface."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Dot Product: Lighting's Secret Weapon"
+        },
+        {
+          "type": "paragraph",
+          "value": "The dot product is the mathematical heart of lighting. It measures how aligned two vectors are. When the surface normal faces the light, the dot product is 1 (full brightness). When perpendicular, it's 0 (no light). When facing away, it's negative (we clamp to 0)."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Diffuse (Lambert) lighting calculation\n// N = surface normal (world space)\n// L = light direction (pointing FROM surface TO light)\n\nhalf NdotL = saturate(dot(normalWS, lightDirectionWS));\n// saturate() clamps value between 0 and 1\n// When normal faces light: dot = 1 → bright\n// When normal is 90° to light: dot = 0 → dark\n// When normal faces away: dot = -1 → saturate makes it 0\n\nhalf3 diffuseColor = _BaseColor.rgb * NdotL * _LightColor0.rgb;",
+          "output": "Surface is bright where facing light, dark where facing away"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "URP's Built-in Lighting Helpers"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP provides powerful built-in functions and variables for lighting. Instead of calculating everything from scratch, you can use Unity's optimized lighting pipeline. The key include is `Lighting.hlsl` which gives you `GetMainLight()`, `LightingLambert()`, and more."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// URP built-in lighting setup\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n\n// In your fragment shader:\nhalf4 frag(Varyings input) : SV_Target\n{\n    // Get the main directional light\n    #if defined(_MAIN_LIGHT_SHADOWS)\n        float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);\n        Light mainLight = GetMainLight(shadowCoord);\n    #else\n        Light mainLight = GetMainLight();\n    #endif\n    \n    // mainLight.color = light color (white for directional)\n    // mainLight.direction = normalized light direction\n    // mainLight.distanceAttenuation = 1 for directional, falls off for point/spot\n    // mainLight.shadowAttenuation = 1 (lit) or 0 (in shadow)\n    \n    half3 normalWS = normalize(input.normalWS);\n    half NdotL = saturate(dot(normalWS, mainLight.direction));\n    \n    half3 diffuse = _BaseColor.rgb * NdotL * mainLight.color;\n    \n    return half4(diffuse, 1);\n}",
+          "output": "Lit surface with directional light, shadow support, and proper attenuation"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Ambient Light and Global Illumination"
+        },
+        {
+          "type": "paragraph",
+          "value": "Real scenes aren't just lit by direct light — ambient light fills shadowed areas. URP provides `SampleSH()` for spherical harmonics (cheap ambient) and you can add a simple ambient term for basic fill lighting."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Adding ambient light to prevent pure black shadows\nhalf3 ambient = SampleSH(input.normalWS); // Spherical harmonics ambient\n// OR simple constant ambient:\n// half3 ambient = half3(0.1, 0.1, 0.15); // Slight blue tint\n\nhalf3 finalColor = diffuse + (ambient * _BaseColor.rgb);\n\n// Complete simple lit shader:\nhalf4 frag(Varyings input) : SV_Target\n{\n    half3 normalWS = normalize(input.normalWS);\n    Light mainLight = GetMainLight();\n    \n    half NdotL = saturate(dot(normalWS, mainLight.direction));\n    half3 diffuse = _BaseColor.rgb * NdotL * mainLight.color;\n    half3 ambient = SampleSH(normalWS) * _BaseColor.rgb;\n    \n    return half4(diffuse + ambient, 1);\n}",
+          "output": "Surface with both direct lighting and soft ambient fill in shadows"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Specular Highlights (Blinn-Phong)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Specular highlights create the shiny 'hotspot' you see on polished surfaces. Blinn-Phong uses the **halfway vector** (between light direction and view direction) instead of the pure reflection vector — it's cheaper and looks great."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing Blinn-Phong specular: light vector + view vector = halfway vector, dot with normal",
+          "caption": "Blinn-Phong specular uses the halfway vector for efficient shiny highlights"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A 3D surface with three vectors: Light direction (L, yellow arrow from surface to light), View direction (V, blue arrow from surface to camera), and Halfway vector (H, green arrow — the normalized sum of L and V). Show the Normal (N, perpendicular line). The specular highlight intensity is determined by dot(N, H) raised to a power. Include a small sphere showing the resulting highlight."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Blinn-Phong specular calculation\nfloat3 viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);\nfloat3 halfVector = normalize(mainLight.direction + viewDirectionWS);\n\n// NdotH raised to shininess power creates the tight highlight\nhalf NdotH = saturate(dot(normalWS, halfVector));\nhalf specularIntensity = pow(NdotH, _Shininess * 128); // _Shininess is 0-1\n\nhalf3 specular = specularIntensity * _SpecularColor.rgb * mainLight.color;\n\n// Combine everything\nhalf3 finalColor = diffuse + ambient + specular;\nreturn half4(finalColor, 1);",
+          "output": "Surface with diffuse base, ambient fill, and sharp specular highlight"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What mathematical operation is the core of diffuse lighting calculations?",
+          "options": [
+            "Cross product",
+            "Dot product",
+            "Matrix multiplication",
+            "Vector addition"
+          ],
+          "correctAnswer": "Dot product",
+          "explanation": "The dot product between the surface normal and light direction gives the cosine of the angle between them — exactly what we need for diffuse brightness."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What URP function retrieves the main directional light data?",
+          "options": [
+            "GetLight()",
+            "GetMainLight()",
+            "FetchDirectionalLight()",
+            "GetPrimaryLight()"
+          ],
+          "correctAnswer": "GetMainLight()",
+          "explanation": "GetMainLight() returns a Light struct containing color, direction, distance attenuation, and shadow attenuation for the scene's main directional light."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What HLSL function clamps a value between 0 and 1?",
+          "correctAnswer": "saturate",
+          "explanation": "saturate(x) is the GPU-optimized way to clamp values to [0, 1]. It's faster than max(0, min(1, x)) on most hardware."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: Normal Maps & Surface Detail",
+      "badge": "Textures",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Adding Surface Detail with Normal Maps"
+        },
+        {
+          "type": "paragraph",
+          "value": "Normal maps are textures that store surface direction (normal vectors) instead of color. They let you fake complex surface details — bumps, grooves, scratches — without adding extra geometry. A flat plane with a good normal map can look like rough stone or woven fabric."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Before/after: flat cube with color texture vs same cube with normal map showing fake surface bumps",
+          "caption": "Normal maps fake surface detail without adding a single extra polygon"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Before/After Split — Left: a flat cube with just a brick color texture — looks like a flat painting. Right: same cube with a normal map applied — the surface appears to have real depth, mortar grooves, and roughness. Both with identical geometry (show wireframe overlay). Label 'Same mesh, different normals'. Use a brick wall texture as the example."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Normal Maps Work"
+        },
+        {
+          "type": "paragraph",
+          "value": "A normal map stores XYZ normal components in the RGB channels of a texture. The default 'flat' normal is (0, 0, 1) which maps to the color (128, 128, 255) — the distinctive blue-purple color of most normal maps. When sampled, these values are unpacked from [0,1] color space to [-1,1] vector space."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Normal map sampling and unpacking\nTEXTURE2D(_NormalMap);\nSAMPLER(sampler_NormalMap);\nfloat _NormalStrength;\n\n// In fragment shader:\nhalf4 normalTex = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.uv);\n\n// Unpack from [0,1] to [-1,1]\nhalf3 normalTS = UnpackNormal(normalTex);\n// OR for URP's built-in unpacking:\n// half3 normalTS = UnpackNormalScale(normalTex, _NormalStrength);\n\n// normalTS is in Tangent Space (relative to the surface)\n// x = left/right bump, y = up/down bump, z = outward (usually ~1)\n\n// Apply strength (reduce the effect)\nnormalTS.xy *= _NormalStrength;\nnormalTS.z = sqrt(1 - saturate(dot(normalTS.xy, normalTS.xy)));",
+          "output": "Surface shows fake bumps and grooves based on the normal map texture"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Tangent Space vs World Space"
+        },
+        {
+          "type": "paragraph",
+          "value": "Normal maps store vectors in **tangent space** — relative to the surface's UV orientation. To use them for lighting, you must transform them to **world space** where your light vectors live. This requires the **TBN matrix** (Tangent, Bitangent, Normal)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing TBN basis vectors: Tangent along U, Bitangent along V, Normal perpendicular",
+          "caption": "The TBN matrix transforms tangent-space normals to world space for lighting"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: 3D Diagram — A 3D surface patch with three orthogonal arrows: Tangent (T, red, along U direction), Bitangent/Binormal (B, green, along V direction), Normal (N, blue, perpendicular). Show a small normal vector in tangent space being transformed by the TBN matrix to world space. Label 'Tangent Space' and 'World Space'. Use a coordinate system visual with clear axis colors."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Vertex shader: pass TBN vectors to fragment shader\nstruct Attributes\n{\n    float4 positionOS : POSITION;\n    float2 uv         : TEXCOORD0;\n    float3 normalOS   : NORMAL;\n    float4 tangentOS  : TANGENT;    // xyz = tangent, w = handedness sign\n};\n\nstruct Varyings\n{\n    float4 positionHCS : SV_POSITION;\n    float2 uv          : TEXCOORD0;\n    float3 normalWS    : TEXCOORD1;\n    float3 tangentWS   : TEXCOORD2;\n    float3 bitangentWS : TEXCOORD3;\n};\n\nVaryings vert(Attributes input)\n{\n    Varyings output;\n    output.positionHCS = TransformObjectToHClip(input.positionOS);\n    output.uv = input.uv;\n    \n    // Build TBN in world space\n    VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS, input.tangentOS);\n    output.normalWS = normalInputs.normalWS;\n    output.tangentWS = normalInputs.tangentWS;\n    output.bitangentWS = normalInputs.bitangentWS;\n    \n    return output;\n}\n\n// Fragment shader: transform normal to world space\nhalf4 frag(Varyings input) : SV_Target\n{\n    // Sample and unpack normal map\n    half3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.uv));\n    normalTS.xy *= _NormalStrength;\n    \n    // Reconstruct Z to ensure unit length\n    normalTS.z = sqrt(1 - saturate(dot(normalTS.xy, normalTS.xy)));\n    \n    // Transform from tangent space to world space\n    half3 normalWS = normalize(\n        normalTS.x * input.tangentWS +\n        normalTS.y * input.bitangentWS +\n        normalTS.z * input.normalWS\n    );\n    \n    // Now use normalWS for lighting!\n    Light mainLight = GetMainLight();\n    half NdotL = saturate(dot(normalWS, mainLight.direction));\n    return half4(NdotL.xxx, 1);\n}",
+          "output": "Lit surface with normal map bumps affecting the lighting direction"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Object-Space Normal Maps (Alternative)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Some assets use **object-space** normal maps (sometimes called 'world-space' normal maps). These store normals directly in object space — no TBN matrix needed! They're great for static objects but don't work well with animated/deformed meshes since the normals are baked to a specific orientation."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Object-space normal map (simpler, no TBN needed)\nhalf4 normalTex = SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, input.uv);\n\n// Object-space normals are stored directly — just remap from [0,1] to [-1,1]\nhalf3 normalOS = normalTex.rgb * 2 - 1;\n\n// Transform to world space\nhalf3 normalWS = TransformObjectToWorldNormal(normalOS);\n\n// Use for lighting\nLight mainLight = GetMainLight();\nhalf NdotL = saturate(dot(normalWS, mainLight.direction));",
+          "output": "Object-space normal map applied without TBN matrix calculation"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Normal Map Mistakes"
+        },
+        {
+          "type": "paragraph",
+          "value": "Beginners often make these normal map mistakes:\n• **Forgetting to normalize** — always call `normalize()` on your final normal\n• **Wrong space** — mixing tangent-space normal with world-space light direction\n• **Strength too high** — values above 1 create physically impossible normals\n• **Not reconstructing Z** — if you scale XY, you must recalculate Z to keep the vector unit-length\n• **Import settings** — Unity must know a texture is a normal map (set Texture Type to 'Normal Map')"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// CORRECT: Always normalize after TBN transformation\nhalf3 normalWS = normalize(tangentWS * normalTS.x + bitangentWS * normalTS.y + normalWS * normalTS.z);\n\n// WRONG: Missing normalize can cause lighting artifacts\n// half3 normalWS = tangentWS * normalTS.x + ... // DON'T DO THIS\n\n// CORRECT: Reconstruct Z after scaling XY\nnormalTS.xy *= _NormalStrength;\nnormalTS.z = sqrt(1 - saturate(dot(normalTS.xy, normalTS.xy)));\n\n// WRONG: Scaling all three components breaks the normal\n// normalTS *= _NormalStrength; // DON'T DO THIS — z becomes too small",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What color represents a 'flat' normal in a tangent-space normal map?",
+          "options": [
+            "Pure red (255, 0, 0)",
+            "Blue-purple (128, 128, 255)",
+            "Pure green (0, 255, 0)",
+            "White (255, 255, 255)"
+          ],
+          "correctAnswer": "Blue-purple (128, 128, 255)",
+          "explanation": "A flat normal pointing straight out is (0, 0, 1) in [-1,1] space, which maps to (128, 128, 255) in [0,1] texture space — the characteristic blue-purple color."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does TBN stand for in normal mapping?",
+          "options": [
+            "Texture, Bump, Normal",
+            "Tangent, Bitangent, Normal",
+            "Transform, Blend, Normalize",
+            "Top, Bottom, North"
+          ],
+          "correctAnswer": "Tangent, Bitangent, Normal",
+          "explanation": "TBN is the basis matrix: Tangent (along U), Bitangent (along V), and Normal (perpendicular). It transforms tangent-space normals to world space."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What URP function unpacks a normal map texture from [0,1] to [-1,1]?",
+          "correctAnswer": "UnpackNormal",
+          "explanation": "UnpackNormal() converts normal map texture data from the 0-1 color range to the -1 to 1 vector range that HLSL expects for normal calculations."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: Custom Lighting & Toon Shading",
+      "badge": "Stylized",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Beyond Realistic: Stylized Lighting"
+        },
+        {
+          "type": "paragraph",
+          "value": "Not every game wants photorealism. Stylized shaders — cel-shading, toon lighting, rim lighting — are essential for games like Zelda, Genshin Impact, and Fortnite. These effects often require **custom lighting functions** that replace Unity's default realistic calculations with artist-controlled steps."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Comparison: smooth realistic shading vs stepped cel-shading with sharp light/dark bands",
+          "caption": "Cel-shading replaces smooth gradients with discrete color bands for a cartoon look"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Before/After Split — Left: a sphere with smooth Blinn-Phong lighting showing gradual light-to-dark transition. Right: same sphere with cel-shading — 3-4 distinct color bands (bright highlight, mid-tone, shadow, deep shadow) with sharp boundaries between them. Label 'Realistic' vs 'Cel-Shaded (Toon)'. Use a vibrant, anime-inspired color palette for the toon version."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Cel-Shading with Step Functions"
+        },
+        {
+          "type": "paragraph",
+          "value": "The core of cel-shading is quantizing (rounding) the lighting value into discrete steps. Instead of smooth NdotL values from 0 to 1, we create 3-4 distinct bands. The `smoothstep` function creates soft transitions between bands to avoid harsh aliasing."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Cel-shading with 3 light bands\nfloat _ShadowThreshold;\nfloat _MidThreshold;\nhalf4 _ShadowColor;\nhalf4 _MidColor;\nhalf4 _HighlightColor;\n\nhalf4 frag(Varyings input) : SV_Target\n{\n    half3 normalWS = normalize(input.normalWS);\n    Light mainLight = GetMainLight();\n    half NdotL = saturate(dot(normalWS, mainLight.direction));\n    \n    // Quantize into 3 bands using thresholds\n    half lightBand;\n    if (NdotL < _ShadowThreshold)\n        lightBand = 0; // Shadow\n    else if (NdotL < _MidThreshold)\n        lightBand = 1; // Mid-tone\n    else\n        lightBand = 2; // Highlight\n    \n    // Smooth transitions between bands (optional but nicer)\n    half shadowBlend = smoothstep(_ShadowThreshold - 0.05, _ShadowThreshold, NdotL);\n    half midBlend = smoothstep(_MidThreshold - 0.05, _MidThreshold, NdotL);\n    \n    // Pick color based on band\n    half3 color = lerp(_ShadowColor.rgb, _MidColor.rgb, shadowBlend);\n    color = lerp(color, _HighlightColor.rgb, midBlend);\n    \n    return half4(color, 1);\n}",
+          "output": "Sphere with 3 distinct lighting bands: shadow, mid-tone, and highlight"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Rim Lighting for Character Highlights"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rim lighting adds a bright edge glow where the surface faces away from the camera. It's iconic in anime, sci-fi, and character art. The effect uses the dot product between the normal and view direction — when they face opposite directions (perpendicular to camera), the rim is strongest."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Character model showing rim light effect: bright cyan edge glow on silhouette edges",
+          "caption": "Rim lighting creates a glowing edge that makes characters pop from the background"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Character Render — A 3D character (anime-style or sci-fi) against a dark background. Show a bright rim light (cyan or warm orange) tracing the silhouette edges — shoulders, head outline, arm edges. Include a small inset diagram showing: Normal vector (perpendicular to surface) and View vector (to camera). The rim intensity = 1 - dot(N, V). Label 'Rim = 1 - N·V'. Use dramatic lighting with the rim as the focal point."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Rim lighting calculation\nfloat _RimPower;\nhalf4 _RimColor;\n\nhalf4 frag(Varyings input) : SV_Target\n{\n    half3 normalWS = normalize(input.normalWS);\n    half3 viewDirectionWS = GetWorldSpaceNormalizeViewDir(input.positionWS);\n    \n    // Rim is strongest when normal faces away from camera\n    half NdotV = saturate(dot(normalWS, viewDirectionWS));\n    half rim = 1.0 - NdotV;\n    \n    // Sharpen or soften the rim falloff\n    rim = pow(rim, _RimPower);\n    \n    // Combine with base color\n    half3 baseColor = _BaseColor.rgb;\n    half3 finalColor = baseColor + (_RimColor.rgb * rim);\n    \n    return half4(finalColor, 1);\n}\n\n// Rim + Cel-shading combined:\n// Add rim on top of your cel-shaded base for a complete toon look",
+          "output": "Object shows bright edge glow on silhouette-facing surfaces"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Outline Effects with Inverted Hull"
+        },
+        {
+          "type": "paragraph",
+          "value": "A classic toon technique is the **inverted hull outline**: render the mesh a second time, flip the normals inward, and push vertices outward along those inverted normals. This creates a solid-colored shell around the object that looks like an outline."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Outline pass — add as a SECOND Pass in your SubShader\nPass\n{\n    Name \"Outline\"\n    Cull Front  // Render backfaces only (inverted hull)\n    \n    HLSLPROGRAM\n    #pragma vertex vert\n    #pragma fragment frag\n    #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n\n    float _OutlineWidth;\n    half4 _OutlineColor;\n\n    struct Attributes\n    {\n        float4 positionOS : POSITION;\n        float3 normalOS   : NORMAL;\n    };\n\n    struct Varyings\n    {\n        float4 positionHCS : SV_POSITION;\n    };\n\n    Varyings vert(Attributes input)\n    {\n        Varyings output;\n        \n        // Push vertex along its normal in object space\n        float3 positionOS = input.positionOS.xyz;\n        positionOS += input.normalOS * _OutlineWidth;\n        \n        output.positionHCS = TransformObjectToHClip(float4(positionOS, 1));\n        return output;\n    }\n\n    half4 frag(Varyings input) : SV_Target\n    {\n        return _OutlineColor;\n    }\n    ENDHLSL\n}",
+          "output": "Object renders with a solid colored outline around its silhouette"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Custom Lighting Functions"
+        },
+        {
+          "type": "paragraph",
+          "value": "For complex stylized looks, you'll want to write your own lighting function instead of using Unity's built-in Lambert. This gives you complete control over how light interacts with your surface."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Reusable custom lighting function\nhalf3 CustomLighting(half3 normalWS, half3 lightDir, half3 lightColor, half3 baseColor)\n{\n    half NdotL = saturate(dot(normalWS, lightDir));\n    \n    // Custom step function: 3 hard bands\n    half3 litColor;\n    if (NdotL > 0.7)\n        litColor = baseColor * lightColor * 1.0;  // Full bright\n    else if (NdotL > 0.3)\n        litColor = baseColor * lightColor * 0.6;  // Mid tone\n    else\n        litColor = baseColor * lightColor * 0.2;  // Shadow\n    \n    return litColor;\n}\n\n// Use it in your fragment shader:\nhalf4 frag(Varyings input) : SV_Target\n{\n    half3 normalWS = normalize(input.normalWS);\n    Light mainLight = GetMainLight();\n    \n    half3 color = CustomLighting(\n        normalWS,\n        mainLight.direction,\n        mainLight.color,\n        _BaseColor.rgb\n    );\n    \n    // Add rim on top\n    half3 viewDir = GetWorldSpaceNormalizeViewDir(input.positionWS);\n    half rim = pow(1 - saturate(dot(normalWS, viewDir)), _RimPower);\n    color += _RimColor.rgb * rim;\n    \n    return half4(color, 1);\n}",
+          "output": "Fully custom toon shader with stepped lighting and rim highlight"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What function creates smooth transitions between cel-shading bands?",
+          "options": [
+            "lerp",
+            "smoothstep",
+            "step",
+            "pow"
+          ],
+          "correctAnswer": "smoothstep",
+          "explanation": "smoothstep(min, max, x) returns a smooth Hermite interpolation between 0 and 1, creating soft band edges instead of harsh aliased lines."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the inverted hull outline technique do?",
+          "options": [
+            "Draws lines using a geometry shader",
+            "Renders backfaces pushed outward along normals",
+            "Uses a post-processing edge detection filter",
+            "Adds a second texture with black borders"
+          ],
+          "correctAnswer": "Renders backfaces pushed outward along normals",
+          "explanation": "The inverted hull method renders the mesh again with Cull Front, pushing vertices along their inverted normals to create a shell that appears as an outline."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What value is rim lighting based on? (1 minus what dot product?)",
+          "correctAnswer": "NdotV",
+          "explanation": "Rim lighting uses 1 - dot(Normal, ViewDirection). When the surface faces away from the camera, NdotV approaches 0, making the rim term approach 1 (full brightness)."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Shader Graph vs Hand-Written HLSL",
+      "badge": "Workflow",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "When to Use Shader Graph vs HLSL"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's Shader Graph is a powerful visual node-based shader editor. It lets you create shaders without writing code by connecting nodes in a graph. But hand-written HLSL still has important advantages. Knowing both workflows makes you a more versatile technical artist or graphics programmer."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Side-by-side: Shader Graph node network vs HLSL code editor showing equivalent shader",
+          "caption": "The same shader effect can be built visually in Shader Graph or written as HLSL code"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Split Screen Comparison — Left: Unity Shader Graph interface showing a node network (Sample Texture 2D → Multiply → Fragment). Nodes are colorful boxes with connection wires. Right: VS Code showing the equivalent HLSL code with syntax highlighting. Both produce the same result (textured, tinted object). Label 'Visual' vs 'Code'. Include a small 'equals' sign between them."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Shader Graph Strengths"
+        },
+        {
+          "type": "paragraph",
+          "value": "• **Visual prototyping** — iterate on effects rapidly without compile times\n• **Artist-friendly** — technical artists can create shaders without programming\n• **Live preview** — see changes instantly in the Graph Inspector\n• **Built-in nodes** — common operations like Fresnel, Noise, and Remap are pre-built\n• **Easier debugging** — visual flow makes it obvious where data comes from"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// What Shader Graph generates behind the scenes (simplified)\n// A simple 'texture * color' graph becomes:\n\n// Shader Graph auto-generates this boilerplate:\n// - Property declarations\n// - Vertex/fragment structs\n// - Texture sampling nodes\n// - Math operation nodes\n// - Output wiring\n\n// The generated HLSL is often verbose but functionally equivalent\n// to hand-written code. Understanding HLSL helps you read and\n// optimize generated shaders.",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Hand-Written HLSL Strengths"
+        },
+        {
+          "type": "paragraph",
+          "value": "• **Performance control** — write exactly the instructions the GPU executes, no bloat\n• **Advanced features** — custom vertex streams, multiple passes, compute shaders\n• **Version control** — text files diff beautifully; graph files are binary/JSON blobs\n• **Reusability** — #include files let you share code across many shaders\n• **Debugging** — shader compilers give precise error line numbers\n• **Portability** — HLSL knowledge transfers to Unreal, Godot, and custom engines"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Hand-written HLSL advantages in practice\n\n// 1. Reusable include files\n#include \"MyLightingLibrary.hlsl\"\n\n// 2. Precise multi-pass control\nSubShader\n{\n    // Pass 1: Depth prepass (optimization)\n    Pass { /* ... */ }\n    \n    // Pass 2: Forward lighting\n    Pass { /* ... */ }\n    \n    // Pass 3: Outline (inverted hull)\n    Pass { /* ... */ }\n}\n\n// 3. Custom vertex data streams\nstruct Attributes\n{\n    float4 positionOS : POSITION;\n    float2 uv         : TEXCOORD0;\n    float4 color      : COLOR;        // Per-vertex color from mesh\n    float2 uv2        : TEXCOORD1;    // Lightmap UVs\n    float4 boneWeights: BLENDWEIGHTS; // For skinning\n};\n\n// 4. Shader variants with keywords\n#pragma multi_compile _ _MAIN_LIGHT_SHADOWS\n#pragma multi_compile _ _ADDITIONAL_LIGHTS",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Hybrid Workflow: Best of Both Worlds"
+        },
+        {
+          "type": "paragraph",
+          "value": "Many professional workflows combine both approaches: prototype in Shader Graph for speed, then convert to HLSL for optimization and advanced features. Unity even lets you create **Custom Function nodes** in Shader Graph that call your own HLSL code."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Shader Graph showing a Custom Function node connected to the graph, calling external HLSL file",
+          "caption": "Custom Function nodes let you inject hand-written HLSL into Shader Graph workflows"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — Unity Shader Graph with a 'Custom Function' node highlighted. The node has input/output ports and a file reference to 'MyCustomLighting.hlsl'. Show wires connecting from a Texture node → Custom Function → Fragment Color. Include a small code preview popup showing the HLSL function inside the node. Use Unity's dark theme."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Custom Function node HLSL file (MyCustomLighting.hlsl)\n// This can be referenced inside Shader Graph\n\nvoid MyCustomLighting_float(\n    float3 Normal,\n    float3 LightDir,\n    float3 BaseColor,\n    float Threshold,\n    out float3 OutColor\n)\n{\n    float NdotL = saturate(dot(normalize(Normal), normalize(LightDir)));\n    \n    if (NdotL > Threshold)\n        OutColor = BaseColor;\n    else\n        OutColor = BaseColor * 0.3;\n}\n\n// In Shader Graph:\n// 1. Add a Custom Function node\n// 2. Set Type to 'File' and reference this .hlsl\n// 3. Set Name to 'MyCustomLighting'\n// 4. Wire inputs: Normal, LightDir, BaseColor, Threshold\n// 5. Wire output: OutColor → Fragment Base Color",
+          "output": "Shader Graph node calls your custom HLSL cel-shading function"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Converting Shader Graph to HLSL"
+        },
+        {
+          "type": "paragraph",
+          "value": "To learn from Shader Graph, you can inspect the generated HLSL. In Shader Graph, go to the **Compile Code** button (or check the generated code in the Inspector). This shows you exactly what nodes translate to — an excellent learning tool!"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Example: What Shader Graph's 'Fresnel Effect' node generates\n// Node inputs: Normal, View Dir, Power\n\n// Shader Graph generates something like this:\nhalf3 viewDirWS = GetWorldSpaceNormalizeViewDir(positionWS);\nhalf NdotV = saturate(dot(normalWS, viewDirWS));\nhalf fresnel = pow(1.0 - NdotV, _Power);\n\n// Which is exactly what you'd write by hand!\n// Understanding both helps you:\n// 1. Build faster in Shader Graph (knowing the math)\n// 2. Optimize generated code (knowing what to simplify)\n// 3. Write custom nodes (knowing the function signature)",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which is NOT an advantage of hand-written HLSL over Shader Graph?",
+          "options": [
+            "Better version control with text diffs",
+            "Precise performance control",
+            "Instant visual preview without compiling",
+            "Reusable #include files"
+          ],
+          "correctAnswer": "Instant visual preview without compiling",
+          "explanation": "Instant visual preview is actually Shader Graph's advantage! HLSL requires compilation and scene refresh to see changes. The other options are genuine HLSL strengths."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What Shader Graph feature lets you inject hand-written HLSL code?",
+          "options": [
+            "Sub Graph",
+            "Custom Function node",
+            "Master Stack",
+            "Property Node"
+          ],
+          "correctAnswer": "Custom Function node",
+          "explanation": "The Custom Function node references an external HLSL file and exposes its inputs/outputs as graph nodes, bridging visual and code workflows."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What pragma directive creates shader keyword variants for different features?",
+          "correctAnswer": "multi_compile",
+          "explanation": "#pragma multi_compile generates multiple shader variants at build time. Unity selects the correct variant at runtime based on active keywords (like _MAIN_LIGHT_SHADOWS)."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: Performance Optimization & Best Practices",
+      "badge": "Optimization",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Writing GPU-Friendly Shaders"
+        },
+        {
+          "type": "paragraph",
+          "value": "A beautiful shader that runs at 15 FPS is useless. GPU optimization is about understanding what makes the graphics card work hard — texture samples, complex math, branching, and overdraw — then minimizing those costs. This part covers the techniques that separate production-ready shaders from hobby experiments."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Performance comparison chart: unoptimized shader vs optimized shader showing FPS and GPU time",
+          "caption": "Optimized shaders can run 5-10x faster while looking nearly identical"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Bar Chart — Two bars side by side. Left (red): 'Unoptimized Shader' — 12 FPS, 8.3ms GPU time, 45 texture samples, 200 instructions. Right (green): 'Optimized Shader' — 60 FPS, 1.6ms GPU time, 4 texture samples, 45 instructions. Show a small arrow with '5x faster' label. Include a tiny before/after render showing they look identical. Use performance dashboard styling."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Minimize Texture Samples"
+        },
+        {
+          "type": "paragraph",
+          "value": "Texture sampling (`SAMPLE_TEXTURE2D`) is one of the most expensive operations in a fragment shader. Each sample reads from GPU memory, which is slow. Aim for 1-4 texture samples per shader. If you need multiple textures, consider packing them into channels of a single texture (e.g., roughness in R, metallic in G, occlusion in B)."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// BAD: 4 separate texture samples\nhalf4 diffuse = SAMPLE_TEXTURE2D(_DiffuseTex, sampler_DiffuseTex, uv);\nhalf4 normal = SAMPLE_TEXTURE2D(_NormalTex, sampler_NormalTex, uv);\nhalf4 roughness = SAMPLE_TEXTURE2D(_RoughnessTex, sampler_RoughnessTex, uv);\nhalf4 metallic = SAMPLE_TEXTURE2D(_MetallicTex, sampler_MetallicTex, uv);\n// Total: 4 texture samples!\n\n// GOOD: Pack into a single 'mask' texture\n// R channel = roughness, G = metallic, B = occlusion\nhalf4 mask = SAMPLE_TEXTURE2D(_MaskTex, sampler_MaskTex, uv);\nhalf roughness = mask.r;\nhalf metallic = mask.g;\nhalf occlusion = mask.b;\n// Total: 1 texture sample + diffuse + normal = 3 total\n\n// EVEN BETTER: Use Unity's built-in packed textures\n// URP's Lit shader packs metallic (R), occlusion (G), detail (B), smoothness (A)",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Avoid Dynamic Branching"
+        },
+        {
+          "type": "paragraph",
+          "value": "GPUs execute shaders in lockstep across many pixels simultaneously. When pixels take different code paths (if/else branches), the GPU must execute BOTH paths and mask out the wrong results — doubling the work. Use `lerp`, `step`, and `saturate` instead of conditionals when possible."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// BAD: Dynamic branching in fragment shader\nhalf4 frag(Varyings input) : SV_Target\n{\n    half3 color;\n    if (input.uv.x > 0.5)  // Branch! GPU executes both paths\n        color = _ColorA;\n    else\n        color = _ColorB;\n    return half4(color, 1);\n}\n\n// GOOD: Branchless with lerp\nhalf4 frag(Varyings input) : SV_Target\n{\n    half blend = step(0.5, input.uv.x);  // 0 or 1, no branch\n    half3 color = lerp(_ColorB, _ColorA, blend);\n    return half4(color, 1);\n}\n\n// EVEN BETTER: Use smoothstep for soft transition\nhalf blend = smoothstep(0.48, 0.52, input.uv.x);\nhalf3 color = lerp(_ColorB, _ColorA, blend);",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Use Appropriate Precision"
+        },
+        {
+          "type": "paragraph",
+          "value": "Not every calculation needs 32-bit float precision. On mobile GPUs especially, using `half` (16-bit) instead of `float` (32-bit) can double your arithmetic throughput. Use `half` for colors, UVs, and normalized vectors. Use `float` only for world positions and depth calculations."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Precision guidelines\n\n// Use float (32-bit) for:\nfloat3 worldPosition;     // Large coordinate values\nfloat depth;              // Depth buffer precision matters\nfloat4 clipPosition;      // Clip space needs range\n\n// Use half (16-bit) for:\nhalf3 albedo;             // Colors are 0-1 range\nhalf3 normalWS;           // Normalized vectors\nhalf NdotL;               // Dot products (clamped 0-1)\nhalf roughness;           // Material properties 0-1\nhalf2 uv;                 // Texture coordinates\n\n// Mobile impact:\n// float4 color = ...;     // 4 * 32 = 128 bits per register\n// half4 color = ...;      // 4 * 16 = 64 bits per register\n// → half uses half the register pressure!",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Shader LOD and Fallbacks"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's **Shader LOD** system lets you specify quality levels. Lower-end devices automatically use simpler shader variants. Always provide a fallback so your object doesn't render as magenta if the shader fails."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "Shader \"Custom/OptimizedShader\"\n{\n    // Set default LOD (can be overridden in Quality Settings)\n    // 600 = high quality, 300 = medium, 150 = low\n    \n    Properties\n    {\n        _BaseColor(\"Color\", Color) = (1,1,1,1)\n    }\n    \n    // High quality subshader (LOD 600)\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Opaque\" \"ShaderModel\"=\"4.5\" }\n        LOD 600\n        \n        Pass\n        {\n            // Full PBR with normal maps, shadows, multiple lights\n            HLSLPROGRAM\n            #pragma target 4.5\n            #pragma vertex vert\n            #pragma fragment frag\n            // ... complex lighting ...\n            ENDHLSL\n        }\n    }\n    \n    // Medium quality subshader (LOD 300)\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Opaque\" }\n        LOD 300\n        \n        Pass\n        {\n            // Simple Lambert + single texture\n            HLSLPROGRAM\n            #pragma target 3.5\n            // ... simpler code ...\n            ENDHLSL\n        }\n    }\n    \n    // Fallback if nothing else works\n    Fallback \"Universal Render Pipeline/Simple Lit\"\n}",
+          "output": "Shader automatically selects appropriate quality based on device capabilities"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Profiling Shaders in Unity"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity provides several tools to measure shader performance:\n• **Frame Debugger** (Window → Analysis → Frame Debugger) — step through draw calls\n• **Profiler** (Window → Analysis → Profiler) — GPU time per shader\n• **Rendering Statistics** (Game view Stats overlay) — draw calls, tris, texture memory\n• **Shader Complexity view** — some platforms show estimated instruction count"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Quick performance checklist for your shaders:\n\n// 1. Count texture samples (aim for ≤ 4 in fragment)\n// 2. Count arithmetic instructions (aim for ≤ 50)\n// 3. Check for dynamic branching (if/else in fragment)\n// 4. Verify you're using half where possible\n// 5. Ensure ZWrite is On for opaque objects (avoids overdraw)\n\n// Debug: Visualize shader complexity with color\nhalf4 frag(Varyings input) : SV_Target\n{\n    half3 color = /* your lighting */;\n    \n    // Uncomment to visualize cost (brighter = more expensive)\n    // return half4(frac(_Time.y * 10).xxx, 1); // Check for flickering\n    \n    return half4(color, 1);\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Optimization Checklist"
+        },
+        {
+          "type": "paragraph",
+          "value": "Before shipping any shader, run through this checklist:\n• [ ] Texture samples minimized and packed where possible\n• [ ] No dynamic branching in fragment shaders\n• [ ] Appropriate precision (half vs float) throughout\n• [ ] Shader LOD and fallback configured\n• [ ] ZWrite correct for transparency mode\n• [ ] Cull mode appropriate (Cull Back for solid, Cull Off for double-sided)\n• [ ] Tested on target hardware (especially mobile!)\n• [ ] Frame Debugger shows expected number of draw calls"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the most expensive operation to minimize in fragment shaders?",
+          "options": [
+            "Vector addition",
+            "Texture sampling",
+            "Variable declaration",
+            "Return statements"
+          ],
+          "correctAnswer": "Texture sampling",
+          "explanation": "Texture sampling reads from GPU memory, which is significantly slower than arithmetic operations. Minimizing samples (aim for 1-4) is the #1 optimization for fragment shaders."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why should you avoid if/else branching in fragment shaders?",
+          "options": [
+            "It causes compile errors",
+            "GPUs execute both paths and mask results",
+            "It makes code harder to read",
+            "Unity doesn't support branching"
+          ],
+          "correctAnswer": "GPUs execute both paths and mask results",
+          "explanation": "GPUs process pixels in lockstep groups (warps/wavefronts). When pixels branch differently, the GPU executes BOTH branches and discards the wrong results, effectively doubling the work."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What HLSL data type should you use for colors and normalized vectors on mobile?",
+          "correctAnswer": "half",
+          "explanation": "half provides 16-bit precision which is sufficient for colors (0-1 range) and normalized vectors. On mobile GPUs, half arithmetic is often 2x faster than float and uses half the register space."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 11: Advanced Textures & UV Techniques",
+      "badge": "Textures",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Beyond Basic Texture Sampling"
+        },
+        {
+          "type": "paragraph",
+          "value": "Once you master basic texture sampling, you can create powerful visual effects by manipulating UV coordinates, blending multiple textures, and using texture masks. These techniques are the foundation of terrain shaders, animated effects, and advanced material systems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing texture blending: base rock texture + moss overlay using a mask texture",
+          "caption": "Texture masking lets you blend multiple materials based on a control texture"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Three panels side by side. Panel 1: 'Base Texture' showing gray rock. Panel 2: 'Mask Texture' showing a grayscale gradient (white at bottom, black at top). Panel 3: 'Blended Result' showing rock at top transitioning to green moss at bottom. Include arrows showing the blend formula: lerp(rock, moss, mask). Use a terrain/cliff visual as the example."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Texture Blending with Masks"
+        },
+        {
+          "type": "paragraph",
+          "value": "Mask textures (also called splat maps or blend maps) use grayscale values to control how much of each texture appears at a given pixel. White = full secondary texture, black = full primary texture, gray = blend between them. This is essential for terrain shaders and complex materials."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Two-texture blend using a mask\nShader \"Custom/TextureBlend\"\n{\n    Properties\n    {\n        _BaseTex(\"Base Texture\", 2D) = \"white\" {}\n        _OverlayTex(\"Overlay Texture\", 2D) = \"white\" {}\n        _BlendMask(\"Blend Mask\", 2D) = \"white\" {}\n        _BlendStrength(\"Blend Strength\", Range(0, 1)) = 1\n    }\n    SubShader\n    {\n        Pass\n        {\n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n\n            TEXTURE2D(_BaseTex); SAMPLER(sampler_BaseTex);\n            TEXTURE2D(_OverlayTex); SAMPLER(sampler_OverlayTex);\n            TEXTURE2D(_BlendMask); SAMPLER(sampler_BlendMask);\n            float _BlendStrength;\n\n            struct Attributes\n            {\n                float4 positionOS : POSITION;\n                float2 uv : TEXCOORD0;\n            };\n\n            struct Varyings\n            {\n                float4 positionHCS : SV_POSITION;\n                float2 uv : TEXCOORD0;\n            };\n\n            Varyings vert(Attributes input)\n            {\n                Varyings output;\n                output.positionHCS = TransformObjectToHClip(input.positionOS);\n                output.uv = input.uv;\n                return output;\n            }\n\n            half4 frag(Varyings input) : SV_Target\n            {\n                half4 base = SAMPLE_TEXTURE2D(_BaseTex, sampler_BaseTex, input.uv);\n                half4 overlay = SAMPLE_TEXTURE2D(_OverlayTex, sampler_OverlayTex, input.uv);\n                half mask = SAMPLE_TEXTURE2D(_BlendMask, sampler_BlendMask, input.uv).r;\n                \n                // Blend based on mask, modulated by strength\n                mask = saturate(mask * _BlendStrength);\n                half4 finalColor = lerp(base, overlay, mask);\n                \n                return finalColor;\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "Object shows smooth blend between two textures controlled by the mask"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Triplanar Mapping for Seamless Surfaces"
+        },
+        {
+          "type": "paragraph",
+          "value": "Triplanar mapping projects a texture from three axes (X, Y, Z) and blends them based on the surface normal. This eliminates UV stretching on steep surfaces and creates seamless textures on complex geometry without unwrapping — perfect for terrain, rocks, and procedural objects."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Triplanar mapping visualization: three axis projections blended by normal direction on a sphere",
+          "caption": "Triplanar mapping projects textures from X, Y, and Z axes and blends by surface normal"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: 3D Diagram — A sphere or cube showing three texture projections: red-tinted from X-axis, green-tinted from Y-axis, blue-tinted from Z-axis. Where faces are flat against an axis, that color dominates. At edges, colors blend smoothly. Include small axis arrows (X, Y, Z) and normal vectors showing how blending weights are calculated. Use a grid texture for clarity."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Triplanar texture mapping\nfloat _TriplanarScale;\n\nhalf4 TriplanarSample(TEXTURE2D_PARAM(tex, sampler_tex), float3 positionWS, float3 normalWS)\n{\n    // Sample from three axes using world position\n    half4 xProj = SAMPLE_TEXTURE2D(tex, sampler_tex, positionWS.yz * _TriplanarScale);\n    half4 yProj = SAMPLE_TEXTURE2D(tex, sampler_tex, positionWS.xz * _TriplanarScale);\n    half4 zProj = SAMPLE_TEXTURE2D(tex, sampler_tex, positionWS.xy * _TriplanarScale);\n    \n    // Blend weights based on normal direction (absolute value)\n    float3 blendWeights = abs(normalWS);\n    blendWeights = pow(blendWeights, 3); // Sharpen the blend\n    blendWeights /= (blendWeights.x + blendWeights.y + blendWeights.z);\n    \n    // Weighted combination\n    return xProj * blendWeights.x + yProj * blendWeights.y + zProj * blendWeights.z;\n}\n\n// In fragment shader:\nhalf4 color = TriplanarSample(TEXTURE2D_ARGS(_MainTex, sampler_MainTex), input.positionWS, abs(input.normalWS));",
+          "output": "Seamless texture on any geometry without UV unwrapping"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Texture Atlasing and Sprite Sheets"
+        },
+        {
+          "type": "paragraph",
+          "value": "A texture atlas packs multiple images into one texture to reduce draw calls. Sprite sheets use the same technique for animation. You calculate UV offsets to select the correct sub-region of the atlas."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Sprite sheet animation in shader\nfloat _Columns;      // Number of columns in atlas\nfloat _Rows;         // Number of rows in atlas\nfloat _FrameIndex;   // Current animation frame\n\nhalf4 frag(Varyings input) : SV_Target\n{\n    // Calculate frame position in grid\n    float frameX = fmod(_FrameIndex, _Columns);\n    float frameY = floor(_FrameIndex / _Columns);\n    \n    // Calculate UV offset and scale for this frame\n    float2 cellSize = float2(1.0 / _Columns, 1.0 / _Rows);\n    float2 cellOffset = float2(frameX * cellSize.x, (_Rows - 1 - frameY) * cellSize.y);\n    \n    // Remap UVs to the current frame\n    float2 atlasUV = input.uv * cellSize + cellOffset;\n    \n    return SAMPLE_TEXTURE2D(_SpriteSheet, sampler_SpriteSheet, atlasUV);\n}\n\n// Animate frame index over time in C# script or via material property block\n// _FrameIndex = (Time.time * _FramesPerSecond) % (_Columns * _Rows);",
+          "output": "Animated sprite playing frames from a texture atlas"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Parallax Mapping for Fake Depth"
+        },
+        {
+          "type": "paragraph",
+          "value": "Parallax mapping offsets UV coordinates based on the view angle and a height map, creating the illusion of depth on a flat surface. It's cheaper than actual geometry displacement but looks convincing for moderate depth variations."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Simple parallax offset\nfloat _ParallaxStrength;\nTEXTURE2D(_HeightMap); SAMPLER(sampler_HeightMap);\n\n// In fragment shader:\nfloat3 viewDirTS = normalize(input.viewDirectionTS); // View dir in tangent space\n\n// Sample height and offset UVs\nhalf height = SAMPLE_TEXTURE2D(_HeightMap, sampler_HeightMap, input.uv).r;\nfloat2 parallaxOffset = viewDirTS.xy / (viewDirTS.z + 0.42) * height * _ParallaxStrength;\nfloat2 finalUV = input.uv - parallaxOffset;\n\n// Sample color and normal with offset UVs\nhalf4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, finalUV);\nhalf3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, finalUV));",
+          "output": "Surface appears to have physical depth when viewed from angles"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What technique projects textures from three axes and blends by normal?",
+          "options": [
+            "Texture atlasing",
+            "Triplanar mapping",
+            "Parallax mapping",
+            "Mipmapping"
+          ],
+          "correctAnswer": "Triplanar mapping",
+          "explanation": "Triplanar mapping samples textures from X, Y, and Z axes and blends them using the surface normal direction, eliminating UV stretching on complex geometry."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does a texture mask control in multi-texture blending?",
+          "options": [
+            "The speed of texture animation",
+            "The blend ratio between textures per pixel",
+            "The resolution of the output",
+            "The color tint of the material"
+          ],
+          "correctAnswer": "The blend ratio between textures per pixel",
+          "explanation": "A mask texture's grayscale values control how much of each source texture appears at each pixel — white = full overlay, black = full base, gray = blend."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What HLSL function linearly interpolates between two values based on a blend factor?",
+          "correctAnswer": "lerp",
+          "explanation": "lerp(a, b, t) returns a when t=0, b when t=1, and a linear blend between them for values in between. It's the GPU-friendly replacement for if/else blending."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Screen-Space Effects & Depth",
+      "badge": "Screen Effects",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Reading the Depth Buffer"
+        },
+        {
+          "type": "paragraph",
+          "value": "Screen-space shaders read data from buffers that Unity renders before your shader runs — the color buffer, depth buffer, and normal buffer. This enables effects like fog, outlines, water depth, soft particles, and intersection glow that react to the entire scene, not just the current object."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing depth buffer as grayscale image and screen-space intersection glow effect",
+          "caption": "The depth buffer stores how far each pixel is from the camera — essential for screen-space effects"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Split Screen — Left: a 3D scene with a sphere partially inside a cube, both with a glowing intersection line. Right: the same scene's depth buffer shown as a grayscale image (white = near, black = far). Include a small depth gradient legend. Label 'Scene View' and 'Depth Buffer'. Use a sci-fi glow effect for the intersection."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Accessing Scene Depth in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP provides the `_CameraDepthTexture` which contains the depth of every pixel from the camera's perspective. You sample it using screen-space UV coordinates to get the depth of geometry behind your object, then compare it with your object's depth."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Required includes and declarations\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl\"\n\n// In Properties (optional — URP handles this automatically):\n// _CameraDepthTexture is provided by URP when you enable depth texture in Renderer\n\n// In fragment shader:\nhalf4 frag(Varyings input) : SV_Target\n{\n    // Get screen-space UVs (0-1 range)\n    float2 screenUV = input.positionHCS.xy / _ScaledScreenParams.xy;\n    \n    // Sample scene depth (non-linear, raw depth buffer value)\n    float sceneDepth = SampleSceneDepth(screenUV);\n    \n    // Convert to linear eye depth (actual distance from camera in world units)\n    float sceneLinearDepth = LinearEyeDepth(sceneDepth, _ZBufferParams);\n    \n    // Get our object's linear depth\n    float objectLinearDepth = LinearEyeDepth(input.positionHCS.z, _ZBufferParams);\n    \n    // Difference = how much the scene is behind our object\n    float depthDifference = sceneLinearDepth - objectLinearDepth;\n    \n    return half4(depthDifference.xxx * 0.1, 1); // Visualize as grayscale\n}",
+          "output": "Grayscale visualization of depth difference between object and scene behind it"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Intersection Glow Effect"
+        },
+        {
+          "type": "paragraph",
+          "value": "A popular screen-space effect is intersection glow — objects glow brighter where they intersect with other geometry. This is used for force fields, magical barriers, sci-fi shields, and water foam lines."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Force field sphere showing bright cyan glow only where it intersects with floor and walls",
+          "caption": "Intersection glow creates a bright edge wherever your object meets other geometry"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — A translucent cyan force field sphere in a sci-fi room. The sphere is mostly transparent, but where it touches the floor and walls, there's a bright glowing edge (like an energy barrier). Show a small inset with the depth-difference math visualization. Use a dark environment with neon cyan glow for dramatic effect."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Force field / intersection glow shader\nShader \"Custom/IntersectionGlow\"\n{\n    Properties\n    {\n        _BaseColor(\"Base Color\", Color) = (0, 0.8, 1, 0.3)\n        _GlowColor(\"Glow Color\", Color) = (0, 1, 1, 1)\n        _GlowWidth(\"Glow Width\", Range(0.001, 1)) = 0.1\n        _GlowIntensity(\"Glow Intensity\", Range(0, 10)) = 3\n    }\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Transparent\" \"Queue\"=\"Transparent\" }\n        Pass\n        {\n            Blend SrcAlpha OneMinusSrcAlpha\n            ZWrite Off\n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl\"\n\n            half4 _BaseColor, _GlowColor;\n            float _GlowWidth, _GlowIntensity;\n\n            struct Attributes { float4 positionOS : POSITION; };\n            struct Varyings { float4 positionHCS : SV_POSITION; };\n\n            Varyings vert(Attributes input)\n            {\n                Varyings output;\n                output.positionHCS = TransformObjectToHClip(input.positionOS);\n                return output;\n            }\n\n            half4 frag(Varyings input) : SV_Target\n            {\n                float2 screenUV = input.positionHCS.xy / _ScaledScreenParams.xy;\n                float sceneDepth = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);\n                float objectDepth = LinearEyeDepth(input.positionHCS.z, _ZBufferParams);\n                \n                float depthDiff = sceneDepth - objectDepth;\n                \n                // Glow is strongest where depth difference is small (intersection)\n                float glow = 1 - saturate(depthDiff / _GlowWidth);\n                glow = pow(glow, _GlowIntensity);\n                \n                half4 finalColor = lerp(_BaseColor, _GlowColor, glow);\n                finalColor.a = lerp(_BaseColor.a, 1, glow);\n                return finalColor;\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "Transparent object with bright glow at geometry intersections"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Soft Particles with Depth Fade"
+        },
+        {
+          "type": "paragraph",
+          "value": "Hard-edged particles clipping into geometry looks terrible. By reading the depth buffer, you can fade particles out as they approach solid surfaces — creating soft, natural-looking smoke, fire, and magic effects."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Soft particle depth fade\nfloat _SoftParticleFade;\n\nhalf4 frag(Varyings input) : SV_Target\n{\n    half4 particleColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);\n    \n    // Sample scene depth at this pixel\n    float2 screenUV = input.positionHCS.xy / _ScaledScreenParams.xy;\n    float sceneDepth = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);\n    float particleDepth = LinearEyeDepth(input.positionHCS.z, _ZBufferParams);\n    \n    // Fade factor: 1 when far from geometry, 0 when close/intersecting\n    float depthDelta = sceneDepth - particleDepth;\n    float fade = saturate(depthDelta * _SoftParticleFade);\n    \n    particleColor.a *= fade;\n    return particleColor;\n}\n\n// _SoftParticleFade = 1.0 → gentle fade\n// _SoftParticleFade = 10.0 → sharp fade near surfaces",
+          "output": "Particles softly fade out instead of clipping into solid geometry"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Screen-Space UV Distortion"
+        },
+        {
+          "type": "paragraph",
+          "value": "You can distort the screen UVs before sampling the scene color to create heat haze, underwater refraction, and glass distortion effects. This requires the `_CameraOpaqueTexture` which contains the rendered scene color."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Screen-space refraction / distortion\n#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareOpaqueTexture.hlsl\"\n\nfloat _DistortionStrength;\nTEXTURE2D(_DistortionTex); SAMPLER(sampler_DistortionTex);\n\nhalf4 frag(Varyings input) : SV_Target\n{\n    float2 screenUV = input.positionHCS.xy / _ScaledScreenParams.xy;\n    \n    // Sample distortion from a noise/normal texture\n    half2 distortion = SAMPLE_TEXTURE2D(_DistortionTex, sampler_DistortionTex, input.uv * 2 + _Time.yy * 0.1).rg;\n    distortion = (distortion - 0.5) * _DistortionStrength;\n    \n    // Offset screen UVs by distortion\n    float2 distortedUV = screenUV + distortion;\n    \n    // Sample scene color with distorted UVs\n    half3 sceneColor = SampleSceneColor(distortedUV);\n    \n    return half4(sceneColor, 1);\n}\n\n// Use on a quad in front of the camera or as a fullscreen effect",
+          "output": "Scene appears distorted/wavy like heat haze or underwater"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What URP texture contains the depth of every pixel from the camera?",
+          "options": [
+            "_CameraOpaqueTexture",
+            "_CameraDepthTexture",
+            "_CameraNormalsTexture",
+            "_MainTex"
+          ],
+          "correctAnswer": "_CameraDepthTexture",
+          "explanation": "_CameraDepthTexture is automatically populated by URP when enabled in the Renderer settings. It stores per-pixel depth values for screen-space effects."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What function converts raw depth buffer values to linear eye-space depth?",
+          "options": [
+            "Linear01Depth",
+            "LinearEyeDepth",
+            "RawDepthToLinear",
+            "ConvertDepth"
+          ],
+          "correctAnswer": "LinearEyeDepth",
+          "explanation": "LinearEyeDepth(rawDepth, _ZBufferParams) converts the non-linear depth buffer value to actual world-unit distance from the camera. Linear01Depth gives 0-1 range instead."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What include file provides the SampleSceneDepth function in URP?",
+          "correctAnswer": "DeclareDepthTexture.hlsl",
+          "explanation": "#include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl\" gives you access to SampleSceneDepth() and the _CameraDepthTexture."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: Introduction to Compute Shaders",
+      "badge": "Compute",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "GPU Computing Beyond Rendering"
+        },
+        {
+          "type": "paragraph",
+          "value": "Compute shaders are GPU programs that don't render pixels at all. Instead, they run general-purpose calculations on thousands of threads in parallel — perfect for particle systems, fluid simulation, procedural generation, and post-processing. They're the bridge between graphics programming and GPU-accelerated computing."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing CPU sends compute dispatch → GPU runs thousands of threads in parallel → results written to buffer/texture",
+          "caption": "Compute shaders run parallel calculations on the GPU without rendering anything to screen"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top: CPU with a single arrow labeled 'Dispatch(64, 1, 1)' pointing down. Middle: a grid of 64 small boxes (8x8) labeled 'Thread Groups' with each containing even smaller boxes labeled 'Threads'. Bottom: a texture/buffer labeled 'Output'. Arrows from threads to output labeled 'Write results'. Use a data-center/grid visual with blue processing nodes."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Compute Shader Anatomy"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unlike vertex/fragment shaders, compute shaders use a `.compute` file extension and declare a `[numthreads(x,y,z)]` attribute. They're dispatched from C# using `ComputeShader.Dispatch()` with a 3D grid of thread groups."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// SimpleComputeShader.compute\n// Each thread processes one pixel/texel\n\n#pragma kernel CSMain\n\nRWTexture2D<float4> Result;  // Read-Write texture output\nfloat _Time;\n\n// numthreads(8, 8, 1) = 64 threads per group\n[numthreads(8, 8, 1)]\nvoid CSMain(uint3 id : SV_DispatchThreadID)\n{\n    // id.xy = pixel coordinate in the output texture\n    float2 uv = float2(id.x, id.y) / 512.0;\n    \n    // Generate a procedural pattern\n    float pattern = sin(uv.x * 20 + _Time) * cos(uv.y * 20 + _Time);\n    \n    // Write result to texture\n    Result[id.xy] = float4(pattern.xxx * 0.5 + 0.5, 1);\n}",
+          "output": "Procedural animated pattern written to a texture by the GPU"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Dispatching from C#"
+        },
+        {
+          "type": "paragraph",
+          "value": "Compute shaders are controlled entirely from C# scripts. You create a RenderTexture, set it as the compute shader's output, then dispatch the kernel with the right thread group dimensions."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// C# script to run a compute shader\nusing UnityEngine;\n\npublic class ComputeShaderRunner : MonoBehaviour\n{\n    public ComputeShader computeShader;\n    public Material displayMaterial;\n    \n    private RenderTexture renderTexture;\n    private int kernelIndex;\n    \n    void Start()\n    {\n        renderTexture = new RenderTexture(512, 512, 0);\n        renderTexture.enableRandomWrite = true;\n        renderTexture.Create();\n        \n        kernelIndex = computeShader.FindKernel(\"CSMain\");\n        computeShader.SetTexture(kernelIndex, \"Result\", renderTexture);\n        displayMaterial.mainTexture = renderTexture;\n    }\n    \n    void Update()\n    {\n        computeShader.SetFloat(\"_Time\", Time.time);\n        computeShader.Dispatch(kernelIndex, 64, 64, 1);\n    }\n}",
+          "output": "Animated procedural texture displayed on a quad in the scene"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "GPU Particle Systems"
+        },
+        {
+          "type": "paragraph",
+          "value": "One of the most powerful compute shader applications is GPU particle simulation. Instead of updating thousands of particles on the CPU (slow), you run a compute shader that updates positions, velocities, and lifetimes in parallel on the GPU."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing thousands of GPU particles: flocking birds, flowing water, or swirling magic particles",
+          "caption": "GPU particles can simulate millions of elements in real-time"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — A dramatic scene with thousands of glowing particles forming a spiral or fountain pattern. Show a small UI overlay: 'Particles: 1,000,000' and 'FPS: 60'. Use a magical or sci-fi theme with bright particle trails against a dark background. Include a tiny inset showing the compute shader code concept."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// GPU Particle Compute Shader (simplified)\n#pragma kernel UpdateParticles\n\nstruct Particle\n{\n    float3 position;\n    float3 velocity;\n    float life;\n};\n\nRWStructuredBuffer<Particle> particles;\nfloat _DeltaTime;\nfloat3 _Gravity;\n\n[numthreads(256, 1, 1)]\nvoid UpdateParticles(uint3 id : SV_DispatchThreadID)\n{\n    uint index = id.x;\n    Particle p = particles[index];\n    \n    p.velocity += _Gravity * _DeltaTime;\n    p.position += p.velocity * _DeltaTime;\n    p.life -= _DeltaTime;\n    \n    if (p.life <= 0)\n    {\n        p.position = float3(0, 0, 0);\n        p.velocity = randomVelocity(index);\n        p.life = 5.0;\n    }\n    \n    particles[index] = p;\n}\n\n// C# dispatches this every frame:\n// compute.Dispatch(kernel, particleCount / 256, 1, 1);",
+          "output": "1,000,000+ particles simulated entirely on GPU at 60 FPS"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Compute Shaders vs Vertex/Fragment Shaders"
+        },
+        {
+          "type": "paragraph",
+          "value": "Compute shaders free you from the vertex→fragment pipeline. You can write to any buffer, read from any texture, and structure your threads however you need. But they can't render directly to screen — you must write to a texture or buffer that a regular shader then displays."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Key differences summary:\n\n// Vertex/Fragment Shader:\n// - Fixed pipeline: vertex → rasterize → fragment\n// - Outputs: SV_POSITION, SV_Target\n// - Best for: rendering meshes, standard materials\n// - Limited to: one output per pixel\n\n// Compute Shader:\n// - Free-form: any thread can write anywhere\n// - Outputs: RWTexture, RWStructuredBuffer, RWBuffer\n// - Best for: simulation, procedural generation, post-processing\n// - Can: read/write shared memory, use thread synchronization\n\n// Shared memory for fast inter-thread communication\ngroupshared float sharedData[256];\n\n[numthreads(256, 1, 1)]\nvoid ReduceSum(uint3 id : SV_GroupThreadID)\n{\n    sharedData[id.x] = inputData[id.x];\n    GroupMemoryBarrierWithGroupSync();\n    \n    for (uint stride = 128; stride > 0; stride /= 2)\n    {\n        if (id.x < stride)\n            sharedData[id.x] += sharedData[id.x + stride];\n        GroupMemoryBarrierWithGroupSync();\n    }\n    \n    if (id.x == 0)\n        outputData[0] = sharedData[0];\n}",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What file extension do compute shaders use in Unity?",
+          "options": [
+            ".shader",
+            ".compute",
+            ".hlsl",
+            ".cginc"
+          ],
+          "correctAnswer": ".compute",
+          "explanation": "Compute shaders in Unity use the .compute extension. Regular shaders use .shader, and include files use .hlsl or .cginc."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What C# method launches a compute shader kernel?",
+          "options": [
+            "ComputeShader.Run()",
+            "ComputeShader.Dispatch()",
+            "ComputeShader.Execute()",
+            "ComputeShader.Launch()"
+          ],
+          "correctAnswer": "ComputeShader.Dispatch()",
+          "explanation": "Dispatch() launches the compute kernel with a specified number of thread groups in X, Y, and Z dimensions. Each group contains the threads defined by [numthreads]."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What attribute declares how many threads run in each thread group?",
+          "correctAnswer": "numthreads",
+          "explanation": "[numthreads(8, 8, 1)] declares 64 threads per group (8×8×1). The total threads dispatched = numthreads × Dispatch() arguments."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: Post-Processing with Fullscreen Shaders",
+      "badge": "Post-Processing",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Fullscreen Effects for the Entire Scene"
+        },
+        {
+          "type": "paragraph",
+          "value": "Post-processing shaders run on the entire rendered scene after all objects are drawn. They're how games achieve film-like color grading, bloom, motion blur, vignette, and screen-space ambient occlusion (SSAO). In URP, you create these as custom Renderer Features or fullscreen shader passes."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Before/after comparison: raw game scene vs same scene with post-processing (bloom, color grading, vignette)",
+          "caption": "Post-processing transforms a raw render into a cinematic final image"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Before/After Split — Left: a raw 3D scene (flat lighting, washed-out colors, no atmosphere). Right: same scene with post-processing applied — warm color grading, subtle bloom on bright areas, dark vignette at edges, slight chromatic aberration. Label 'Raw Render' vs 'With Post-Processing'. Use a fantasy or sci-fi environment for visual impact."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fullscreen Shader Setup in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "A fullscreen shader in URP uses a special vertex shader that generates a full-screen triangle without any mesh data. The fragment shader then samples the `_CameraOpaqueTexture` (the rendered scene) and applies effects."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Fullscreen post-processing shader\nShader \"Custom/PostProcessVignette\"\n{\n    Properties\n    {\n        _Intensity(\"Vignette Intensity\", Range(0, 1)) = 0.5\n        _Smoothness(\"Edge Smoothness\", Range(0.01, 1)) = 0.5\n        _Color(\"Vignette Color\", Color) = (0, 0, 0, 1)\n    }\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Opaque\" }\n        Pass\n        {\n            Cull Off ZWrite Off ZTest Always\n            \n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n            #include \"Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl\"\n            \n            float _Intensity, _Smoothness;\n            half4 _Color;\n\n            float4 vert(uint vertexID : SV_VertexID) : SV_POSITION\n            {\n                float2 uv = float2(vertexID % 2, vertexID / 2) * 2;\n                return float4(uv * 2 - 1, 0, 1);\n            }\n\n            half4 frag(float4 positionHCS : SV_POSITION) : SV_Target\n            {\n                float2 screenUV = positionHCS.xy / _ScaledScreenParams.xy;\n                half3 sceneColor = SampleSceneColor(screenUV);\n                \n                float2 center = screenUV - 0.5;\n                float dist = length(center);\n                float vignette = 1 - smoothstep(0.3, 0.3 + _Smoothness, dist);\n                vignette = lerp(1, vignette, _Intensity);\n                \n                half3 finalColor = lerp(_Color.rgb, sceneColor, vignette);\n                return half4(finalColor, 1);\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "Scene with darkened edges that fade toward the center"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Chromatic Aberration Effect"
+        },
+        {
+          "type": "paragraph",
+          "value": "Chromatic aberration simulates lens distortion by offsetting the red, green, and blue channels differently at screen edges. It's a subtle but effective cinematic touch used in games like Resident Evil and Cyberpunk 2077."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Close-up showing RGB channel separation at screen edges creating chromatic aberration",
+          "caption": "Chromatic aberration offsets RGB channels at screen edges for a lens-distortion look"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Close-up Detail — A zoomed-in corner of a screen showing the RGB channel separation. The red channel is shifted outward (away from center), blue shifted inward (toward center), green stays centered. Show a thin white line or high-contrast edge to make the separation visible. Label 'R', 'G', 'B' with small arrows showing shift directions. Use a dark scene with bright neon edges for maximum effect."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Chromatic aberration post-processing\nfloat _ChromaticIntensity;\n\nhalf4 frag(float4 positionHCS : SV_POSITION) : SV_Target\n{\n    float2 screenUV = positionHCS.xy / _ScaledScreenParams.xy;\n    float2 centerOffset = screenUV - 0.5;\n    float dist = length(centerOffset);\n    \n    float2 direction = normalize(centerOffset);\n    float2 aberration = direction * dist * dist * _ChromaticIntensity;\n    \n    float r = SampleSceneColor(screenUV + aberration * 1.0).r;\n    float g = SampleSceneColor(screenUV + aberration * 0.5).g;\n    float b = SampleSceneColor(screenUV - aberration * 0.5).b;\n    \n    return half4(r, g, b, 1);\n}\n\n// _ChromaticIntensity = 0.02 → subtle film look\n// _ChromaticIntensity = 0.1 → intense glitch/damage effect",
+          "output": "RGB color fringing at screen edges, stronger at corners"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Custom Renderer Feature in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "To integrate a post-processing shader into URP's render pipeline, you create a custom Renderer Feature. This tells URP when and how to inject your fullscreen pass into the frame rendering."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Custom Renderer Feature for post-processing\nusing UnityEngine;\nusing UnityEngine.Rendering;\nusing UnityEngine.Rendering.Universal;\n\npublic class CustomPostProcessFeature : ScriptableRendererFeature\n{\n    [System.Serializable]\n    public class Settings\n    {\n        public Material postProcessMaterial;\n        public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;\n    }\n    \n    public Settings settings = new Settings();\n    private CustomPostProcessPass pass;\n    \n    public override void Create()\n    {\n        pass = new CustomPostProcessPass(settings);\n    }\n    \n    public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData data)\n    {\n        renderer.EnqueuePass(pass);\n    }\n}\n\npublic class CustomPostProcessPass : ScriptableRenderPass\n{\n    private Material material;\n    private RenderTargetHandle tempTexture;\n    \n    public CustomPostProcessPass(Settings settings)\n    {\n        this.material = settings.postProcessMaterial;\n        this.renderPassEvent = settings.renderPassEvent;\n        tempTexture.Init(\"_TempTexture\");\n    }\n    \n    public override void Execute(ScriptableRenderContext context, ref RenderingData data)\n    {\n        CommandBuffer cmd = CommandBufferPool.Get(\"CustomPostProcess\");\n        RenderTargetIdentifier cameraColorTarget = data.cameraData.renderer.cameraColorTarget;\n        RenderTextureDescriptor descriptor = data.cameraData.cameraTargetDescriptor;\n        cmd.GetTemporaryRT(tempTexture.id, descriptor);\n        Blit(cmd, cameraColorTarget, tempTexture.Identifier(), material);\n        Blit(cmd, tempTexture.Identifier(), cameraColorTarget);\n        context.ExecuteCommandBuffer(cmd);\n        CommandBufferPool.Release(cmd);\n    }\n}",
+          "output": "Post-processing effect automatically applied to the camera every frame"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Post-Processing Effects Reference"
+        },
+        {
+          "type": "paragraph",
+          "value": "Here are the most common post-processing effects and their core techniques:\n• **Vignette** — darken screen edges based on distance from center\n• **Bloom** — blur bright areas and add them back (requires multi-pass blur)\n• **Color Grading** — apply LUT (Look-Up Texture) or matrix transform to colors\n• **Chromatic Aberration** — offset RGB channels at edges\n• **Film Grain** — add noise based on screen UV + time\n• **Scanlines** — horizontal lines based on screen Y position\n• **Night Vision** — green tint + noise + vignette + light amplification"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Quick reference: common post-processing snippets\n\n// Film grain\nfloat noise = frac(sin(dot(screenUV * _Time.y, float2(12.9898, 78.233))) * 43758.5453);\nsceneColor += (noise - 0.5) * _GrainIntensity;\n\n// Scanlines\nfloat scanline = sin(screenUV.y * _ScreenParams.y * _ScanlineDensity) * 0.5 + 0.5;\nsceneColor *= lerp(1.0, _ScanlineIntensity, scanline);\n\n// Night vision (green + noise + vignette)\nfloat luminance = Luminance(sceneColor);\nfloat3 nightVision = luminance * float3(0.1, 1.0, 0.2);\nnightVision += noise * 0.1;\nnightVision *= vignette;",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the special vertex shader technique for fullscreen shaders that requires no mesh?",
+          "options": [
+            "Screen-aligned quad",
+            "Fullscreen triangle via SV_VertexID",
+            "Billboard rendering",
+            "Instanced mesh drawing"
+          ],
+          "correctAnswer": "Fullscreen triangle via SV_VertexID",
+          "explanation": "Using SV_VertexID to generate a single large triangle that covers the screen is more efficient than a quad (2 triangles) because it eliminates the diagonal edge and requires no mesh data at all."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What URP class do you inherit from to create a custom post-processing pass?",
+          "options": [
+            "MonoBehaviour",
+            "ScriptableRenderPass",
+            "RenderTexture",
+            "CommandBuffer"
+          ],
+          "correctAnswer": "ScriptableRenderPass",
+          "explanation": "You create a class inheriting from ScriptableRenderPass and override Execute() to inject your fullscreen blit into URP's rendering pipeline."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What function samples the rendered scene color in a fullscreen post-processing shader?",
+          "correctAnswer": "SampleSceneColor",
+          "explanation": "SampleSceneColor(uv) reads from the _CameraOpaqueTexture, which contains the color of the scene before post-processing. It's available when including DeclareOpaqueTexture.hlsl."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 15: Capstone Project — Stylized Water Shader",
+      "badge": "Project",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Build Your First Production Shader"
+        },
+        {
+          "type": "paragraph",
+          "value": "Congratulations — you've learned all the fundamentals! Now let's put everything together in a Stylized Water Shader. This project uses: vertex displacement, normal mapping, depth-based foam, color gradients, specular highlights, and transparency. It's a complete, portfolio-ready shader that demonstrates mastery of every concept in this course."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Mind map showing all concepts connected to the water shader project: vertex displacement, normals, depth, color, specular, transparency",
+          "caption": "This project ties together every concept you've learned in the course"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Mind Map/Concept Map — Central node 'Stylized Water Shader' with 6 branches: 'Vertex Displacement' (waves), 'Normal Mapping' (surface detail), 'Depth-Based Foam' (screen-space), 'Color Gradient' (deep vs shallow), 'Specular Highlights' (sun reflection), 'Transparency & Refraction' (see-through water). Each branch has a small icon and connects to the central water drop icon. Use ocean blue/teal colors."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Project Requirements"
+        },
+        {
+          "type": "paragraph",
+          "value": "Your water shader should:\n1. **Vertex waves** — animate the mesh surface with sine waves in the vertex shader\n2. **Normal mapping** — add surface detail with scrolling normal maps\n3. **Depth-based foam** — white foam where water intersects geometry (screen-space)\n4. **Color gradient** — deep blue in the center, turquoise at edges\n5. **Specular highlights** — Blinn-Phong sun reflection on wave peaks\n6. **Transparency** — see through to the underwater floor with refraction distortion\n7. **Properties** — expose wave speed, height, color, foam width, and normal strength in the Inspector"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Final water shader result: stylized ocean with waves, foam at shore, specular sun reflection, and visible underwater floor",
+          "caption": "Your finished water shader will look like this in the Unity scene"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — A beautiful stylized water scene in Unity. A large plane with animated waves (not flat — actual vertex displacement). White foam lines where water meets a sandy shore. Bright specular highlight from a directional sun. Turquoise-to-deep-blue color gradient. Slight transparency showing underwater sand texture with refraction distortion. Include a small inset of the Material Inspector showing the tweakable properties. Use a bright, cheerful daytime scene."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "Shader \"Custom/StylizedWater\"\n{\n    Properties\n    {\n        [Header(Wave Settings)]\n        _WaveSpeed(\"Wave Speed\", Float) = 1\n        _WaveHeight(\"Wave Height\", Range(0, 1)) = 0.2\n        _WaveFrequency(\"Wave Frequency\", Float) = 2\n        \n        [Header(Surface)]\n        _BaseColor(\"Deep Color\", Color) = (0, 0.3, 0.5, 0.8)\n        _ShallowColor(\"Shallow Color\", Color) = (0, 0.8, 1, 0.6)\n        _NormalMap(\"Normal Map\", 2D) = \"bump\" {}\n        _NormalStrength(\"Normal Strength\", Range(0, 2)) = 1\n        _NormalSpeed(\"Normal Scroll Speed\", Float) = 0.5\n        \n        [Header(Foam)]\n        _FoamColor(\"Foam Color\", Color) = (1, 1, 1, 1)\n        _FoamWidth(\"Foam Width\", Range(0.01, 2)) = 0.5\n        _FoamIntensity(\"Foam Intensity\", Range(0, 5)) = 2\n        \n        [Header(Specular)]\n        _SpecularColor(\"Specular Color\", Color) = (1, 1, 0.9, 1)\n        _Shininess(\"Shininess\", Range(1, 256)) = 64\n    }\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Transparent\" \"Queue\"=\"Transparent\" }\n        Pass\n        {\n            Blend SrcAlpha OneMinusSrcAlpha\n            ZWrite Off\n            \n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl\"\n            \n            float _WaveSpeed, _WaveHeight, _WaveFrequency;\n            half4 _BaseColor, _ShallowColor, _FoamColor, _SpecularColor;\n            float _NormalStrength, _NormalSpeed, _FoamWidth, _FoamIntensity, _Shininess;\n            TEXTURE2D(_NormalMap); SAMPLER(sampler_NormalMap);\n            \n            struct Attributes\n            {\n                float4 positionOS : POSITION;\n                float3 normalOS   : NORMAL;\n                float4 tangentOS  : TANGENT;\n                float2 uv         : TEXCOORD0;\n            };\n            \n            struct Varyings\n            {\n                float4 positionHCS : SV_POSITION;\n                float3 positionWS  : TEXCOORD0;\n                float2 uv          : TEXCOORD1;\n                float4 screenPos   : TEXCOORD2;\n                float3 normalWS    : TEXCOORD3;\n                float3 tangentWS   : TEXCOORD4;\n                float3 bitangentWS : TEXCOORD5;\n            };\n            \n            Varyings vert(Attributes input)\n            {\n                Varyings output;\n                \n                float3 posOS = input.positionOS.xyz;\n                float wave1 = sin(posOS.x * _WaveFrequency + _Time.y * _WaveSpeed);\n                float wave2 = cos(posOS.z * _WaveFrequency * 0.5 + _Time.y * _WaveSpeed * 0.8);\n                posOS.y += (wave1 + wave2) * _WaveHeight * 0.5;\n                \n                output.positionHCS = TransformObjectToHClip(float4(posOS, 1));\n                output.positionWS = TransformObjectToWorld(float4(posOS, 1)).xyz;\n                output.uv = input.uv;\n                output.screenPos = ComputeScreenPos(output.positionHCS);\n                \n                VertexNormalInputs normalInputs = GetVertexNormalInputs(input.normalOS, input.tangentOS);\n                output.normalWS = normalInputs.normalWS;\n                output.tangentWS = normalInputs.tangentWS;\n                output.bitangentWS = normalInputs.bitangentWS;\n                \n                return output;\n            }\n            \n            half4 frag(Varyings input) : SV_Target\n            {\n                float2 scrollUV = input.uv + float2(_Time.y * _NormalSpeed, 0);\n                half3 normalTS = UnpackNormal(SAMPLE_TEXTURE2D(_NormalMap, sampler_NormalMap, scrollUV));\n                normalTS.xy *= _NormalStrength;\n                normalTS.z = sqrt(1 - saturate(dot(normalTS.xy, normalTS.xy)));\n                \n                half3 normalWS = normalize(\n                    normalTS.x * input.tangentWS +\n                    normalTS.y * input.bitangentWS +\n                    normalTS.z * input.normalWS\n                );\n                \n                float2 screenUV = input.screenPos.xy / input.screenPos.w;\n                float sceneDepth = LinearEyeDepth(SampleSceneDepth(screenUV), _ZBufferParams);\n                float waterDepth = LinearEyeDepth(input.positionHCS.z, _ZBufferParams);\n                float depthDiff = sceneDepth - waterDepth;\n                float foam = 1 - saturate(depthDiff / _FoamWidth);\n                foam = pow(foam, _FoamIntensity);\n                \n                float depthFactor = saturate(depthDiff / 5.0);\n                half3 waterColor = lerp(_ShallowColor.rgb, _BaseColor.rgb, depthFactor);\n                \n                Light mainLight = GetMainLight();\n                float3 viewDirWS = GetWorldSpaceNormalizeViewDir(input.positionWS);\n                float3 halfVector = normalize(mainLight.direction + viewDirWS);\n                half NdotH = saturate(dot(normalWS, halfVector));\n                half specular = pow(NdotH, _Shininess);\n                \n                half3 finalColor = waterColor + (specular * _SpecularColor.rgb * mainLight.color);\n                finalColor = lerp(finalColor, _FoamColor.rgb, foam);\n                \n                half alpha = lerp(_ShallowColor.a, _BaseColor.a, depthFactor);\n                \n                return half4(finalColor, alpha);\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "Animated stylized water with waves, foam, specular highlights, and depth-based color"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Code Structure Tips"
+        },
+        {
+          "type": "paragraph",
+          "value": "As your shaders grow, organization matters. Follow these patterns:\n• Group related properties with `[Header()]` attributes\n• Define all properties at the top of HLSLPROGRAM\n• Keep vertex and fragment functions focused — one main task each\n• Use clear struct names (Attributes/Varyings is the URP standard)\n• Comment each major section (waves, normals, foam, lighting, combine)\n• Separate reusable logic into #include files for other shaders"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Well-organized shader structure\nShader \"Custom/WaterClean\"\n{\n    Properties { /* ... */ }\n    \n    SubShader\n    {\n        Pass\n        {\n            HLSLPROGRAM\n            \n            // === INCLUDES ===\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl\"\n            #include \"MyWaterLibrary.hlsl\" // Reusable wave functions\n            \n            // === PROPERTIES ===\n            float _WaveSpeed, _WaveHeight;\n            half4 _BaseColor;\n            // ... etc ...\n            \n            // === STRUCTS ===\n            struct Attributes { /* ... */ };\n            struct Varyings { /* ... */ };\n            \n            // === VERTEX STAGE ===\n            Varyings vert(Attributes input) { /* ... */ }\n            \n            // === FRAGMENT STAGE ===\n            half4 frag(Varyings input) : SV_Target { /* ... */ }\n            \n            ENDHLSL\n        }\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Testing Your Water Shader"
+        },
+        {
+          "type": "paragraph",
+          "value": "Before declaring your project done, test these scenarios:\n• **Wave animation** — waves move smoothly without popping or jitter\n• **Foam at shore** — foam appears where water meets land/rocks\n• **Foam width** — adjusting _FoamWidth property changes foam spread\n• **Deep vs shallow color** — color changes based on water depth\n• **Specular angle** — highlight moves correctly as you orbit the camera\n• **Normal strength** — surface detail increases/decreases with property\n• **Transparency** — underwater objects visible through the water\n• **Performance** — maintains 60 FPS with the water plane in view"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Quick test cases to verify:\n// 1. Set _WaveHeight = 0 → water should be perfectly flat\n// 2. Set _NormalStrength = 0 → surface should look smooth\n// 3. Set _FoamWidth = 0.01 → foam should be a thin line\n// 4. Set _FoamWidth = 2.0 → foam should cover large area\n// 5. Set _Shininess = 1 → specular should be very broad\n// 6. Set _Shininess = 256 → specular should be a tiny sharp dot\n// 7. Move light direction → specular highlight should follow\n// 8. Move camera underwater → should see refracted distortion",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Beginner Mistakes"
+        },
+        {
+          "type": "paragraph",
+          "value": "Watch out for these pitfalls when building your water shader:\n• **Forgetting ZWrite Off** for transparent shaders — causes sorting artifacts\n• **Wrong depth comparison** — remember sceneDepth > waterDepth means floor is BEHIND water\n• **Missing normalize()** on interpolated normals — causes lighting to look wrong at grazing angles\n• **Not reconstructing Z** after scaling normal XY — breaks unit-length vectors\n• **Forgetting ComputeScreenPos()** in vertex shader — screen UVs will be wrong\n• **Using linear depth incorrectly** — always convert with LinearEyeDepth() before comparing\n• **Wave frequency too high** — causes vertex popping and aliasing"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Common mistake: forgetting ZWrite Off for transparent shaders\n// This causes water to block objects behind it incorrectly!\n\n// WRONG:\n// Pass { Blend SrcAlpha OneMinusSrcAlpha /* ZWrite missing! */ }\n\n// CORRECT:\nPass\n{\n    Blend SrcAlpha OneMinusSrcAlpha\n    ZWrite Off      // Transparent objects shouldn't write depth\n    ZTest LEqual    // But they should still test against it\n}\n\n// Common mistake: depth comparison direction\n// WRONG: float depthDiff = waterDepth - sceneDepth;\n// This is backwards! sceneDepth is the floor behind the water.\n// CORRECT: float depthDiff = sceneDepth - waterDepth;",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "What You Practiced"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Vertex displacement** — animate mesh geometry with sine waves\n**Normal mapping** — scrolling normals with TBN transformation\n**Screen-space depth** — foam based on scene depth buffer\n**Color blending** — lerp between shallow and deep colors\n**Specular lighting** — Blinn-Phong highlights on wave peaks\n**Transparency** — alpha blending with ZWrite Off\n**Material properties** — artist-friendly Inspector controls\n**URP integration** — proper includes, structs, and helper functions"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Challenge: Extend Your Water Shader"
+        },
+        {
+          "type": "paragraph",
+          "value": "Try adding these features on your own:\n• **Refraction** — distort underwater view using normal maps and `SampleSceneColor`\n• **Caustics** — animated light patterns on the underwater floor\n• **Foam noise** — use a noise texture to make foam edges irregular and organic\n• **Multiple wave layers** — combine 3-4 sine waves at different frequencies for more natural motion\n• **Edge detection** — sharper foam where water meets vertical walls\n• **Reflection probe support** — add sky/environment reflections\n• **Gerstner waves** — more realistic wave math used in professional water systems\n• **Underwater fog** — color shift when camera is below the water surface"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Roadmap showing beginner water shader → intermediate features → advanced ocean system",
+          "caption": "Your journey doesn't end here — keep building on this foundation"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Roadmap/Progression Illustration — A winding path or staircase going upward over stylized waves. Step 1: 'Basic Water' (current project, green checkmark). Step 2: 'Refraction + Caustics' (yellow, in progress). Step 3: 'Gerstner Waves' (blue, future). Step 4: 'Full Ocean System' (purple, advanced). Each step has a small water-themed icon. Motivational, encouraging style with ocean colors."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Challenge starter: Refraction distortion\n// Add this inside your fragment shader before the final return:\n\n// Sample scene color with refracted UVs\nfloat2 refractOffset = normalWS.xz * _RefractionStrength;\nfloat2 refractUV = screenUV + refractOffset;\nhalf3 underwaterColor = SampleSceneColor(refractUV);\n\n// Blend between water color and refracted underwater view\nfloat refractFactor = (1 - alpha) * _RefractionVisibility;\nfinalColor = lerp(finalColor, underwaterColor, refractFactor);\n\n// This makes shallow water see-through with distortion!",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Where to Go Next"
+        },
+        {
+          "type": "paragraph",
+          "value": "You've completed the HLSL Shader Programming course! Here's your learning path forward:\n• **Advanced Lighting** — PBR (Physically Based Rendering), image-based lighting, area lights\n• **Tessellation Shaders** — GPU geometry subdivision for displacement mapping\n• **Geometry Shaders** — generate new primitives (grass, fur, particle trails)\n• **Ray Marching** — volumetric fog, clouds, and signed distance fields\n• **Deferred Rendering** — work with G-buffers for advanced lighting\n• **Custom SRP** — build your own render pipeline from scratch\n• **Portfolio Projects** — toon ocean, holographic UI, magical effects, procedural terrain"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which technique creates white foam where water intersects with underwater geometry?",
+          "options": [
+            "Normal mapping",
+            "Screen-space depth comparison",
+            "Vertex color painting",
+            "Alpha clipping"
+          ],
+          "correctAnswer": "Screen-space depth comparison",
+          "explanation": "By comparing the water's depth with the scene depth behind it, we detect where water is close to geometry and add foam. This is the standard technique for shoreline foam in water shaders."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why must ZWrite be Off for transparent water shaders?",
+          "options": [
+            "It makes the shader compile faster",
+            "Transparent objects writing depth causes sorting artifacts",
+            "It improves specular highlights",
+            "Mobile GPUs require it"
+          ],
+          "correctAnswer": "Transparent objects writing depth causes sorting artifacts",
+          "explanation": "If transparent objects write to the depth buffer, objects behind them may be incorrectly culled, causing visual glitches. Transparent objects should only read depth (ZTest LEqual), not write it."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What URP function computes screen-space position from clip-space position for depth sampling?",
+          "correctAnswer": "ComputeScreenPos",
+          "explanation": "ComputeScreenPos(clipPosition) returns a float4 where .xy/.w gives normalized screen UVs needed for SampleSceneDepth(). It must be called in the vertex shader and divided by .w in the fragment shader."
+        }
+      ]
     }
   ]
 }
