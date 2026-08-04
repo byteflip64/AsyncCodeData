@@ -4,7 +4,7 @@
     "title": "HLSL Shader Programming for Unity",
     "description": "A comprehensive course taking you from shader basics to writing custom HLSL shaders in Unity. Covers the rendering pipeline, shader anatomy, properties, vertex/fragment shaders, lighting, textures, and a capstone project.",
     "category": "Unity",
-    "level": "Beginner to Intermediate",
+    "level": "Beginner",
     "tags": [
       "HLSL",
       "Unity",
