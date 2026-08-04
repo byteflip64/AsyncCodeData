@@ -1,0 +1,555 @@
+{
+  "id": "hlsl-shader-unity-mastery",
+  "course": {
+    "title": "HLSL Shader Programming for Unity",
+    "description": "A comprehensive course taking you from shader basics to writing custom HLSL shaders in Unity. Covers the rendering pipeline, shader anatomy, properties, vertex/fragment shaders, lighting, textures, and a capstone project.",
+    "category": "Unity",
+    "level": "Beginner to Intermediate",
+    "tags": [
+      "HLSL",
+      "Unity",
+      "Shaders",
+      "Graphics Programming",
+      "URP"
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: What Are Shaders?",
+      "badge": "Foundation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Welcome to the World of Shaders"
+        },
+        {
+          "type": "paragraph",
+          "value": "A shader is a small program that runs on the GPU (Graphics Processing Unit) to determine how objects look on screen. Shaders control color, lighting, texture mapping, shadows, and visual effects. In Unity, shaders are written in HLSL (High-Level Shading Language) and define how every pixel of your game is rendered."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing CPU sends mesh data → GPU shader pipeline → final pixel on screen",
+          "caption": "Shaders bridge 3D geometry data to the final pixels you see on screen"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Infographic/Diagram — A visual flowchart showing: '3D Model (Mesh + UVs)' → 'Vertex Shader' → 'Fragment/Pixel Shader' → 'Screen Pixels'. Use Unity's brand colors (dark gray, white, cyan accent). Show a before/after: flat gray cube vs lit, textured cube."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Why Learn HLSL Shaders?"
+        },
+        {
+          "type": "paragraph",
+          "value": "• **Full creative control** — customize every visual aspect beyond what built-in materials offer\n• **Performance** — hand-written shaders can be faster than Shader Graph for complex effects\n• **Portability** — HLSL works across Unity's Built-in, URP, and HDRP pipelines\n• **Industry standard** — HLSL knowledge transfers to Unreal, Godot, and custom engines\n• **Career value** — shader programmers are highly sought after in game development"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Grid of shader effects: water, fire, hologram, toon shading, dissolve, outline",
+          "caption": "Shaders create everything from water surfaces to holographic UI effects"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Showcase Grid — 2x3 grid showing diverse shader effects in Unity. Top row: stylized water with foam, cartoon toon shading, fire particle shader. Bottom row: holographic scanlines, dissolve effect, edge outline. Each with a small label. Use vibrant, game-ready visuals."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Shaders Run on the GPU"
+        },
+        {
+          "type": "paragraph",
+          "value": "The GPU processes thousands of shader instances in parallel. First, the **vertex shader** transforms 3D mesh vertices into screen space. Then, the **fragment shader** (also called pixel shader) calculates the final color for each pixel. This pipeline happens for every frame, 60+ times per second."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// The simplest possible HLSL shader in Unity\nShader \"Custom/SimplestShader\"\n{\n    SubShader\n    {\n        Pass\n        {\n            CGPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n\n            float4 vert(float4 vertex : POSITION) : SV_POSITION\n            {\n                return UnityObjectToClipPos(vertex);\n            }\n\n            fixed4 frag() : SV_Target\n            {\n                return fixed4(1, 0, 0, 1); // Pure red\n            }\n            ENDCG\n        }\n    }\n}",
+          "output": "A solid red square/cube on screen"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the primary role of a shader?",
+          "options": [
+            "To store game save data",
+            "To determine how objects look on screen",
+            "To handle player input",
+            "To manage game physics"
+          ],
+          "correctAnswer": "To determine how objects look on screen",
+          "explanation": "Shaders are GPU programs that calculate color, lighting, and visual effects for every pixel rendered on screen."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of the following is NOT a reason to learn HLSL shaders?",
+          "options": [
+            "Full creative control over visuals",
+            "Better performance for complex effects",
+            "Shaders handle game logic and AI",
+            "Industry-standard skill across engines"
+          ],
+          "correctAnswer": "Shaders handle game logic and AI",
+          "explanation": "Shaders run on the GPU and only handle visual rendering. Game logic and AI are handled by C# scripts running on the CPU."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What language are Unity shaders primarily written in?",
+          "correctAnswer": "HLSL",
+          "explanation": "Unity shaders use HLSL (High-Level Shading Language), which is Microsoft's shading language adapted for Unity's rendering pipelines."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Unity Rendering Pipeline & Setup",
+      "badge": "Setup",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Unity's Rendering Pipeline"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity supports three rendering pipelines: **Built-in RP** (legacy, still widely used), **URP** (Universal Render Pipeline — recommended for most projects), and **HDRP** (High Definition Render Pipeline — for high-end PC/console). This course focuses on URP as it's the modern standard for cross-platform development."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Comparison of Built-in RP vs URP vs HDRP showing visual quality and platform targets",
+          "caption": "URP is the recommended pipeline for learning shaders — it balances quality and performance"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Chart — Three columns side by side. Column 1: 'Built-in RP' with older visuals, label 'Legacy'. Column 2: 'URP' with modern clean visuals, label 'Recommended' with green checkmark. Column 3: 'HDRP' with photorealistic visuals, label 'High-end PC/Console'. Include platform icons (mobile, PC, console) under each."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up Your Shader Project"
+        },
+        {
+          "type": "paragraph",
+          "value": "1. Create a new Unity 2022.3 LTS project with URP template\n2. In Project window, right-click → Create → Shader → Unlit Shader (or HLSL Shader)\n3. Create a Material and assign your shader to it\n4. Apply the material to a 3D object (Cube, Sphere, or Plane)\n5. Open the shader file in your code editor (Visual Studio or VS Code)"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Unity editor screenshot showing Project window with shader file, material, and Inspector panel",
+          "caption": "The Unity workflow: create shader → create material → assign to mesh"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — Unity editor with dark theme. Left: Project window showing 'MyFirstShader.shader' highlighted. Middle: Scene view with a cube using the shader. Right: Inspector showing Material properties. Use annotations/arrows to show the workflow path."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Your very first Unity shader file\n// Right-click in Project → Create → Shader → Unlit Shader\n\nShader \"Custom/MyFirstShader\"\n{\n    Properties\n    {\n        _Color(\"Main Color\", Color) = (1,1,1,1)\n    }\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Opaque\" }\n        LOD 100\n\n        Pass\n        {\n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n\n            float4 _Color;\n\n            struct Attributes\n            {\n                float4 positionOS : POSITION;\n            };\n\n            struct Varyings\n            {\n                float4 positionHCS : SV_POSITION;\n            };\n\n            Varyings vert(Attributes input)\n            {\n                Varyings output;\n                output.positionHCS = TransformObjectToHClip(input.positionOS);\n                return output;\n            }\n\n            half4 frag(Varyings input) : SV_Target\n            {\n                return _Color;\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "A solid-colored cube using the _Color property from the Material Inspector"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Shader File Anatomy"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every Unity shader has these key sections:\n1. **Shader declaration** — `Shader \"Category/Name\"` (defines the menu path)\n2. **Properties** — variables exposed to the Material Inspector\n3. **SubShader** — contains one or more Passes\n4. **Pass** — a single rendering step (vertex + fragment stages)\n5. **HLSLPROGRAM** — the actual shader code block"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Shader anatomy breakdown with comments\nShader \"Custom/AnatomyExample\"\n{\n    // === PROPERTIES ===\n    // These appear in the Material Inspector\n    Properties\n    {\n        _MainTex(\"Texture\", 2D) = \"white\" {}\n        _Color(\"Color\", Color) = (1,1,1,1)\n    }\n\n    // === SUBSHADER ===\n    // Unity picks the first compatible SubShader\n    SubShader\n    {\n        Tags { \"RenderType\"=\"Opaque\" }\n\n        // === PASS ===\n        // Each Pass is one full rendering of the object\n        Pass\n        {\n            HLSLPROGRAM\n            // Vertex and fragment function declarations\n            #pragma vertex vert\n            #pragma fragment frag\n            // ... shader code here ...\n            ENDHLSL\n        }\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which Unity render pipeline is recommended for most projects and this course?",
+          "options": [
+            "Built-in Render Pipeline",
+            "Universal Render Pipeline (URP)",
+            "High Definition Render Pipeline (HDRP)",
+            "Custom Render Pipeline"
+          ],
+          "correctAnswer": "Universal Render Pipeline (URP)",
+          "explanation": "URP is Unity's modern, cross-platform pipeline that balances quality and performance. It's the recommended default for new projects."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What section of a shader exposes variables to the Unity Material Inspector?",
+          "options": [
+            "SubShader",
+            "Pass",
+            "Properties",
+            "HLSLPROGRAM"
+          ],
+          "correctAnswer": "Properties",
+          "explanation": "The Properties block defines shader variables that artists can tweak in the Material Inspector without editing code."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword marks the start of the actual HLSL shader code block in Unity?",
+          "correctAnswer": "HLSLPROGRAM",
+          "explanation": "HLSLPROGRAM (and its closing ENDHLSL) wraps the actual shader code, including vertex and fragment functions."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Shader Properties & Data Types",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Exposing Data with Properties"
+        },
+        {
+          "type": "paragraph",
+          "value": "Properties are the bridge between your shader code and Unity's Material Inspector. They let artists and designers tweak colors, textures, numbers, and toggles without touching code. In HLSL, you must also declare a matching variable inside the shader program."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Unity Inspector panel showing shader properties: Color picker, slider, texture slot, toggle",
+          "caption": "Properties turn shader values into artist-friendly controls in the Inspector"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot/Diagram — Unity Inspector panel showing various property types. Top: Color property with color picker. Middle: Range property with slider (0-1). Bottom: 2D texture property with texture slot. Right side: matching HLSL variable declarations. Use annotations to link each UI control to its code counterpart."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "Shader \"Custom/PropertiesDemo\"\n{\n    Properties\n    {\n        // Color picker in Inspector\n        _MainColor(\"Main Color\", Color) = (1, 0.5, 0, 1)\n        \n        // Slider from 0 to 1\n        _Brightness(\"Brightness\", Range(0, 2)) = 1\n        \n        // Texture slot\n        _MainTex(\"Main Texture\", 2D) = \"white\" {}\n        \n        // Toggle (0 or 1)\n        [Toggle] _UseEffect(\"Use Effect\", Float) = 0\n    }\n    SubShader\n    {\n        Pass\n        {\n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n\n            // MUST declare matching variables here!\n            float4 _MainColor;\n            float _Brightness;\n            sampler2D _MainTex;\n            float4 _MainTex_ST; // Tiling and Offset\n            float _UseEffect;\n\n            // ... vertex and fragment functions ...\n            ENDHLSL\n        }\n    }\n}",
+          "output": "Material Inspector shows color picker, brightness slider, texture slot, and toggle"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "HLSL Data Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "HLSL has specific data types optimized for GPU math:\n• **`float`** — 32-bit precision, use for world positions and UVs\n• **`half`** — 16-bit precision, use for colors and normals (faster)\n• **`fixed`** — 12-bit precision, legacy, rarely used in URP\n• **`int`** — whole numbers, use for array indices and toggles\n• **`bool`** — true/false values"
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// HLSL vector types — packed components\nfloat4 colorRGBA;    // 4 floats: R, G, B, A\nhalf3 normal;        // 3 halfs: X, Y, Z\nfloat2 uv;           // 2 floats: U, V\nfloat  intensity;    // Single float\n\n// Accessing components\ncolorRGBA.r = 1.0;   // Red channel\ncolorRGBA.gba = half3(0, 0, 1); // Set G, B, A at once\nuv.x = 0.5;          // First component\n\n// Swizzling — rearrange components\nfloat3 rgb = colorRGBA.rgb;\nfloat4 reversed = colorRGBA.abgr; // Alpha, Blue, Green, Red",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Property Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity supports many property types for the Inspector. Here are the most common ones with their HLSL counterparts."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Property type reference with matching HLSL types\nProperties\n{\n    _Color(\"Color\", Color) = (1,1,1,1)           // float4 _Color;\n    _Value(\"Value\", Float) = 1.0                  // float _Value;\n    _Range(\"Range\", Range(0,1)) = 0.5             // float _Range;\n    _Tex(\"Texture\", 2D) = \"white\" {}             // sampler2D _Tex; float4 _Tex_ST;\n    _Cube(\"Cube Map\", Cube) = \"white\" {}        // samplerCUBE _Cube;\n    _Vector(\"Vector\", Vector) = (0,1,0,0)        // float4 _Vector;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Property Attributes for Better UX"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity provides attributes to customize how properties appear in the Inspector. These improve the artist experience significantly."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "Properties\n{\n    // Header label in Inspector\n    [Header(Surface Options)]\n    _MainTex(\"Albedo\", 2D) = \"white\" {}\n    \n    // Toggle that enables a shader keyword\n    [Toggle(_ENABLE_EFFECT)] _UseEffect(\"Use Effect\", Float) = 0\n    \n    // Keyword enum dropdown\n    [KeywordEnum(None, Add, Multiply)] _BlendMode(\"Blend Mode\", Float) = 0\n    \n    // Space for visual separation\n    [Space(20)]\n    _Emission(\"Emission\", Color) = (0,0,0,1)\n    \n    // HDR color picker (for bloom effects)\n    [HDR] _GlowColor(\"Glow Color\", Color) = (1,1,1,1)\n}",
+          "output": "Inspector shows organized sections with headers, toggles, dropdowns, and HDR color picker"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which HLSL data type is best for storing colors in URP shaders?",
+          "options": [
+            "float4",
+            "half4",
+            "int4",
+            "double4"
+          ],
+          "correctAnswer": "half4",
+          "explanation": "half4 provides 16-bit precision which is sufficient for colors and runs faster on mobile GPUs. float4 is overkill for most color data."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you declare a Property but forget to declare the matching HLSL variable?",
+          "options": [
+            "Unity auto-creates the variable",
+            "The shader compiles but shows pink",
+            "The shader fails to compile",
+            "The property uses a default value silently"
+          ],
+          "correctAnswer": "The shader compiles but shows pink",
+          "explanation": "Unity shows a magenta/pink color when a shader fails to compile or has missing variable bindings. Always declare matching HLSL variables."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What suffix is added to a texture property name for its tiling and offset data?",
+          "correctAnswer": "_ST",
+          "explanation": "For a texture named _MainTex, Unity automatically provides _MainTex_ST which contains tiling (xy) and offset (zw) values."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: Vertex Shaders — Transforming Geometry",
+      "badge": "Vertex Stage",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Vertex Shader Stage"
+        },
+        {
+          "type": "paragraph",
+          "value": "The vertex shader is the first programmable stage in the rendering pipeline. It processes each vertex of your 3D mesh individually. Its main job is to transform vertex positions from **object space** (local to the model) to **clip space** (ready for the screen). But it can also pass data like UVs, normals, and colors to the fragment shader."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing coordinate spaces: Object → World → View → Clip → Screen",
+          "caption": "The vertex shader transforms coordinates through multiple spaces to reach the screen"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A horizontal pipeline showing 5 coordinate spaces with arrows between them. Object (local mesh) → World (scene coordinates) → View (camera-relative) → Clip (normalized device) → Screen (final pixels). Each space has a small 3D axis icon. Highlight the vertex shader's role in the first three transformations. Use a 3D cube that morphs through each stage."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Basic vertex shader with all coordinate transformations\nstruct Attributes\n{\n    float4 positionOS : POSITION;      // Object space position\n    float2 uv         : TEXCOORD0;     // Texture coordinates\n    float3 normalOS   : NORMAL;        // Object space normal\n};\n\nstruct Varyings\n{\n    float4 positionHCS : SV_POSITION;  // Clip space position (REQUIRED)\n    float2 uv          : TEXCOORD0;    // Pass UV to fragment shader\n    float3 normalWS    : TEXCOORD1;    // Pass world normal\n};\n\nVaryings vert(Attributes input)\n{\n    Varyings output;\n    \n    // Transform object-space position to clip-space (screen-ready)\n    output.positionHCS = TransformObjectToHClip(input.positionOS);\n    \n    // Pass UV coordinates through unchanged\n    output.uv = input.uv;\n    \n    // Transform normal to world space for lighting calculations\n    output.normalWS = TransformObjectToWorldNormal(input.normalOS);\n    \n    return output;\n}",
+          "output": "Mesh renders correctly with UVs and normals available in fragment stage"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Coordinate Space Transformations"
+        },
+        {
+          "type": "paragraph",
+          "value": "Unity's Shader Library provides helper functions for common transformations. Understanding these spaces is essential for advanced effects."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Common transformation functions in URP\n\n// Object Space → World Space\nfloat3 worldPos = TransformObjectToWorld(input.positionOS.xyz);\n\n// Object Space → Clip Space (most common — goes straight to screen)\nfloat4 clipPos = TransformObjectToHClip(input.positionOS);\n\n// World Space → View Space (camera-relative)\nfloat3 viewPos = TransformWorldToView(worldPos);\n\n// World Space → Clip Space\nfloat4 clipFromWorld = TransformWorldToHClip(worldPos);\n\n// Normal transformations\nfloat3 worldNormal = TransformObjectToWorldNormal(input.normalOS);\nfloat3 viewNormal = TransformWorldToViewDir(worldNormal);",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Vertex Displacement Effects"
+        },
+        {
+          "type": "paragraph",
+          "value": "One of the most powerful vertex shader techniques is **vertex displacement** — modifying vertex positions before they reach the screen. This creates effects like waves, pulsing, and vertex animation without changing the mesh."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Before/after comparison: flat plane vs wave-displaced plane using sine function in vertex shader",
+          "caption": "Vertex displacement turns a flat plane into an animated wave surface"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Before/After Split — Left: flat gray plane grid. Right: same plane with sine wave displacement, showing peaks and valleys. Both with wireframe overlay to show vertex movement. Include the sine wave formula as an overlay annotation. Use a blue water-like color scheme."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Vertex displacement: make a plane wave like water\nfloat _WaveSpeed;\nfloat _WaveHeight;\n\nVaryings vert(Attributes input)\n{\n    Varyings output;\n    \n    // Copy the original position\n    float3 positionOS = input.positionOS.xyz;\n    \n    // Displace Y based on X position and time\n    float wave = sin(positionOS.x * 2.0 + _Time.y * _WaveSpeed);\n    positionOS.y += wave * _WaveHeight;\n    \n    // Transform the displaced position to clip space\n    output.positionHCS = TransformObjectToHClip(float4(positionOS, 1.0));\n    output.uv = input.uv;\n    \n    return output;\n}",
+          "output": "Plane mesh animates up and down in a sine wave pattern"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Semantics: What the Colons Mean"
+        },
+        {
+          "type": "paragraph",
+          "value": "The colon syntax (`: POSITION`, `: TEXCOORD0`, `: SV_POSITION`) are called **semantics**. They tell the GPU what each variable represents. `SV_POSITION` is special — it means 'System Value Position' and is required for the vertex shader output."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Common semantics explained\nstruct Attributes\n{\n    float4 positionOS : POSITION;      // Vertex position in object space\n    float3 normalOS   : NORMAL;        // Vertex normal\n    float4 tangentOS  : TANGENT;       // Vertex tangent (for normal maps)\n    float2 uv         : TEXCOORD0;     // Primary UV coordinates\n    float2 uv2        : TEXCOORD1;     // Secondary UV (lightmaps)\n    float4 color      : COLOR;         // Per-vertex color\n};\n\nstruct Varyings\n{\n    float4 positionHCS : SV_POSITION;  // Required: clip-space position\n    float2 uv          : TEXCOORD0;    // Pass data to fragment\n    float3 normalWS    : TEXCOORD1;    // Can use any TEXCOORD slot\n    float4 color       : COLOR;        // Interpolated vertex color\n};",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main job of the vertex shader?",
+          "options": [
+            "To calculate the final pixel color",
+            "To transform vertex positions to clip space",
+            "To load textures from disk",
+            "To handle user input"
+          ],
+          "correctAnswer": "To transform vertex positions to clip space",
+          "explanation": "The vertex shader's primary responsibility is transforming 3D vertex positions into clip space (screen-ready coordinates). Pixel color is handled by the fragment shader."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which semantic is REQUIRED in the vertex shader output struct?",
+          "options": [
+            "TEXCOORD0",
+            "NORMAL",
+            "SV_POSITION",
+            "COLOR"
+          ],
+          "correctAnswer": "SV_POSITION",
+          "explanation": "SV_POSITION (System Value Position) is mandatory. It tells the GPU where to place the vertex on screen. Without it, the shader won't compile."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Unity function transforms object-space position directly to clip space?",
+          "correctAnswer": "TransformObjectToHClip",
+          "explanation": "TransformObjectToHClip is the URP helper function that converts local mesh coordinates directly to homogeneous clip space in one step."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: Fragment Shaders — Coloring Pixels",
+      "badge": "Fragment Stage",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Fragment (Pixel) Shader Stage"
+        },
+        {
+          "type": "paragraph",
+          "value": "The fragment shader (also called pixel shader) runs for every pixel that covers your mesh on screen. It receives interpolated data from the vertex shader — positions, UVs, normals — and outputs the final color. This is where lighting, texturing, and special effects happen."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing triangle rasterization: vertices → interpolated pixels → fragment shader colors each pixel",
+          "caption": "The fragment shader colors every pixel that covers your mesh on screen"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A 3D triangle in clip space being rasterized into a grid of pixels. Show three vertices (red, green, blue) with arrows pointing to interpolated pixel colors inside the triangle. Label 'Vertex Shader' at vertices, 'Fragment Shader' at interior pixels. Use a gradient fill to show interpolation."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Complete shader with vertex and fragment stages\nShader \"Custom/SimpleColor\"\n{\n    Properties\n    {\n        _Color(\"Color\", Color) = (1, 1, 1, 1)\n    }\n    SubShader\n    {\n        Pass\n        {\n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n\n            float4 _Color;\n\n            struct Attributes\n            {\n                float4 positionOS : POSITION;\n            };\n\n            struct Varyings\n            {\n                float4 positionHCS : SV_POSITION;\n            };\n\n            Varyings vert(Attributes input)\n            {\n                Varyings output;\n                output.positionHCS = TransformObjectToHClip(input.positionOS);\n                return output;\n            }\n\n            half4 frag(Varyings input) : SV_Target\n            {\n                // Return the color property\n                return _Color;\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "A solid-colored object using the _Color property"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Sampling Textures"
+        },
+        {
+          "type": "paragraph",
+          "value": "The most common fragment shader operation is texture sampling — reading pixel colors from an image and applying them to your mesh. Use `SAMPLE_TEXTURE2D` in URP for proper platform support."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing UV coordinates (0,0 to 1,1) mapping to a texture, then applied to a 3D cube",
+          "caption": "UV coordinates map 2D texture pixels to 3D mesh surfaces"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Left: a 2D texture with a grid showing UV coordinates (0,0 at bottom-left, 1,1 at top-right). Middle: arrows showing how UVs wrap around a 3D cube. Right: the final textured cube. Use a checkerboard texture for clarity. Include small UV coordinate labels on the cube faces."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Textured shader with UV support\nShader \"Custom/Textured\"\n{\n    Properties\n    {\n        _MainTex(\"Main Texture\", 2D) = \"white\" {}\n        _Color(\"Tint Color\", Color) = (1,1,1,1)\n    }\n    SubShader\n    {\n        Pass\n        {\n            HLSLPROGRAM\n            #pragma vertex vert\n            #pragma fragment frag\n            #include \"Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl\"\n\n            TEXTURE2D(_MainTex);\n            SAMPLER(sampler_MainTex);\n            float4 _MainTex_ST;\n            float4 _Color;\n\n            struct Attributes\n            {\n                float4 positionOS : POSITION;\n                float2 uv         : TEXCOORD0;\n            };\n\n            struct Varyings\n            {\n                float4 positionHCS : SV_POSITION;\n                float2 uv          : TEXCOORD0;\n            };\n\n            Varyings vert(Attributes input)\n            {\n                Varyings output;\n                output.positionHCS = TransformObjectToHClip(input.positionOS);\n                // Apply tiling and offset to UVs\n                output.uv = TRANSFORM_TEX(input.uv, _MainTex);\n                return output;\n            }\n\n            half4 frag(Varyings input) : SV_Target\n            {\n                // Sample the texture at the UV coordinates\n                half4 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);\n                // Multiply by tint color\n                return texColor * _Color;\n            }\n            ENDHLSL\n        }\n    }\n}",
+          "output": "Object displays the assigned texture, tinted by the _Color property"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "UV Manipulation Effects"
+        },
+        {
+          "type": "paragraph",
+          "value": "By manipulating UV coordinates in the fragment shader, you can create scrolling textures, distortion, and animated effects without changing the mesh."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Scrolling UV effect (like flowing water or lava)\nfloat _ScrollSpeedX;\nfloat _ScrollSpeedY;\n\nhalf4 frag(Varyings input) : SV_Target\n{\n    // Animate UVs over time\n    float2 scrollUV = input.uv;\n    scrollUV.x += _Time.y * _ScrollSpeedX;\n    scrollUV.y += _Time.y * _ScrollSpeedY;\n    \n    // Sample with animated UVs\n    half4 texColor = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, scrollUV);\n    return texColor;\n}\n\n// UV Distortion (like heat haze or water refraction)\nfloat _DistortionStrength;\n\nhalf4 fragDistort(Varyings input) : SV_Target\n{\n    // Use a noise texture to offset the main UVs\n    float2 noiseUV = input.uv + _Time.y * 0.1;\n    half2 distortion = SAMPLE_TEXTURE2D(_NoiseTex, sampler_NoiseTex, noiseUV).rg;\n    distortion = (distortion - 0.5) * _DistortionStrength;\n    \n    float2 finalUV = input.uv + distortion;\n    return SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, finalUV);\n}",
+          "output": "Texture appears to scroll or warp based on the effect applied"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Alpha and Transparency"
+        },
+        {
+          "type": "paragraph",
+          "value": "To make objects transparent, you need three things: an alpha channel in your color, the correct blend mode, and the right render queue. Unity's default opaque shaders ignore alpha."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Transparent shader setup\nSubShader\n{\n    Tags\n    {\n        \"RenderType\" = \"Transparent\"\n        \"Queue\" = \"Transparent\"\n        \"RenderPipeline\" = \"UniversalPipeline\"\n    }\n\n    Pass\n    {\n        // Enable blending: SrcAlpha * color + OneMinusSrcAlpha * background\n        Blend SrcAlpha OneMinusSrcAlpha\n        ZWrite Off  // Don't write to depth buffer for transparency\n\n        HLSLPROGRAM\n        // ... vertex and fragment code ...\n        \n        half4 frag(Varyings input) : SV_Target\n        {\n            half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);\n            color.a *= _Transparency; // Control overall transparency\n            return color;\n        }\n        ENDHLSL\n    }\n}",
+          "output": "Object renders with adjustable transparency"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which shader stage determines the final color of each pixel?",
+          "options": [
+            "Vertex shader",
+            "Fragment shader",
+            "Geometry shader",
+            "Compute shader"
+          ],
+          "correctAnswer": "Fragment shader",
+          "explanation": "The fragment (pixel) shader runs once per pixel and outputs the final RGBA color that appears on screen."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What URP macro applies tiling and offset to UV coordinates?",
+          "options": [
+            "TEX2D",
+            "TRANSFORM_TEX",
+            "SAMPLE_UV",
+            "APPLY_TILING"
+          ],
+          "correctAnswer": "TRANSFORM_TEX",
+          "explanation": "TRANSFORM_TEX(uv, textureName) applies the texture's tiling (xy) and offset (zw) values stored in textureName_ST."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What built-in HLSL variable provides elapsed time for animations?",
+          "correctAnswer": "_Time",
+          "explanation": "_Time is a built-in float4 where _Time.y gives elapsed time in seconds. It's essential for creating animated shader effects."
+        }
+      ]
+    }
+  ]
+}
