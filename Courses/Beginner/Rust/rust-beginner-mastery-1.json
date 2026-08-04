@@ -1,0 +1,613 @@
+{
+  "id": "rust-beginner-mastery",
+  "course": {
+    "title": "Rust Beginner Mastery",
+    "description": "A comprehensive beginner course for the Rust programming language. Covers ownership, borrowing, lifetimes, structs, enums, pattern matching, error handling, concurrency, and more. Designed for complete beginners with detailed explanations that gradually become more concise as concepts build upon each other.",
+    "category": "Rust",
+    "level": "Beginner",
+    "tags": [
+      "Rust",
+      "Programming",
+      "Systems",
+      "Memory Safety"
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: Introduction to Rust",
+      "badge": "Getting Started",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "What is Rust?"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust is a systems programming language that runs blazingly fast, prevents segfaults, and guarantees thread safety. Developed by Mozilla Research, Rust first appeared in 2010 and reached version 1.0 in 2015. It has consistently ranked as the 'most loved programming language' in Stack Overflow surveys for multiple years."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Where is Rust Used?"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust is used across many domains:\n• Operating Systems: Linux kernel modules, Redox OS, Google's Fuchsia OS\n• Web Browsers: Firefox's Quantum engine, Servo browser engine\n• Cloud Infrastructure: Discord, Cloudflare, AWS (Firecracker microVMs)\n• Blockchain: Solana, Polkadot, Parity Ethereum client\n• Game Development: Bevy engine, Embark Studios\n• Embedded Systems: Microcontrollers, IoT devices\n• Command Line Tools: ripgrep, fd, exa (replacing traditional Unix tools)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Rust Differs from Other Languages"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust stands out from languages like C, C++, Python, and Java in several key ways:\n\n1. Memory Safety Without GC: Unlike Java or Python which use garbage collection, and unlike C/C++ which require manual memory management, Rust achieves memory safety at compile time through its ownership system. No runtime garbage collector means predictable performance.\n\n2. Zero-Cost Abstractions: High-level features like iterators and closures compile down to code as efficient as hand-written low-level code. You don't pay for what you don't use.\n\n3. Fearless Concurrency: Rust's ownership and type system prevent data races at compile time, making parallel programming safer without runtime overhead.\n\n4. Pattern Matching: Rust's match expression is exhaustive and powerful, catching bugs at compile time.\n\n5. Error Handling as Values: Rust uses Result and Option types instead of exceptions, forcing you to handle errors explicitly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Why Top Companies Choose Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "Companies like Google, Microsoft, Amazon, Meta, Discord, and Cloudflare use Rust because:\n• Performance: Matches C/C++ speed without the memory safety risks\n• Reliability: The compiler catches entire classes of bugs before runtime\n• Developer Productivity: Fewer bugs in production means less debugging time\n• Security: Eliminates buffer overflows, use-after-free, and other memory vulnerabilities\n• Cost Savings: Fewer security patches and crashes reduce maintenance costs"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Installing Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust is installed via rustup, the Rust toolchain installer. It manages Rust versions and associated tools."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# On macOS and Linux\ncurl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh\n\n# On Windows, download and run rustup-init.exe from https://rustup.rs/\n\n# After installation, reload your shell\nsource $HOME/.cargo/env\n\n# Verify installation\nrustc --version\ncargo --version",
+          "output": "rustc 1.82.0\ncargo 1.82.0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Your First Rust Program"
+        },
+        {
+          "type": "paragraph",
+          "value": "Let's create a simple 'Hello, world!' program. In Rust, the main() function is the entry point of every program."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    println!(\"Hello, world!\");\n}",
+          "output": "Hello, world!"
+        },
+        {
+          "type": "paragraph",
+          "value": "Notice println! ends with an exclamation mark — this is a macro, not a regular function. Macros in Rust are powerful metaprogramming tools that generate code at compile time. The println! macro handles formatting and type checking at compile time, preventing format string vulnerabilities common in C's printf."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Using Cargo — Rust's Build Tool"
+        },
+        {
+          "type": "paragraph",
+          "value": "Cargo is Rust's build system and package manager. It handles compiling code, downloading dependencies, and building packages. Every Rust project should use Cargo."
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Create a new project\ncargo new hello_rust\ncd hello_rust\n\n# Build the project\ncargo build\n\n# Run the project\ncargo run\n\n# Check for errors without building\ncargo check\n\n# Build optimized release version\ncargo build --release",
+          "output": "     Created binary (application) `hello_rust` package\n   Compiling hello_rust v0.1.0\n    Finished `dev` profile [unoptimized + debuginfo]\n     Running `target/debug/hello_rust`\nHello, world!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What makes Rust memory-safe without using a garbage collector?",
+          "options": [
+            "Manual memory management",
+            "The ownership system at compile time",
+            "Reference counting",
+            "A lightweight runtime"
+          ],
+          "correctAnswer": "The ownership system at compile time",
+          "explanation": "Rust's ownership system enforces memory safety rules at compile time, eliminating the need for a garbage collector while preventing memory errors."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the purpose of the exclamation mark in println!?",
+          "options": [
+            "It makes the function run faster",
+            "It indicates a macro, not a regular function",
+            "It is required for all print statements",
+            "It suppresses output"
+          ],
+          "correctAnswer": "It indicates a macro, not a regular function",
+          "explanation": "The ! suffix indicates a macro. Macros perform compile-time code generation and type checking, unlike regular function calls."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What command creates a new Rust project with Cargo?",
+          "correctAnswer": "cargo new",
+          "explanation": "cargo new project_name creates a new Rust project with the standard directory structure and a Cargo.toml configuration file."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Variables and Mutability",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Variables in Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "In Rust, variables are immutable by default. This is one of Rust's core safety features — once a value is bound to a name, it cannot be changed unless you explicitly opt in to mutability. This prevents accidental modifications and makes code easier to reason about."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Declaring Immutable Variables"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let x = 5;\n    println!(\"The value of x is: {}\", x);\n    \n    // This will cause a compile error!\n    // x = 6;\n    // error: cannot assign twice to immutable variable `x`\n}",
+          "output": "The value of x is: 5"
+        },
+        {
+          "type": "paragraph",
+          "value": "The let keyword creates a variable binding. By default, this binding is immutable — you cannot reassign a new value to it. The compiler will reject any attempt to modify an immutable variable, catching bugs at compile time rather than runtime."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Making Variables Mutable"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let mut x = 5;\n    println!(\"The value of x is: {}\", x);\n    \n    x = 6;  // This works because x is mutable\n    println!(\"The value of x is now: {}\", x);\n}",
+          "output": "The value of x is: 5\nThe value of x is now: 6"
+        },
+        {
+          "type": "paragraph",
+          "value": "The mut keyword explicitly marks a variable as mutable. This makes the code self-documenting — when you see mut, you know this variable will change. It also signals to the compiler that reassignment is intentional."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Constants"
+        },
+        {
+          "type": "paragraph",
+          "value": "Constants are always immutable and must have a type annotation. They can be declared in any scope, including the global scope. Unlike variables declared with let, constants cannot be shadowed and their value must be a constant expression (computed at compile time)."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "const MAX_POINTS: u32 = 100_000;\n\nfn main() {\n    println!(\"Maximum points: {}\", MAX_POINTS);\n    \n    // Constants can be used in any scope\n    const PI: f64 = 3.14159;\n    println!(\"Value of PI: {}\", PI);\n}",
+          "output": "Maximum points: 100000\nValue of PI: 3.14159"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Shadowing"
+        },
+        {
+          "type": "paragraph",
+          "value": "Shadowing allows you to declare a new variable with the same name as a previous variable. The new variable shadows the previous one. Unlike mutability, shadowing lets you change both the value AND the type of a variable."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let x = 5;\n    let x = x + 1;      // Shadowing: new x = 6\n    let x = x * 2;      // Shadowing: new x = 12\n    println!(\"The value of x is: {}\", x);\n    \n    // Shadowing also allows type changes\n    let spaces = \"   \";\n    let spaces = spaces.len();  // Now spaces is a usize\n    println!(\"Number of spaces: {}\", spaces);\n}",
+          "output": "The value of x is: 12\nNumber of spaces: 3"
+        },
+        {
+          "type": "paragraph",
+          "value": "Shadowing is different from mutability. With shadowing, each let creates a completely new variable that happens to have the same name. The old variable still exists until it goes out of scope, but you can no longer access it by that name. This is useful for transforming values without needing separate variable names."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the default mutability of variables declared with let in Rust?",
+          "options": [
+            "Mutable",
+            "Immutable",
+            "Depends on the type",
+            "Depends on the scope"
+          ],
+          "correctAnswer": "Immutable",
+          "explanation": "In Rust, variables are immutable by default. You must explicitly use the mut keyword to allow modification."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the difference between mutability and shadowing?",
+          "options": [
+            "There is no difference",
+            "Shadowing creates a new variable; mutability modifies the same variable",
+            "Mutability is faster than shadowing",
+            "Shadowing requires the mut keyword"
+          ],
+          "correctAnswer": "Shadowing creates a new variable; mutability modifies the same variable",
+          "explanation": "Shadowing with let creates a new variable that happens to share a name. Mutability with mut modifies the same variable in place."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword makes a variable mutable in Rust?",
+          "correctAnswer": "mut",
+          "explanation": "The mut keyword before a variable name allows it to be reassigned: let mut x = 5;"
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Data Types",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Rust's Type System"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust is a statically typed language, meaning the compiler must know the types of all variables at compile time. However, Rust has excellent type inference — in many cases, the compiler can figure out the type from how the variable is used, so you don't need to write explicit type annotations."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Scalar Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "Scalar types represent a single value. Rust has four primary scalar types: integers, floating-point numbers, booleans, and characters."
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "value": "Integer Types"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // Signed integers (can be negative)\n    let a: i8 = -128;       // 8-bit: -128 to 127\n    let b: i16 = 1000;      // 16-bit\n    let c: i32 = 100000;    // 32-bit (default)\n    let d: i64 = 1000000;   // 64-bit\n    let e: i128 = 10000000; // 128-bit\n    \n    // Unsigned integers (only positive)\n    let f: u8 = 255;        // 8-bit: 0 to 255\n    let g: u32 = 4000000;   // 32-bit unsigned\n    \n    // Architecture-dependent size\n    let h: isize = 100;     // 32-bit on 32-bit systems, 64-bit on 64-bit\n    let i: usize = 100;     // Same, but unsigned\n    \n    // Type inference works too\n    let j = 42;             // Rust infers i32\n    \n    println!(\"a = {}, f = {}, j = {}\", a, f, j);\n}",
+          "output": "a = -128, f = 255, j = 42"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust's integer types are explicit about their size. i32 is the default when the compiler infers an integer type. The isize and usize types are used for indexing collections because their size matches the platform's pointer size."
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "value": "Floating-Point Types"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let x = 2.0;          // f64 (default, double precision)\n    let y: f32 = 3.0;     // f32 (single precision)\n    \n    println!(\"x = {}, y = {}\", x, y);\n    \n    // Floating-point operations\n    let sum = x + y as f64;\n    let product = x * 2.5;\n    println!(\"sum = {}, product = {}\", sum, product);\n}",
+          "output": "x = 2, y = 3\nsum = 5, product = 5"
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "value": "Boolean and Character Types"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // Boolean type\n    let t = true;\n    let f: bool = false;\n    println!(\"t = {}, f = {}\", t, f);\n    \n    // Character type (4 bytes, Unicode scalar value)\n    let c = 'z';\n    let z = 'ℤ';\n    let heart = '❤';\n    let emoji = '😀';\n    \n    println!(\"c = {}, z = {}, heart = {}, emoji = {}\", c, z, heart, emoji);\n}",
+          "output": "t = true, f = false\nc = z, z = ℤ, heart = ❤, emoji = 😀"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust's char type is 4 bytes and represents a Unicode Scalar Value, meaning it can represent any Unicode character — not just ASCII. This is different from C's char which is only 1 byte."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Compound Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "Compound types can group multiple values into one type. Rust has two primitive compound types: tuples and arrays."
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "value": "Tuples"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // A tuple with mixed types\n    let tup: (i32, f64, &str) = (500, 6.4, \"hello\");\n    \n    // Destructuring a tuple\n    let (x, y, z) = tup;\n    println!(\"x = {}, y = {}, z = {}\", x, y, z);\n    \n    // Accessing by index\n    let first = tup.0;\n    let second = tup.1;\n    println!(\"first = {}, second = {}\", first, second);\n    \n    // Unit type (empty tuple)\n    let unit = ();\n    println!(\"Unit type: {:?}\", unit);\n}",
+          "output": "x = 500, y = 6.4, z = hello\nfirst = 500, second = 6.4\nUnit type: ()"
+        },
+        {
+          "type": "heading",
+          "level": "h4",
+          "value": "Arrays"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // Array with explicit type and size\n    let a: [i32; 5] = [1, 2, 3, 4, 5];\n    \n    // Array with repeated values\n    let b = [3; 5];  // [3, 3, 3, 3, 3]\n    \n    // Accessing elements\n    let first = a[0];\n    let second = a[1];\n    println!(\"first = {}, second = {}\", first, second);\n    \n    // Array length\n    println!(\"Array a has {} elements\", a.len());\n    \n    // Iterating over an array\n    for element in a {\n        print!(\"{} \", element);\n    }\n    println!();\n}",
+          "output": "first = 1, second = 2\nArray a has 5 elements\n1 2 3 4 5"
+        },
+        {
+          "type": "paragraph",
+          "value": "Arrays in Rust have a fixed length known at compile time. Unlike vectors (which we'll cover later), arrays cannot grow or shrink. The type [i32; 5] means an array of 5 i32 values."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the default integer type inferred by the Rust compiler?",
+          "options": [
+            "i64",
+            "i32",
+            "isize",
+            "u32"
+          ],
+          "correctAnswer": "i32",
+          "explanation": "When the compiler infers an integer type, it defaults to i32, which is generally the fastest type on modern systems."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How many bytes does a Rust char type occupy?",
+          "options": [
+            "1 byte",
+            "2 bytes",
+            "4 bytes",
+            "8 bytes"
+          ],
+          "correctAnswer": "4 bytes",
+          "explanation": "Rust's char is 4 bytes (32 bits) and represents a Unicode Scalar Value, supporting any Unicode character including emojis."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What syntax creates an array of five 3s in Rust?",
+          "correctAnswer": "[3; 5]",
+          "explanation": "The syntax [value; count] creates an array with 'count' copies of 'value'. So [3; 5] creates [3, 3, 3, 3, 3]."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: Functions",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Functions in Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "Functions are the primary building blocks of Rust programs. Every Rust program has at least one function: main(). Rust uses snake_case for function and variable names (all lowercase with underscores between words)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Defining Functions"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    println!(\"Hello from main!\");\n    \n    // Calling another function\n    say_hello();\n    \n    // Calling a function with parameters\n    greet(\"Alice\");\n    \n    // Calling a function that returns a value\n    let result = add(5, 3);\n    println!(\"5 + 3 = {}\", result);\n}\n\nfn say_hello() {\n    println!(\"Hello!\");\n}\n\nfn greet(name: &str) {\n    println!(\"Hello, {}!\", name);\n}\n\nfn add(a: i32, b: i32) -> i32 {\n    a + b  // No semicolon = expression (returns value)\n}",
+          "output": "Hello from main!\nHello!\nHello, Alice!\n5 + 3 = 8"
+        },
+        {
+          "type": "paragraph",
+          "value": "Functions are declared with the fn keyword followed by the function name and parentheses. Parameters require type annotations — Rust does not infer parameter types. The return type is specified after an arrow ->."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Statements vs Expressions"
+        },
+        {
+          "type": "paragraph",
+          "value": "Understanding the difference between statements and expressions is crucial in Rust. Statements perform an action and do not return a value. Expressions evaluate to a value. Functions in Rust return the value of their last expression."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let x = 5;  // Statement: let binding\n    \n    // This is an expression block\n    let y = {\n        let a = 3;\n        a + 1       // Expression (no semicolon) - returns 4\n    };\n    \n    println!(\"x = {}, y = {}\", x, y);\n    \n    // Function returning an expression\n    let z = calculate();\n    println!(\"z = {}\", z);\n}\n\nfn calculate() -> i32 {\n    let a = 10;\n    let b = 20;\n    a + b  // Expression: returns 30\n    // a + b;  // With semicolon, this becomes a statement and causes an error!\n}",
+          "output": "x = 5, y = 4\nz = 30"
+        },
+        {
+          "type": "paragraph",
+          "value": "Adding a semicolon to the end of an expression turns it into a statement, which does not return a value. If a function's last line ends with a semicolon, it returns () (the unit type) instead of the computed value. This is a common source of compiler errors for beginners."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Early Returns with return"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    println!(\"abs(-5) = {}\", absolute_value(-5));\n    println!(\"abs(5) = {}\", absolute_value(5));\n    println!(\"max(10, 20) = {}\", max(10, 20));\n}\n\nfn absolute_value(x: i32) -> i32 {\n    if x < 0 {\n        return -x;  // Early return\n    }\n    x  // Implicit return of the last expression\n}\n\nfn max(a: i32, b: i32) -> i32 {\n    if a > b {\n        return a;\n    }\n    b\n}",
+          "output": "abs(-5) = 5\nabs(5) = 5\nmax(10, 20) = 20"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Function Parameters and Passing Values"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let num = 5;\n    print_number(num);\n    println!(\"num is still: {}\", num);  // num is still valid\n    \n    let s = String::from(\"hello\");\n    print_string(&s);  // Pass a reference (borrowing)\n    println!(\"s is still: {}\", s);  // s is still valid\n}\n\nfn print_number(x: i32) {\n    println!(\"The number is: {}\", x);\n}\n\nfn print_string(s: &String) {\n    println!(\"The string is: {}\", s);\n}",
+          "output": "The number is: 5\nnum is still: 5\nThe string is: hello\ns is still: hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "Notice how we pass a reference (&s) to print_string. This is borrowing — we'll explore this in detail in the Ownership chapters. For now, understand that passing by reference lets the function use the value without taking ownership."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you add a semicolon at the end of the last line in a function?",
+          "options": [
+            "The function runs faster",
+            "The function returns () instead of the value",
+            "The function returns the value anyway",
+            "It causes a compile error"
+          ],
+          "correctAnswer": "The function returns () instead of the value",
+          "explanation": "A semicolon turns an expression into a statement. Statements don't return values, so the function returns the unit type ()."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What naming convention does Rust use for functions?",
+          "options": [
+            "camelCase",
+            "PascalCase",
+            "snake_case",
+            "kebab-case"
+          ],
+          "correctAnswer": "snake_case",
+          "explanation": "Rust uses snake_case (all lowercase with underscores) for function and variable names. PascalCase is used for types and structs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What symbol is used to specify a function's return type in Rust?",
+          "correctAnswer": "->",
+          "explanation": "The arrow -> is placed after the parameter list to specify the return type: fn add(a: i32, b: i32) -> i32 { ... }"
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: Control Flow — if and match",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Making Decisions in Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "Control flow allows your program to make decisions and repeat actions. Rust provides if expressions, loops, and the powerful match expression for pattern matching."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "if Expressions"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let number = 7;\n    \n    // Basic if-else\n    if number < 5 {\n        println!(\"condition was true\");\n    } else {\n        println!(\"condition was false\");\n    }\n    \n    // if with multiple branches\n    if number % 4 == 0 {\n        println!(\"number is divisible by 4\");\n    } else if number % 3 == 0 {\n        println!(\"number is divisible by 3\");\n    } else if number % 2 == 0 {\n        println!(\"number is divisible by 2\");\n    } else {\n        println!(\"number is not divisible by 4, 3, or 2\");\n    }\n}",
+          "output": "condition was false\nnumber is not divisible by 4, 3, or 2"
+        },
+        {
+          "type": "paragraph",
+          "value": "In Rust, if is an expression, not just a statement. This means it can return a value. All branches must return the same type."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Using if in a let Statement"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let condition = true;\n    \n    // if is an expression that returns a value\n    let number = if condition { 5 } else { 6 };\n    \n    println!(\"The value of number is: {}\", number);\n    \n    // Both branches must return the same type!\n    // This would cause an error:\n    // let x = if condition { 5 } else { \"six\" };\n}",
+          "output": "The value of number is: 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The match Expression"
+        },
+        {
+          "type": "paragraph",
+          "value": "match is one of Rust's most powerful control flow constructs. It compares a value against a series of patterns and executes code based on which pattern matches. Unlike switch statements in other languages, match is exhaustive — you must handle ALL possible cases."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let number = 3;\n    \n    match number {\n        1 => println!(\"One!\"),\n        2 => println!(\"Two!\"),\n        3 => println!(\"Three!\"),\n        4 | 5 => println!(\"Four or Five!\"),  // Multiple patterns\n        6..=10 => println!(\"Between 6 and 10\"),  // Range pattern\n        _ => println!(\"Something else\"),  // Catch-all pattern (required!)\n    }\n    \n    // match can also return values\n    let result = match number {\n        1 => \"first\",\n        2 => \"second\",\n        3 => \"third\",\n        _ => \"other\",\n    };\n    \n    println!(\"Result: {}\", result);\n}",
+          "output": "Three!\nResult: third"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "if let — Concise Pattern Matching"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let some_number = Some(5);\n    \n    // Using match (verbose)\n    match some_number {\n        Some(5) => println!(\"It's five!\"),\n        _ => (),\n    }\n    \n    // Using if let (concise for single patterns)\n    if let Some(5) = some_number {\n        println!(\"It's five!\");\n    }\n    \n    // if let with else\n    let favorite: Option<&str> = Some(\"Rust\");\n    if let Some(lang) = favorite {\n        println!(\"Favorite language: {}\", lang);\n    } else {\n        println!(\"No favorite language\");\n    }\n}",
+          "output": "It's five!\nFavorite language: Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "if let is syntactic sugar for a match that only cares about one pattern and ignores all others. It's cleaner when you only need to handle a single case."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Loops in Rust"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // loop — infinite loop\n    let mut counter = 0;\n    let result = loop {\n        counter += 1;\n        if counter == 10 {\n            break counter * 2;  // Return a value from loop\n        }\n    };\n    println!(\"Loop result: {}\", result);\n    \n    // while loop\n    let mut number = 3;\n    while number != 0 {\n        println!(\"{}!\", number);\n        number -= 1;\n    }\n    println!(\"LIFTOFF!!!\");\n    \n    // for loop (iterating over a collection)\n    let a = [10, 20, 30, 40, 50];\n    for element in a {\n        println!(\"The value is: {}\", element);\n    }\n    \n    // for with a range\n    for number in 1..4 {\n        println!(\"{}!\", number);\n    }\n    \n    // Range inclusive\n    for number in 1..=3 {\n        println!(\"{}!\", number);\n    }\n}",
+          "output": "Loop result: 20\n3!\n2!\n1!\nLIFTOFF!!!\nThe value is: 10\nThe value is: 20\nThe value is: 30\nThe value is: 40\nThe value is: 50\n1!\n2!\n3!\n1!\n2!\n3!"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust's for loop is the most common loop type. It uses iterators under the hood and is safer and more efficient than while loops for iterating over collections. The range 1..4 includes 1, 2, 3 but not 4. Use 1..=3 for an inclusive range."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What makes Rust's match expression different from a C-style switch statement?",
+          "options": [
+            "It is faster",
+            "It is exhaustive — all cases must be handled",
+            "It only works with integers",
+            "It requires a default case"
+          ],
+          "correctAnswer": "It is exhaustive — all cases must be handled",
+          "explanation": "Rust's match is exhaustive. The compiler ensures you handle every possible case, preventing bugs from unhandled variants."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the _ pattern do in a match expression?",
+          "options": [
+            "It matches only zero",
+            "It matches any value not matched by other arms",
+            "It skips the match entirely",
+            "It causes a compile error"
+          ],
+          "correctAnswer": "It matches any value not matched by other arms",
+          "explanation": "The _ (underscore) is a catch-all pattern that matches any value, similar to default in switch statements."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the inclusive range syntax in Rust? (e.g., 1 through 3 inclusive)",
+          "correctAnswer": "1..=3",
+          "explanation": "The syntax start..=end creates an inclusive range. 1..=3 includes 1, 2, and 3. The exclusive range 1..4 includes 1, 2, 3 but not 4."
+        }
+      ]
+    }
+  ]
+}
