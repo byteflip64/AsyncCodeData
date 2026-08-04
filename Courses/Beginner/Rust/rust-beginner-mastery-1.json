@@ -1651,6 +1651,469 @@
           "explanation": "The use keyword creates shortcuts to module paths, similar to import in other languages."
         }
       ]
+    },
+    {
+      "partTitle": "Part 16: Common Collections — Vectors",
+      "badge": "Collections",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Storing Lists of Values with Vec<T>"
+        },
+        {
+          "type": "paragraph",
+          "value": "A vector (Vec<T>) stores a variable number of values of the same type, contiguously in memory. Unlike arrays, vectors can grow or shrink at runtime. They are one of the most commonly used collections in Rust."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating and Using Vectors"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // Empty vector\n    let v: Vec<i32> = Vec::new();\n    \n    // Vector with initial values (using vec! macro)\n    let v2 = vec![1, 2, 3];\n    \n    // Mutable vector\n    let mut v3 = Vec::new();\n    v3.push(5);\n    v3.push(6);\n    v3.push(7);\n    \n    println!(\"v3 = {:?}\", v3);\n}",
+          "output": "v3 = [5, 6, 7]"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Reading Elements"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let v = vec![1, 2, 3, 4, 5];\n    \n    // Indexing (panics if out of bounds)\n    let third = &v[2];\n    println!(\"The third element is {}\", third);\n    \n    // Using get (returns Option)\n    match v.get(2) {\n        Some(third) => println!(\"The third element is {}\", third),\n        None => println!(\"There is no third element\"),\n    }\n    \n    // Safe access with get\n    if let Some(first) = v.get(0) {\n        println!(\"First: {}\", first);\n    }\n}",
+          "output": "The third element is 3\nThe third element is 3\nFirst: 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Iterating Over Vectors"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let mut v = vec![100, 32, 57];\n    \n    // Immutable iteration\n    for i in &v {\n        println!(\"{}\", i);\n    }\n    \n    // Mutable iteration\n    for i in &mut v {\n        *i += 50;\n    }\n    \n    println!(\"After mutation: {:?}\", v);\n}",
+          "output": "100\n32\n57\nAfter mutation: [150, 82, 107]"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Vectors of Enums for Mixed Types"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "enum SpreadsheetCell {\n    Int(i32),\n    Float(f64),\n    Text(String),\n}\n\nfn main() {\n    let row = vec![\n        SpreadsheetCell::Int(3),\n        SpreadsheetCell::Text(String::from(\"blue\")),\n        SpreadsheetCell::Float(10.12),\n    ];\n    \n    for cell in &row {\n        match cell {\n            SpreadsheetCell::Int(i) => println!(\"Integer: {}\", i),\n            SpreadsheetCell::Float(f) => println!(\"Float: {}\", f),\n            SpreadsheetCell::Text(s) => println!(\"Text: {}\", s),\n        }\n    }\n}",
+          "output": "Integer: 3\nText: blue\nFloat: 10.12"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does v.get(100) return if the vector has only 5 elements?",
+          "options": [
+            "0",
+            "None",
+            "Panics",
+            "100"
+          ],
+          "correctAnswer": "None",
+          "explanation": "get() returns Option<&T>. For an out-of-bounds index, it returns None instead of panicking."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How do you create a vector with initial values?",
+          "options": [
+            "Vec::new(1, 2, 3)",
+            "vec![1, 2, 3]",
+            "[1, 2, 3].to_vec()",
+            "Both B and C"
+          ],
+          "correctAnswer": "Both B and C",
+          "explanation": "vec![] macro and [].to_vec() both create vectors with initial values. Vec::new() creates an empty vector."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method adds an element to the end of a vector?",
+          "correctAnswer": "push",
+          "explanation": "The push() method appends an element to the end of a Vec. The vector must be mutable."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Common Collections — Strings",
+      "badge": "Collections",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding Rust's String Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust has two main string types: String (owned, mutable, heap-allocated) and str (string slice, borrowed, immutable). Understanding their relationship is crucial for working with text in Rust."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating Strings"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // From string literal\n    let s1 = String::from(\"hello\");\n    \n    // From &str using to_string()\n    let s2 = \"hello\".to_string();\n    \n    // Empty string\n    let mut s3 = String::new();\n    s3.push_str(\"hello\");\n    s3.push('!');  // push adds a single character\n    \n    println!(\"s1 = {}\", s1);\n    println!(\"s2 = {}\", s2);\n    println!(\"s3 = {}\", s3);\n}",
+          "output": "s1 = hello\ns2 = hello\ns3 = hello!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "String Concatenation"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s1 = String::from(\"Hello, \");\n    let s2 = String::from(\"world!\");\n    \n    // Using + operator (s1 is moved!)\n    let s3 = s1 + &s2;\n    // println!(\"{}\", s1); // ERROR: s1 was moved\n    println!(\"s3 = {}\", s3);\n    \n    // Using format! macro (no ownership issues)\n    let s4 = String::from(\"tic\");\n    let s5 = String::from(\"tac\");\n    let s6 = String::from(\"toe\");\n    let s7 = format!(\"{}-{}-{}\", s4, s5, s6);\n    println!(\"s7 = {}\", s7);\n    println!(\"s4 still valid: {}\", s4);\n}",
+          "output": "s3 = Hello, world!\ns7 = tic-tac-toe\ns4 still valid: tic"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Indexing Strings"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s = String::from(\"hello\");\n    \n    // let h = s[0]; // ERROR! Cannot index String\n    \n    // Use bytes() for raw bytes\n    for b in s.bytes() {\n        print!(\"{} \", b);\n    }\n    println!();\n    \n    // Use chars() for Unicode scalar values\n    for c in s.chars() {\n        print!(\"{} \", c);\n    }\n    println!();\n    \n    // Unicode example\n    let hello = String::from(\"नमस्ते\");\n    println!(\"Length in bytes: {}\", hello.len());\n    println!(\"Characters: {}\", hello.chars().count());\n}",
+          "output": "104 101 108 108 111 \nh e l l o \nLength in bytes: 18\nCharacters: 6"
+        },
+        {
+          "type": "paragraph",
+          "value": "Strings cannot be indexed because UTF-8 is variable-width. A character might be 1-4 bytes. Use chars() to iterate over characters or bytes() to iterate over raw bytes."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Slicing Strings"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s = String::from(\"hello world\");\n    \n    let hello = &s[0..5];\n    let world = &s[6..11];\n    \n    println!(\"hello = {}\", hello);\n    println!(\"world = {}\", world);\n    \n    // Be careful with multi-byte characters!\n    let hindi = String::from(\"नमस्ते\");\n    // let slice = &hindi[0..1]; // PANIC! Not a valid char boundary\n    let slice = &hindi[0..3];  // Valid: first character is 3 bytes\n    println!(\"slice = {}\", slice);\n}",
+          "output": "hello = hello\nworld = world\nslice = न"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why can't you index a String with s[0]?",
+          "options": [
+            "Strings don't support indexing",
+            "UTF-8 encoding has variable-width characters",
+            "It's a compiler bug",
+            "Only arrays support indexing"
+          ],
+          "correctAnswer": "UTF-8 encoding has variable-width characters",
+          "explanation": "UTF-8 characters can be 1-4 bytes. Indexing by position would be ambiguous. Use chars() or bytes() instead."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens to s1 in s1 + &s2?",
+          "options": [
+            "It is copied",
+            "It is moved (no longer valid)",
+            "It is cloned",
+            "Nothing happens"
+          ],
+          "correctAnswer": "It is moved (no longer valid)",
+          "explanation": "The + operator takes ownership of the left-hand String. Use format! if you need to keep both strings."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What macro concatenates strings without taking ownership?",
+          "correctAnswer": "format!",
+          "explanation": "The format! macro works like println! but returns a String. It borrows all arguments and doesn't take ownership."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Common Collections — HashMaps",
+      "badge": "Collections",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Storing Key-Value Pairs with HashMap"
+        },
+        {
+          "type": "paragraph",
+          "value": "HashMap<K, V> stores a mapping of keys to values. It uses a hashing function to determine how to place keys in memory. HashMaps are not ordered — use BTreeMap if you need sorted keys."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating and Using HashMaps"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::collections::HashMap;\n\nfn main() {\n    // Empty HashMap\n    let mut scores = HashMap::new();\n    \n    scores.insert(String::from(\"Blue\"), 10);\n    scores.insert(String::from(\"Yellow\"), 50);\n    \n    // Accessing values\n    let team_name = String::from(\"Blue\");\n    let score = scores.get(&team_name);\n    \n    match score {\n        Some(s) => println!(\"Blue team score: {}\", s),\n        None => println!(\"Team not found\"),\n    }\n    \n    // Iterating\n    for (key, value) in &scores {\n        println!(\"{}: {}\", key, value);\n    }\n}",
+          "output": "Blue team score: 10\nBlue: 10\nYellow: 50"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Ownership in HashMaps"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::collections::HashMap;\n\nfn main() {\n    let field_name = String::from(\"Favorite color\");\n    let field_value = String::from(\"Blue\");\n    \n    let mut map = HashMap::new();\n    map.insert(field_name, field_value);\n    \n    // field_name and field_value are now invalid (moved into map)\n    // println!(\"{}\", field_name); // ERROR!\n    \n    // For Copy types, values are copied\n    let mut scores = HashMap::new();\n    scores.insert(\"Blue\", 10);\n    let blue_score = scores.get(\"Blue\");\n    println!(\"Score: {:?}\", blue_score);\n}",
+          "output": "Score: Some(10)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Updating Values"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::collections::HashMap;\n\nfn main() {\n    let mut scores = HashMap::new();\n    \n    scores.insert(\"Blue\", 10);\n    \n    // Overwrite existing value\n    scores.insert(\"Blue\", 25);\n    println!(\"After overwrite: {:?}\", scores);\n    \n    // Only insert if key doesn't exist\n    scores.entry(\"Yellow\").or_insert(50);\n    scores.entry(\"Blue\").or_insert(100);  // Won't change\n    println!(\"After entry: {:?}\", scores);\n    \n    // Update based on old value\n    let text = \"hello world wonderful world\";\n    let mut word_counts = HashMap::new();\n    \n    for word in text.split_whitespace() {\n        let count = word_counts.entry(word).or_insert(0);\n        *count += 1;\n    }\n    \n    println!(\"{:?}\", word_counts);\n}",
+          "output": "After overwrite: {\"Blue\": 25}\nAfter entry: {\"Blue\": 25, \"Yellow\": 50}\n{\"hello\": 1, \"world\": 2, \"wonderful\": 1}"
+        },
+        {
+          "type": "paragraph",
+          "value": "The entry API provides a powerful way to handle keys that may or may not exist. or_insert returns a mutable reference to the value, creating it with a default if needed."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does HashMap::get() return?",
+          "options": [
+            "The value directly",
+            "Option<&V>",
+            "Result<V, E>",
+            "A reference to the key"
+          ],
+          "correctAnswer": "Option<&V>",
+          "explanation": "get() returns Option<&V> because the key might not exist. Returns Some(&value) if found, None otherwise."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does entry().or_insert() do?",
+          "options": [
+            "Always overwrites the value",
+            "Inserts only if the key doesn't exist",
+            "Deletes the entry",
+            "Returns the key"
+          ],
+          "correctAnswer": "Inserts only if the key doesn't exist",
+          "explanation": "or_insert inserts a default value only if the key is not already present. It returns a mutable reference to the value."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method adds a key-value pair to a HashMap?",
+          "correctAnswer": "insert",
+          "explanation": "The insert() method adds a key-value pair to a HashMap. If the key already exists, the value is overwritten."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 19: Error Handling with Result",
+      "badge": "Error Handling",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Handling Recoverable Errors"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust groups errors into two categories: recoverable errors (handled with Result<T, E>) and unrecoverable errors (handled with panic!). Most errors are recoverable — a file might not exist, a network request might fail. Result forces you to handle these cases explicitly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Result Enum"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::fs::File;\n\nfn main() {\n    let f = File::open(\"hello.txt\");\n    \n    let f = match f {\n        Ok(file) => file,\n        Err(error) => {\n            println!(\"Problem opening the file: {:?}\", error);\n            panic!(\"File not found!\");\n        }\n    };\n}",
+          "output": "Problem opening the file: Os { code: 2, kind: NotFound, message: \"No such file or directory\" }\nthread 'main' panicked at 'File not found!'"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Matching on Different Errors"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::fs::File;\nuse std::io::ErrorKind;\n\nfn main() {\n    let f = File::open(\"hello.txt\");\n    \n    let f = match f {\n        Ok(file) => file,\n        Err(error) => match error.kind() {\n            ErrorKind::NotFound => match File::create(\"hello.txt\") {\n                Ok(fc) => fc,\n                Err(e) => panic!(\"Problem creating the file: {:?}\", e),\n            },\n            other_error => {\n                panic!(\"Problem opening the file: {:?}\", other_error);\n            }\n        },\n    };\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Shortcuts: unwrap and expect"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::fs::File;\n\nfn main() {\n    // unwrap: returns the value or panics\n    // let f = File::open(\"hello.txt\").unwrap();\n    \n    // expect: same as unwrap but with custom message\n    // let f = File::open(\"hello.txt\")\n    //     .expect(\"hello.txt should be included in this project\");\n    \n    // For demonstration, use an existing file\n    // (This would panic if hello.txt doesn't exist)\n    println!(\"unwrap and expect are for prototyping only\");\n}",
+          "output": "unwrap and expect are for prototyping only"
+        },
+        {
+          "type": "paragraph",
+          "value": "unwrap() and expect() are convenient for prototyping and tests but should be avoided in production code. They panic on error, crashing the program. Use proper error handling for robust applications."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Propagating Errors with ?"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "use std::fs::File;\nuse std::io::{self, Read};\n\nfn read_username_from_file() -> Result<String, io::Error> {\n    let mut f = File::open(\"hello.txt\")?;\n    let mut s = String::new();\n    f.read_to_string(&mut s)?;\n    Ok(s)\n}\n\n// Even shorter:\nfn read_username_short() -> Result<String, io::Error> {\n    let mut s = String::new();\n    File::open(\"hello.txt\")?.read_to_string(&mut s)?;\n    Ok(s)\n}\n\nfn main() {\n    match read_username_from_file() {\n        Ok(name) => println!(\"Username: {}\", name),\n        Err(e) => println!(\"Error: {}\", e),\n    }\n}",
+          "output": "Error: No such file or directory (os error 2)"
+        },
+        {
+          "type": "paragraph",
+          "value": "The ? operator is syntactic sugar for match that returns the error early. If the Result is Ok, it unwraps the value. If Err, it returns from the function immediately. It can only be used in functions that return Result or Option."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the ? operator do on an Err value?",
+          "options": [
+            "Ignores the error",
+            "Returns the error from the current function",
+            "Panics",
+            "Converts it to Ok"
+          ],
+          "correctAnswer": "Returns the error from the current function",
+          "explanation": "The ? operator returns Err early from the function. It can only be used in functions that return Result or Option."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When should you use unwrap()?",
+          "options": [
+            "In production code",
+            "In prototypes and tests only",
+            "For all error handling",
+            "When the error is recoverable"
+          ],
+          "correctAnswer": "In prototypes and tests only",
+          "explanation": "unwrap() panics on error. Use it only when you're certain an error won't occur, like in tests or quick prototypes."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What enum represents recoverable errors in Rust?",
+          "correctAnswer": "Result",
+          "explanation": "Result<T, E> has Ok(T) for success and Err(E) for failure. It forces explicit error handling."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Error Handling with panic!",
+      "badge": "Error Handling",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Unrecoverable Errors"
+        },
+        {
+          "type": "paragraph",
+          "value": "Sometimes bad things happen and there's no way to recover. Rust uses the panic! macro for these situations. When panic! executes, the program prints an error message, unwinds the stack, and exits."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "When to panic!"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // Explicit panic\n    // panic!(\"crash and burn\");\n    \n    // Panic from out-of-bounds access\n    let v = vec![1, 2, 3];\n    // v[99]; // This would panic!\n    \n    // Using assert for invariants\n    let x = 5;\n    assert!(x > 0, \"x must be positive\");\n    \n    // assert_eq for equality checks\n    assert_eq!(2 + 2, 4);\n    \n    println!(\"All assertions passed!\");\n}",
+          "output": "All assertions passed!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Using panic! Backtrace"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let v = vec![1, 2, 3];\n    \n    // To see the backtrace, run with:\n    // RUST_BACKTRACE=1 cargo run\n    \n    // v[99]; // Would panic with backtrace info\n    \n    println!(\"Set RUST_BACKTRACE=1 to see backtraces\");\n}",
+          "output": "Set RUST_BACKTRACE=1 to see backtraces"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Guidelines: panic! vs Result"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use panic! when:\n• A bug has been detected that shouldn't happen\n• You're in an example, prototype, or test\n• You have external code that violates a contract\n\nUse Result when:\n• The error is expected (file not found, bad input)\n• The caller might want to handle the error\n• You're writing a library that others will use"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Custom Error Types"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "#[derive(Debug)]\nenum MyError {\n    NotFound,\n    InvalidInput(String),\n    PermissionDenied,\n}\n\nfn do_something(input: i32) -> Result<i32, MyError> {\n    if input < 0 {\n        return Err(MyError::InvalidInput(String::from(\"negative\")));\n    }\n    if input == 0 {\n        return Err(MyError::NotFound);\n    }\n    Ok(input * 2)\n}\n\nfn main() {\n    match do_something(-5) {\n        Ok(n) => println!(\"Result: {}\", n),\n        Err(e) => println!(\"Error: {:?}\", e),\n    }\n    \n    match do_something(5) {\n        Ok(n) => println!(\"Result: {}\", n),\n        Err(e) => println!(\"Error: {:?}\", e),\n    }\n}",
+          "output": "Error: InvalidInput(\"negative\")\nResult: 10"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When should you use panic! instead of Result?",
+          "options": [
+            "When a file might not exist",
+            "When a bug is detected that shouldn't happen",
+            "When the user enters invalid input",
+            "When a network request fails"
+          ],
+          "correctAnswer": "When a bug is detected that shouldn't happen",
+          "explanation": "panic! is for unrecoverable errors and bugs. Result is for expected errors that the caller might want to handle."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What environment variable shows a backtrace when panicking?",
+          "options": [
+            "RUST_DEBUG",
+            "RUST_BACKTRACE",
+            "RUST_PANIC",
+            "RUST_TRACE"
+          ],
+          "correctAnswer": "RUST_BACKTRACE",
+          "explanation": "Set RUST_BACKTRACE=1 when running your program to see the full call stack when a panic occurs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What macro checks a condition and panics if it is false?",
+          "correctAnswer": "assert",
+          "explanation": "The assert! macro checks a boolean condition. If false, it panics with an optional message. assert_eq! checks equality."
+        }
+      ]
     }
   ]
 }
