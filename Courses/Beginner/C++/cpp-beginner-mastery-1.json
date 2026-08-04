@@ -1,0 +1,555 @@
+{
+  "id": "cpp-beginner-mastery",
+  "course": {
+    "title": "C++ Beginner Mastery",
+    "description": "A comprehensive 30-part beginner course taking you from absolute zero to confident C++ programmer. Covers fundamentals, memory management, OOP, STL, and real-world projects. C++ is the backbone of game engines, operating systems, browsers, embedded systems, and high-performance software.",
+    "category": "C++",
+    "level": "Beginner",
+    "tags": [
+      "C++",
+      "Programming",
+      "Systems Programming",
+      "OOP",
+      "STL",
+      "Memory Management"
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: What is C++?",
+      "badge": "Foundation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Welcome to the World of C++"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ is one of the most powerful and widely-used programming languages in the world. Created by Bjarne Stroustrup in 1985 as an extension of the C language, C++ adds object-oriented features while keeping C's low-level hardware control. It is a compiled language — meaning your code is translated into machine code before running, giving it unmatched performance."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing C++ code → compiler → machine code → CPU execution",
+          "caption": "C++ is compiled directly to machine code for maximum performance"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Infographic/Diagram — A visual flowchart showing: 'Human writes C++ code' → 'Compiler (GCC/Clang/MSVC)' → 'Machine Code (.exe/.out)' → 'CPU executes directly'. Use arrows and icons. Highlight the compiler step as the key difference from interpreted languages. Use C++ blue (#00599C) and white colors."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Where is C++ Used?"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ powers some of the most critical software on Earth:\n• **Game Engines** — Unreal Engine, Unity (core), Godot, most AAA games\n• **Operating Systems** — Windows, macOS, Linux kernels, Android\n• **Browsers** — Chrome, Firefox, Safari rendering engines\n• **Databases** — MySQL, MongoDB, Redis\n• **Embedded Systems** — Cars, medical devices, IoT, spacecraft (NASA uses C++)\n• **High-Frequency Trading** — Wall Street trading platforms\n• **Graphics & Simulation** — Adobe Photoshop, Blender, AutoCAD\n• **Compilers** — GCC, Clang, LLVM are written in C++"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "C++ logo surrounded by icons representing games, OS, browsers, databases, cars, and finance",
+          "caption": "C++ powers everything from video games to spacecraft"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Illustration — C++ logo (blue hexagon with '++') in the center with orbiting icons: game controller (games), OS window (operating systems), browser icon (Chrome/Firefox), database cylinder (MySQL), car (embedded/ADAS), rocket (space), stock chart (finance). Use official C++ blue (#00599C) and accent colors."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How C++ Differs from Other Languages"
+        },
+        {
+          "type": "paragraph",
+          "value": "**C++ vs Python:** C++ is compiled (fast, direct CPU execution) while Python is interpreted (slower, runs via interpreter). C++ gives you manual memory control; Python handles memory automatically. C++ code is verbose but blazing fast; Python is concise but slower.\n\n**C++ vs Java:** Both are compiled, but Java runs on a Virtual Machine (JVM) while C++ compiles directly to machine code. C++ offers pointers and manual memory management; Java uses garbage collection. C++ is closer to the hardware.\n\n**C++ vs JavaScript:** JavaScript runs in browsers and is interpreted. C++ is a systems language with static typing and compilation. They serve completely different purposes.\n\n**C++ vs C:** C++ is a superset of C — it includes everything C has, plus classes, objects, templates, exceptions, and the Standard Template Library (STL)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Your First C++ Program"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every C++ program needs a `main()` function — this is where execution begins. We use `cout` (character output) to print text, and `return 0` tells the operating system the program finished successfully."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>  // Include the input/output library\n\nint main() {\n    // This is a single-line comment\n    /* This is a\n       multi-line comment */\n    \n    std::cout << \"Hello, World!\" << std::endl;\n    \n    return 0;  // Exit successfully\n}",
+          "output": "Hello, World!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What makes C++ different from Python in terms of execution?",
+          "options": [
+            "C++ is interpreted, Python is compiled",
+            "C++ is compiled to machine code, Python is interpreted",
+            "Both are interpreted languages",
+            "Both are compiled to machine code"
+          ],
+          "correctAnswer": "C++ is compiled to machine code, Python is interpreted",
+          "explanation": "C++ code is compiled directly into machine code that the CPU executes. Python code is read and executed line-by-line by an interpreter, which is slower."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of the following is NOT typically built with C++?",
+          "options": [
+            "Game engines like Unreal Engine",
+            "Operating system kernels",
+            "Simple static websites",
+            "High-frequency trading platforms"
+          ],
+          "correctAnswer": "Simple static websites",
+          "explanation": "Simple static websites are typically built with HTML/CSS/JavaScript. C++ is used for performance-critical applications like game engines, OS kernels, and trading platforms."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the entry point (starting function) of every C++ program?",
+          "correctAnswer": "main",
+          "explanation": "Every C++ program must have a main() function. Execution always starts from main()."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Setting Up Your C++ Environment",
+      "badge": "Setup",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Installing Your C++ Toolkit"
+        },
+        {
+          "type": "paragraph",
+          "value": "To write and run C++ code, you need two things: a **compiler** (translates C++ to machine code) and a **code editor** (where you write code). Unlike Python, C++ requires compilation before you can run your program."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "VS Code editor with C++ extension and terminal showing compilation command",
+          "caption": "VS Code with C++ extension is the recommended editor for beginners"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — VS Code window showing the Extensions sidebar with 'C/C++' by Microsoft installed, and a hello.cpp file open in the editor with syntax highlighting. Terminal panel at bottom showing 'g++ hello.cpp -o hello'. Dark theme preferred."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Installing a Compiler"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Windows:** Install MinGW-w64 or use Visual Studio Community (includes MSVC compiler).\n**macOS:** Install Xcode Command Line Tools by running `xcode-select --install` in Terminal.\n**Linux:** Install GCC with `sudo apt install g++` (Ubuntu/Debian) or `sudo dnf install gcc-c++` (Fedora)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Terminal windows on Windows, Mac, and Linux showing compiler version check commands",
+          "caption": "Verify your compiler installation by checking its version"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Screenshot — Three terminal windows side by side. Left: Windows Command Prompt showing 'g++ --version'. Middle: macOS Terminal showing 'clang++ --version'. Right: Linux Terminal showing 'g++ --version'. Each shows version output. Dark terminal themes."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Compilation Process"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ is a compiled language. You cannot run `.cpp` files directly. You must compile them first:\n1. Write code in a `.cpp` file\n2. Run the compiler: `g++ filename.cpp -o outputname`\n3. Run the executable: `./outputname` (Linux/Mac) or `outputname.exe` (Windows)"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// Save this as hello.cpp\n#include <iostream>\n\nint main() {\n    std::cout << \"Hello, C++!\" << std::endl;\n    return 0;\n}",
+          "output": ""
+        },
+        {
+          "type": "paragraph",
+          "value": "**Compile:** `g++ hello.cpp -o hello`\n**Run (Linux/Mac):** `./hello`\n**Run (Windows):** `hello.exe`"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Understanding #include and std::"
+        },
+        {
+          "type": "paragraph",
+          "value": "`#include <iostream>` tells the compiler to include the input/output stream library. Without it, `std::cout` would not exist.\n\n`std::` is the namespace for the C++ Standard Library. It prevents naming conflicts. You can also write `using namespace std;` to avoid typing `std::` repeatedly, but it's better practice to use the prefix in real projects."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// Using namespace (shorter but less explicit)\n#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << \"No std:: prefix needed!\" << endl;\n    return 0;\n}",
+          "output": "No std:: prefix needed!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What file extension is used for C++ source files?",
+          "options": [
+            ".c",
+            ".cpp",
+            ".cxx",
+            ".cc"
+          ],
+          "correctAnswer": ".cpp",
+          "explanation": ".cpp is the most common and recommended extension for C++ source files. .c is for C, .cxx and .cc are also valid but less common."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which command compiles a C++ file named program.cpp on Linux?",
+          "options": [
+            "run program.cpp",
+            "g++ program.cpp -o program",
+            "python program.cpp",
+            "compile program.cpp"
+          ],
+          "correctAnswer": "g++ program.cpp -o program",
+          "explanation": "g++ is the GNU C++ compiler. The -o flag specifies the output executable name. You must compile before running."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What does std::cout do in C++?",
+          "correctAnswer": "output",
+          "explanation": "std::cout (character output) is used to print text and values to the console/terminal. It's part of the iostream library."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Variables & Data Types",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Storing Data with Variables"
+        },
+        {
+          "type": "paragraph",
+          "value": "In C++, you must declare a variable's type before using it. This is called **static typing** — the compiler needs to know how much memory to allocate. Unlike Python, you cannot change a variable's type after declaration."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Memory diagram showing different variable types occupying different byte sizes in RAM",
+          "caption": "Each data type occupies a specific amount of memory in RAM"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A horizontal RAM/memory strip divided into blocks of different sizes. int (4 bytes), float (4 bytes), double (8 bytes), char (1 byte), bool (1 byte). Each block labeled with type name and size. Use a technical but clean style with byte counts clearly visible."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fundamental Data Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "**int** — Whole numbers (e.g., 42, -7, 0). Typically 4 bytes. Range: -2,147,483,648 to 2,147,483,647.\n**float** — Single-precision decimals (e.g., 3.14f). 4 bytes. ~7 decimal digits of precision.\n**double** — Double-precision decimals (e.g., 3.14159). 8 bytes. ~15 decimal digits of precision.\n**char** — Single character (e.g., 'A', '$'). 1 byte. Must use single quotes.\n**bool** — True or false. 1 byte. Values: true or false (lowercase).\n**string** — Text (e.g., \"Hello\"). Requires `#include <string>`. Variable length."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    int age = 25;\n    float price = 19.99f;      // 'f' suffix for float literals\n    double pi = 3.1415926535;\n    char grade = 'A';\n    bool isActive = true;\n    std::string name = \"Alice\";\n    \n    std::cout << \"Name: \" << name << std::endl;\n    std::cout << \"Age: \" << age << std::endl;\n    std::cout << \"Price: \" << price << std::endl;\n    std::cout << \"PI: \" << pi << std::endl;\n    std::cout << \"Grade: \" << grade << std::endl;\n    std::cout << \"Active: \" << isActive << std::endl;\n    \n    return 0;\n}",
+          "output": "Name: Alice\nAge: 25\nPrice: 19.99\nPI: 3.14159\nGrade: A\nActive: 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Variable Naming Rules"
+        },
+        {
+          "type": "paragraph",
+          "value": "• Names can contain letters, numbers, and underscores\n• Must start with a letter or underscore (NOT a number)\n• Case-sensitive: `Score` and `score` are different\n• Use **camelCase** or **snake_case**: `userName` or `user_name`\n• Avoid C++ reserved words: int, class, return, if, while, etc.\n• Cannot use special characters: @, #, $, %, -, etc."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// Good variable names\nint userAge = 25;\nfloat totalScore = 95.5f;\nbool isLoggedIn = true;\n\n// Bad variable names (these would cause errors!)\n// int 2ndPlace = 2;     // Starts with number - ERROR\n// int user-name = 5;    // Contains hyphen - ERROR\n// int class = 10;       // Reserved word - ERROR",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "sizeof() — Checking Memory Usage"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ gives you control over memory. The `sizeof()` operator tells you exactly how many bytes a type or variable uses. This is crucial for understanding memory constraints, especially in embedded systems."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    std::cout << \"Size of int: \" << sizeof(int) << \" bytes\" << std::endl;\n    std::cout << \"Size of float: \" << sizeof(float) << \" bytes\" << std::endl;\n    std::cout << \"Size of double: \" << sizeof(double) << \" bytes\" << std::endl;\n    std::cout << \"Size of char: \" << sizeof(char) << \" bytes\" << std::endl;\n    std::cout << \"Size of bool: \" << sizeof(bool) << \" bytes\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Size of int: 4 bytes\nSize of float: 4 bytes\nSize of double: 8 bytes\nSize of char: 1 bytes\nSize of bool: 1 bytes"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of the following is a valid C++ variable declaration?",
+          "options": [
+            "2nd_place = 5;",
+            "int total_score = 10;",
+            "float user-name = 3.5;",
+            "string class = \"hello\";"
+          ],
+          "correctAnswer": "int total_score = 10;",
+          "explanation": "C++ requires the type before the name, and names cannot start with numbers or contain hyphens. 'class' is also a reserved keyword."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the typical size of an int in C++?",
+          "options": [
+            "1 byte",
+            "2 bytes",
+            "4 bytes",
+            "8 bytes"
+          ],
+          "correctAnswer": "4 bytes",
+          "explanation": "On most modern systems, an int occupies 4 bytes (32 bits), giving it a range of approximately -2 billion to +2 billion."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator checks how many bytes a variable or type uses?",
+          "correctAnswer": "sizeof",
+          "explanation": "sizeof(variable) or sizeof(type) returns the number of bytes the variable or type occupies in memory."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: Constants & Type Modifiers",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Constants and Type Modifiers"
+        },
+        {
+          "type": "paragraph",
+          "value": "Sometimes you want values that never change — these are called **constants**. C++ also provides **type modifiers** that change the behavior and range of basic types, giving you fine-grained control over memory and data representation."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The const Keyword"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `const` to declare a variable whose value cannot be modified after initialization. This prevents accidental changes and makes your intent clear to other programmers."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    const double PI = 3.14159;\n    const int MAX_USERS = 100;\n    \n    std::cout << \"PI = \" << PI << std::endl;\n    std::cout << \"Max users = \" << MAX_USERS << std::endl;\n    \n    // This would cause a compile error:\n    // PI = 3.14;  // ERROR: cannot modify const variable\n    \n    return 0;\n}",
+          "output": "PI = 3.14159\nMax users = 100"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Type Modifiers: signed, unsigned, short, long"
+        },
+        {
+          "type": "paragraph",
+          "value": "**signed** — Can hold positive and negative values (default for int).\n**unsigned** — Can only hold positive values (0 and up), but doubles the positive range.\n**short** — Reduces size (typically 2 bytes for short int).\n**long** — Increases size (typically 4 or 8 bytes for long int).\n**long long** — Even larger (typically 8 bytes)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Number line showing signed int range (-2B to +2B) vs unsigned int range (0 to +4B)",
+          "caption": "Unsigned types sacrifice negative range for double the positive range"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Two horizontal number lines. Top: signed int from -2,147,483,648 to +2,147,483,647. Bottom: unsigned int from 0 to 4,294,967,295. Use different colors. Show that unsigned has no negative side but extends further on the positive side."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    unsigned int positiveOnly = 4000000000;\n    short int smallNumber = 32000;\n    long int bigNumber = 2000000000L;\n    long long int hugeNumber = 9000000000000LL;\n    \n    std::cout << \"unsigned int: \" << positiveOnly << std::endl;\n    std::cout << \"short int: \" << smallNumber << std::endl;\n    std::cout << \"long int: \" << bigNumber << std::endl;\n    std::cout << \"long long: \" << hugeNumber << std::endl;\n    \n    std::cout << \"Size of short: \" << sizeof(short) << \" bytes\" << std::endl;\n    std::cout << \"Size of long long: \" << sizeof(long long) << \" bytes\" << std::endl;\n    \n    return 0;\n}",
+          "output": "unsigned int: 4000000000\nshort int: 32000\nlong int: 2000000000\nlong long: 9000000000000\nSize of short: 2 bytes\nSize of long long: 8 bytes"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Auto Keyword (C++11+)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Modern C++ lets the compiler infer the type with `auto`. This is convenient but use it carefully — explicit types make code more readable for beginners."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    auto count = 10;        // Compiler infers int\n    auto price = 19.99;     // Compiler infers double\n    auto letter = 'A';      // Compiler infers char\n    \n    std::cout << \"Count: \" << count << \" (type inferred)\" << std::endl;\n    std::cout << \"Price: \" << price << \" (type inferred)\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Count: 10 (type inferred)\nPrice: 19.99 (type inferred)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you try to modify a const variable after initialization?",
+          "options": [
+            "It updates silently",
+            "Compilation error",
+            "Runtime crash",
+            "The variable becomes non-const"
+          ],
+          "correctAnswer": "Compilation error",
+          "explanation": "const variables are read-only. The compiler will reject any attempt to modify them after initialization."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main advantage of using unsigned int over signed int?",
+          "options": [
+            "It can store negative numbers",
+            "It uses less memory",
+            "It doubles the positive range",
+            "It is faster"
+          ],
+          "correctAnswer": "It doubles the positive range",
+          "explanation": "Unsigned types use the bit that would represent the sign to store more positive values, effectively doubling the maximum positive value."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword makes a variable unchangeable after initialization?",
+          "correctAnswer": "const",
+          "explanation": "The const keyword creates a constant variable whose value cannot be modified after it is set."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: Basic Operators",
+      "badge": "Operators",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Arithmetic, Comparison & Logical Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "Operators are symbols that perform operations on values. C++ has the same three essential categories as most languages: arithmetic (math), comparison (checking equality), and logical (combining conditions). C++ also has unique operators for memory manipulation."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Cheat sheet showing arithmetic, comparison, logical, and bitwise operators with examples",
+          "caption": "Your quick reference guide to C++ essential operators"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Cheat Sheet/Infographic — A clean table divided into sections: Arithmetic (+, -, *, /, %), Comparison (==, !=, >, <, >=, <=), Logical (&&, ||, !), and Bitwise (&, |, ^, ~, <<, >>). Each operator shows symbol, name, and a mini example. Use monospace font for code examples. C++ blue theme."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Arithmetic Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "`+` Addition, `-` Subtraction, `*` Multiplication, `/` Division (integer division truncates), `%` Modulus (remainder).\n\n**Important:** When dividing two integers, C++ performs integer division (truncates the decimal). To get a decimal result, at least one operand must be a float or double."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int a = 17, b = 5;\n    \n    std::cout << \"Addition: \" << a + b << std::endl;\n    std::cout << \"Subtraction: \" << a - b << std::endl;\n    std::cout << \"Multiplication: \" << a * b << std::endl;\n    std::cout << \"Division (int): \" << a / b << std::endl;  // Integer division!\n    std::cout << \"Division (float): \" << (float)a / b << std::endl;\n    std::cout << \"Modulus: \" << a % b << std::endl;\n    \n    return 0;\n}",
+          "output": "Addition: 22\nSubtraction: 12\nMultiplication: 85\nDivision (int): 3\nDivision (float): 3.4\nModulus: 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Comparison Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "These return `true` (1) or `false` (0):\n`==` Equal to, `!=` Not equal to, `>` Greater than, `<` Less than, `>=` Greater than or equal, `<=` Less than or equal"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int x = 10, y = 20;\n    \n    std::cout << (x == y) << std::endl;  // 0 (false)\n    std::cout << (x != y) << std::endl;  // 1 (true)\n    std::cout << (x < y) << std::endl;   // 1 (true)\n    std::cout << (x >= 10) << std::endl; // 1 (true)\n    \n    return 0;\n}",
+          "output": "0\n1\n1\n1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Logical Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "`&&` — AND: True if BOTH conditions are true\n`||` — OR: True if AT LEAST ONE condition is true\n`!` — NOT: Reverses the boolean value"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int age = 25;\n    bool hasID = true;\n    \n    std::cout << (age >= 18 && hasID) << std::endl;  // 1 (true)\n    std::cout << (age < 18 || hasID) << std::endl;   // 1 (true)\n    std::cout << (!hasID) << std::endl;              // 0 (false)\n    \n    return 0;\n}",
+          "output": "1\n1\n0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Increment and Decrement Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ has special operators for adding or subtracting 1:\n`++x` (pre-increment): increment first, then use\n`x++` (post-increment): use first, then increment\n`--x` and `x--` work the same way for subtraction."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int a = 5, b = 5;\n    \n    std::cout << \"Pre-increment: \" << ++a << std::endl;  // 6 (incremented first)\n    std::cout << \"Post-increment: \" << b++ << std::endl; // 5 (used first, then becomes 6)\n    std::cout << \"b is now: \" << b << std::endl;         // 6\n    \n    return 0;\n}",
+          "output": "Pre-increment: 6\nPost-increment: 5\nb is now: 6"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the result of 17 / 5 when both are integers in C++?",
+          "options": [
+            "3.4",
+            "3",
+            "2",
+            "4"
+          ],
+          "correctAnswer": "3",
+          "explanation": "C++ performs integer division when both operands are integers, truncating (cutting off) the decimal part. 17 / 5 = 3.4 becomes 3."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does 10 % 3 return in C++?",
+          "options": [
+            "3",
+            "1",
+            "0",
+            "3.33"
+          ],
+          "correctAnswer": "1",
+          "explanation": "% (modulus) gives the remainder after division. 10 divided by 3 is 3 with a remainder of 1."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator increments a variable by 1?",
+          "correctAnswer": "++",
+          "explanation": "The ++ operator increments a variable by 1. It can be used as prefix (++x) or postfix (x++)."
+        }
+      ]
+    }
+  ]
+}
