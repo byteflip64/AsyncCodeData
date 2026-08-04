@@ -1887,6 +1887,225 @@
           "explanation": "ComputeScreenPos(clipPosition) returns a float4 where .xy/.w gives normalized screen UVs needed for SampleSceneDepth(). It must be called in the vertex shader and divided by .w in the fragment shader."
         }
       ]
+    },
+    {
+      "partTitle": "Part 16: Transparency, Sorting, and the Painter's Algorithm",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Why Transparency Is Hard"
+        },
+        {
+          "type": "paragraph",
+          "value": "Transparent objects (glass, water, particles, UI) are one of the most expensive and tricky aspects of real-time rendering. Unlike opaque objects, which completely block what's behind them, transparent objects must **blend** their color with the background. This creates two major problems:\n\n1. **Order dependency** — transparent objects must be drawn from back to front. If you draw a transparent window before the building behind it, the building will overwrite the window.\n\n2. **No depth writing** — transparent objects usually don't write to the depth buffer (or the depth buffer would block everything behind them). This means every transparent pixel must be shaded, even if it's completely covered by another transparent object closer to the camera."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing correct back-to-front transparent rendering vs incorrect front-to-back rendering with visual artifacts",
+          "caption": "Transparent objects must be sorted and drawn in the correct order"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison — Left: 'Correct (Back to Front)' showing three transparent colored planes properly blended. Right: 'Incorrect (Front to Back)' showing the same planes with wrong blending, nearest plane blocking others. Use colored glass panes as example. Label sorting order with arrows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How URP Handles Transparent Objects"
+        },
+        {
+          "type": "paragraph",
+          "value": "URP's Forward Renderer handles transparency in the **Transparent Pass**, which runs after all opaque objects and the skybox:\n\n1. **Sort transparent objects by depth** — URP calculates each object's distance from the camera and sorts them from farthest to nearest\n2. **Draw back-to-front** — Each transparent object is drawn in sorted order, blending its color with whatever is already in the color buffer\n3. **Alpha blending** — The shader uses the alpha channel to control how much of the object's color vs. the background color appears\n\nThis is called the **Painter's Algorithm** — like painting on canvas, you paint background layers first and foreground layers last."
+        },
+        {
+          "type": "code",
+          "language": "hlsl",
+          "value": "// Standard alpha blending in a URP shader\n// This is what happens in the fragment shader for transparent objects\n\n// Sample the texture (includes alpha channel)\nhalf4 texColor = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);\n\n// Apply material color\nhalf4 finalColor = texColor * _BaseColor;\n\n// The alpha value controls transparency\n// 1.0 = fully opaque, 0.0 = fully transparent\n//\n// URP handles the actual blending in the render state:\n// Blend SrcAlpha OneMinusSrcAlpha\n//\n// This means:\n// FinalColor = (ObjectColor * ObjectAlpha) + (BackgroundColor * (1 - ObjectAlpha))\n//\n// Example: Object is 50% transparent red (1, 0, 0, 0.5)\n// Background is white (1, 1, 1)\n// Result = (red * 0.5) + (white * 0.5) = pink (1, 0.5, 0.5)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Transparency Problems"
+        },
+        {
+          "type": "paragraph",
+          "value": "Here are the transparency issues you'll encounter most often:\n\n**Sorting artifacts** — When transparent objects intersect or have similar depths, the sort order can be wrong. URP sorts by object center point, not per-pixel, so a large transparent panel might sort incorrectly against a small object inside it.\n\n**Overdraw** — Every transparent pixel draws on top of existing pixels. 10 layers of transparent particles means 10x the fragment shader work for those screen pixels. This is why particle effects can destroy performance.\n\n**Alpha testing vs Alpha blending** — Alpha testing (cutout) uses a hard threshold (alpha > 0.5 = draw, else discard). It's faster because discarded pixels skip shading entirely, but edges are jagged. Alpha blending is smoother but more expensive.\n\n**Z-fighting with transparent objects** — When two transparent surfaces are at nearly the same depth, they can flicker as the sort order changes frame to frame."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing overdraw visualization: screen filled with red where many transparent layers overlap",
+          "caption": "Overdraw from transparent objects is a major performance killer"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Overdraw Visualization — A scene with many transparent particles. Overlay heatmap showing red (high overdraw) where particles overlap. Label 'Overdraw: 8x' in red zones, 'Overdraw: 1x' in green zones. Include a legend. Use a game scene with fire/smoke particles as example."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Performance Tips for Transparency"
+        },
+        {
+          "type": "paragraph",
+          "value": "To keep transparency performant:\n\n• **Use alpha testing (cutout) when possible** — For fences, leaves, chain-link. Much faster than blending.\n• **Minimize transparent overlap** — Don't stack 50 particle systems in the same screen area.\n• **Use the Opaque queue when possible** — If an object is 95% opaque, use the opaque queue with alpha testing instead of true transparency.\n• **Reduce transparent object count** — Combine particle systems, use larger sprites instead of many small ones.\n• **Disable shadows on transparent objects** — Transparent objects casting shadows is expensive and often unnecessary.\n• **Use the Frame Debugger** — Check how many transparent draw calls you have and where overdraw is worst.\n• **Consider dithered transparency** — A fake transparency using a noise pattern and alpha testing. Looks decent and is much faster."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Shader queue controls render order in URP:\n//\n// Tags { \"Queue\" = \"Geometry\" }     → Opaque queue (drawn first)\n// Tags { \"Queue\" = \"AlphaTest\" }     → Alpha tested/cutout (after opaque)\n// Tags { \"Queue\" = \"Transparent\" }  → Transparent queue (drawn last)\n//\n// Within each queue, objects are sorted:\n// - Opaque: front-to-back (closest first, for early-z optimization)\n// - Transparent: back-to-front (farthest first, for correct blending)\n//\n// You can also use custom queue offsets:\n// Tags { \"Queue\" = \"Transparent+100\" } → drawn after other transparent objects\n//\n// In the Material Inspector, you can see and change the Render Queue.\n// Lower numbers = drawn earlier.\n// Background (1000) → Geometry (2000) → AlphaTest (2450) →\n// Transparent (3000) → Overlay (4000)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In which order does URP draw transparent objects?",
+          "options": [
+            "Front to back (nearest first)",
+            "Back to front (farthest first)",
+            "Random order",
+            "Alphabetical by object name"
+          ],
+          "correctAnswer": "Back to front (farthest first)",
+          "explanation": "Transparent objects must be drawn from back to front (farthest from camera first) so that each object's color blends correctly with the background already in the color buffer. This is the Painter's Algorithm."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is 'overdraw' in the context of transparent rendering?",
+          "options": [
+            "Drawing objects outside the camera frustum",
+            "Drawing multiple transparent layers on top of the same screen pixels",
+            "Rendering at a higher resolution than the screen",
+            "Using too many vertices in a mesh"
+          ],
+          "correctAnswer": "Drawing multiple transparent layers on top of the same screen pixels",
+          "explanation": "Overdraw occurs when multiple transparent objects cover the same screen pixel, causing the GPU to run the fragment shader multiple times for that pixel. Heavy overdraw (like dense particle effects) is a major performance bottleneck."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What faster alternative to alpha blending uses a hard threshold to discard pixels? (Two words)",
+          "correctAnswer": "alpha testing",
+          "explanation": "Alpha testing (or alpha cutout) discards pixels below an alpha threshold instead of blending them. It's much faster than alpha blending because discarded pixels skip shading entirely, but it produces hard edges instead of smooth transparency."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Render Textures and Camera Stacking",
+      "badge": "URP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Rendering to a Texture Instead of the Screen"
+        },
+        {
+          "type": "paragraph",
+          "value": "So far we've talked about rendering directly to the screen. But sometimes you need to render to a **Render Texture** — a texture in GPU memory that holds an image. You can then use that texture for other purposes: display it on a UI element, project it in-world, use it as input for a shader effect, or process it further.\n\nCommon uses for Render Textures:\n• **Minimaps** — render the world from above at low resolution\n• **Security cameras** — render a secondary camera view to a monitor\n• **Reflections** — render the scene from a mirror's perspective\n• **Portal effects** — render what's on the other side of a portal\n• **Custom post-processing** — capture the frame, process it, display it"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing camera rendering to Render Texture, then that texture applied to UI Raw Image and in-world monitor mesh",
+          "caption": "Render Textures let you capture camera output and reuse it anywhere"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Flow Diagram — Camera icon → 'Render Texture' box → splits to two paths: Path 1 → UI Canvas with Raw Image showing the texture. Path 2 → 3D TV monitor mesh in world showing the texture. Label 'One render, multiple uses'. Use clean, illustrative style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up a Render Texture in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Creating a Render Texture in Unity is straightforward:\n\n1. **Create the asset** — Right-click in Project window → Create → Render Texture. Set resolution and format.\n2. **Assign to a Camera** — On a Camera component, set Output Target to 'Texture' and assign your Render Texture.\n3. **Use the texture** — Assign it to a material, UI RawImage, or shader property.\n\nIn URP, cameras can render to Render Textures just like the screen. The camera uses the same Renderer and passes, but writes to your texture instead of the display."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Creating and using a Render Texture in code\npublic class SecurityCamera : MonoBehaviour\n{\n    public Camera securityCam;\n    public Material monitorMaterial;\n    private RenderTexture renderTex;\n    \n    void Start()\n    {\n        // Create a 512x512 render texture\n        renderTex = new RenderTexture(512, 512, 16);\n        renderTex.name = \"SecurityCameraFeed\";\n        \n        // Assign to camera\n        securityCam.targetTexture = renderTex;\n        \n        // Assign to monitor material\n        monitorMaterial.mainTexture = renderTex;\n    }\n    \n    void OnDestroy()\n    {\n        // Clean up GPU memory\n        renderTex.Release();\n        Destroy(renderTex);\n    }\n}\n\n// The camera now renders every frame to renderTex,\n// and the monitor displays that texture in real-time."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Camera Stacking in URP"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Camera Stacking** lets you combine the output of multiple cameras into a single final image. Unlike Render Textures (which capture to a separate texture), camera stacking layers cameras directly on top of each other.\n\nIn URP, you set up camera stacking like this:\n\n1. **Base Camera** — The main camera that renders first. This is the 'bottom layer.'\n2. **Overlay Cameras** — Additional cameras that render on top of the base camera's output.\n\nUse cases:\n• **UI camera** — A separate camera that only renders UI at a different FOV or with different post-processing\n• **Weapon camera** — A close-up camera for first-person weapons that avoids clipping with walls\n• **Effect camera** — A camera that renders only specific layers with special effects\n• **Split-screen** — Multiple base cameras for local multiplayer"
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing Base Camera rendering world, then Overlay Camera rendering weapon on top, combined into final image",
+          "caption": "Camera stacking layers multiple camera outputs into one final frame"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Layer Stack — Bottom layer: 'Base Camera' showing 3D world scene. Middle: arrow 'Stack'. Top layer: 'Overlay Camera' showing weapon model. Final combined image on right showing weapon overlaid on world. Label 'Camera Stacking'. Use a clean, game-scene example."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up Camera Stacking"
+        },
+        {
+          "type": "paragraph",
+          "value": "To set up camera stacking in URP:\n\n1. Create your **Base Camera** (main game camera)\n   - Set Render Type to 'Base'\n   - This camera renders first and clears the screen\n\n2. Create an **Overlay Camera**\n   - Set Render Type to 'Overlay'\n   - Set Culling Mask to only render specific layers (e.g., 'Weapons')\n   - Adjust near/far clip planes as needed\n\n3. Add the Overlay to the Base\n   - On the Base Camera, find 'Stack' list\n   - Click '+' and add your Overlay Camera\n\nThe Overlay Camera renders after the Base Camera, using the Base's output as its background. You can have multiple overlays — they render in the order listed."
+        },
+        {
+          "type": "code",
+          "language": "csharp",
+          "value": "// Camera stacking setup in URP:\n//\n// Base Camera (main game view):\n//   Camera component → Render Type: Base\n//   Culling Mask: Everything except 'Weapons' layer\n//   Post-processing: enabled\n//\n// Overlay Camera (weapon view):\n//   Camera component → Render Type: Overlay\n//   Culling Mask: Only 'Weapons' layer\n//   Clear Flags: Don't Clear (keeps base camera output)\n//   Near Clip Plane: 0.01 (very close for weapon model)\n//   Far Clip Plane: 1.0 (only renders weapon)\n//   Post-processing: disabled (use base camera's)\n//\n// On Base Camera → Stack section:\n//   Add Overlay Camera to the list\n//\n// Result: Base camera renders world. Overlay camera renders\n// weapon on top. Weapon never clips through walls because\n// it has its own near/far planes and doesn't render the world.\n//\n// Performance note: Each camera in the stack is a full render.\n// Keep overlay cameras simple — avoid shadows, post-processing,\n// and complex culling on overlay cameras."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Render Texture vs Camera Stack: When to Use Which"
+        },
+        {
+          "type": "paragraph",
+          "value": "Both techniques solve similar problems but have different trade-offs:\n\n**Use Render Textures when:**\n• You need to display the output on a surface in the world (monitor, mirror, portal)\n• You need to process the image in a shader before displaying it\n• You need the same camera output in multiple places\n• You want to control resolution independently (e.g., low-res minimap)\n\n**Use Camera Stacking when:**\n• You want to layer different camera views directly (weapon, UI)\n• You don't need the intermediate texture for other purposes\n• You want simpler setup without managing Render Texture assets\n• Performance is less critical (stacking is usually faster than Render Texture + blit)\n\n**Key difference:** Camera stacking writes directly to the same output. Render Textures capture to a separate GPU texture that must be sampled later."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main purpose of a Render Texture?",
+          "options": [
+            "To increase screen resolution",
+            "To capture camera output to a GPU texture for reuse",
+            "To disable post-processing",
+            "To batch multiple meshes together"
+          ],
+          "correctAnswer": "To capture camera output to a GPU texture for reuse",
+          "explanation": "A Render Texture is a GPU texture that a camera renders into instead of the screen. You can then use that texture on materials, UI elements, or as input to shader effects. It's essential for effects like mirrors, security cameras, and minimaps."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In URP Camera Stacking, what Render Type should the main game camera use?",
+          "options": [
+            "Overlay",
+            "Base",
+            "Render Texture",
+            "Perspective"
+          ],
+          "correctAnswer": "Base",
+          "explanation": "In camera stacking, the main camera that renders first and provides the background is the 'Base' camera. Additional cameras that render on top of it are 'Overlay' cameras. The Base camera must be set to Render Type: Base."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What camera property do you set to make a camera render into a Render Texture instead of the screen? (Two words)",
+          "correctAnswer": "target texture",
+          "explanation": "The Camera.targetTexture property assigns a Render Texture for the camera to render into. When set, the camera outputs to that texture instead of the screen. Set it to null to render to the screen again."
+        }
+      ]
     }
   ]
 }
