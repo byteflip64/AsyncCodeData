@@ -550,6 +550,811 @@
           "explanation": "The ++ operator increments a variable by 1. It can be used as prefix (++x) or postfix (x++)."
         }
       ]
+    },
+    {
+      "partTitle": "Part 6: Input and Output (cin, cout, cerr)",
+      "badge": "I/O",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Reading and Writing Data"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ provides three standard streams for input and output: `cout` for normal output, `cin` for input, and `cerr` for error messages. These are part of the `<iostream>` library and are objects connected to your terminal."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing cin reading from keyboard into variables and cout writing to screen",
+          "caption": "cin reads from keyboard, cout writes to screen, cerr writes errors"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Three labeled arrows. Arrow 1: Keyboard → cin → Variables. Arrow 2: Variables → cout → Screen. Arrow 3: Error data → cerr → Screen (in red). Use a clean flowchart style with distinct colors for each stream."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Reading Input with cin"
+        },
+        {
+          "type": "paragraph",
+          "value": "`cin` (character input) reads data from the keyboard. The `>>` extraction operator pulls data from the input stream into a variable. `cin` automatically skips whitespace (spaces, tabs, newlines) between inputs."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    std::string name;\n    int age;\n    \n    std::cout << \"Enter your name: \";\n    std::cin >> name;\n    \n    std::cout << \"Enter your age: \";\n    std::cin >> age;\n    \n    std::cout << \"Hello, \" << name << \"! You are \" << age << \" years old.\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Enter your name: Alice\nEnter your age: 25\nHello, Alice! You are 25 years old."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Reading Strings with Spaces: getline()"
+        },
+        {
+          "type": "paragraph",
+          "value": "`cin >>` stops reading at the first whitespace. To read an entire line including spaces, use `getline()`. Be careful: if you mix `cin >>` and `getline()`, leftover newline characters can cause issues. Use `cin.ignore()` to clear the buffer."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    std::string fullName;\n    int age;\n    \n    std::cout << \"Enter your age: \";\n    std::cin >> age;\n    \n    std::cin.ignore();  // Clear the newline left by cin >>\n    \n    std::cout << \"Enter your full name: \";\n    std::getline(std::cin, fullName);\n    \n    std::cout << \"Name: \" << fullName << \", Age: \" << age << std::endl;\n    \n    return 0;\n}",
+          "output": "Enter your age: 25\nEnter your full name: Alice Johnson\nName: Alice Johnson, Age: 25"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "cerr — The Error Stream"
+        },
+        {
+          "type": "paragraph",
+          "value": "`cerr` works like `cout` but is dedicated to error messages. In production systems, `cerr` output can be redirected to log files while `cout` goes to the normal display. This separation is crucial for debugging and monitoring."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int divisor = 0;\n    int dividend = 10;\n    \n    std::cout << \"Attempting division...\" << std::endl;\n    \n    if (divisor == 0) {\n        std::cerr << \"Error: Cannot divide by zero!\" << std::endl;\n    } else {\n        std::cout << \"Result: \" << dividend / divisor << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "Attempting division...\nError: Cannot divide by zero!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Formatting Output with setw and setprecision"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `<iomanip>` library provides tools to format output: `setw(n)` sets the width of the next output field, `setprecision(n)` controls decimal places for floating-point numbers, and `fixed` forces decimal notation."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <iomanip>\n\nint main() {\n    double pi = 3.1415926535;\n    \n    std::cout << \"Default: \" << pi << std::endl;\n    std::cout << \"Fixed 2 decimals: \" << std::fixed << std::setprecision(2) << pi << std::endl;\n    std::cout << \"Width 15: [\" << std::setw(15) << pi << \"]\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Default: 3.14159\nFixed 2 decimals: 3.14\nWidth 15: [           3.14]"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which function reads an entire line including spaces from the user?",
+          "options": [
+            "cin >>",
+            "getline()",
+            "scanf()",
+            "read()"
+          ],
+          "correctAnswer": "getline()",
+          "explanation": "getline() reads an entire line including spaces until it hits a newline. cin >> stops at the first whitespace."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why should you use cin.ignore() before getline() after using cin >>?",
+          "options": [
+            "To make the program faster",
+            "To clear the leftover newline character from the buffer",
+            "To close the input stream",
+            "It's not necessary"
+          ],
+          "correctAnswer": "To clear the leftover newline character from the buffer",
+          "explanation": "cin >> leaves a newline in the buffer. getline() sees this newline and thinks the user pressed Enter immediately. cin.ignore() removes it."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which stream is used specifically for error messages in C++?",
+          "correctAnswer": "cerr",
+          "explanation": "cerr (character error) is the standard error stream. Unlike cout, it is unbuffered and typically used for error and diagnostic messages."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: Type Casting & Conversion",
+      "badge": "Data Types",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Converting Between Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ is a statically typed language, so you often need to convert values from one type to another. This is called **type casting** or **type conversion**. C++ offers multiple ways to cast, each with different safety guarantees."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Flowchart showing implicit vs explicit casting paths between int, float, double, and char",
+          "caption": "C++ supports both automatic (implicit) and manual (explicit) type conversions"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Two paths side by side. Left: 'Implicit Casting' showing int → float automatically with a green arrow. Right: 'Explicit Casting' showing (int)3.7 with a blue arrow to 3. Include warning signs for dangerous casts like float to int (data loss)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Implicit Conversion (Automatic)"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ automatically converts smaller types to larger types to prevent data loss. This happens when you assign a smaller type to a larger type variable, or mix types in expressions."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int whole = 5;\n    double result = whole + 2.5;  // int 5 promoted to double 5.0\n    \n    std::cout << \"Result: \" << result << std::endl;\n    std::cout << \"Type of result: double\" << std::endl;\n    \n    char letter = 'A';  // ASCII value 65\n    int asciiValue = letter;  // char promoted to int\n    \n    std::cout << \"ASCII of 'A': \" << asciiValue << std::endl;\n    \n    return 0;\n}",
+          "output": "Result: 7.5\nType of result: double\nASCII of 'A': 65"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Explicit Casting (C-Style)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `(type)value` or `type(value)` to force a conversion. Be careful — explicit casts can cause data loss when converting from larger to smaller types (e.g., double to int truncates the decimal)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    double price = 19.99;\n    int intPrice = (int)price;  // C-style cast\n    \n    std::cout << \"Original: \" << price << std::endl;\n    std::cout << \"Cast to int: \" << intPrice << std::endl;  // 19 (truncated!)\n    \n    int total = 17;\n    int count = 5;\n    double average = (double)total / count;  // Cast before division!\n    \n    std::cout << \"Average: \" << average << std::endl;\n    \n    return 0;\n}",
+          "output": "Original: 19.99\nCast to int: 19\nAverage: 3.4"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Modern C++ Casts (static_cast, etc.)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Modern C++ provides safer casting operators: `static_cast<type>(value)` for standard conversions, `dynamic_cast` for polymorphic types, `const_cast` for removing const, and `reinterpret_cast` for low-level bit reinterpretation. As a beginner, focus on `static_cast`."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    double value = 42.7;\n    \n    // Modern, safer explicit cast\n    int truncated = static_cast<int>(value);\n    \n    std::cout << \"Original: \" << value << std::endl;\n    std::cout << \"static_cast to int: \" << truncated << std::endl;\n    \n    // Casting to char from int\n    char letter = static_cast<char>(66);  // ASCII 66 = 'B'\n    std::cout << \"Char from 66: \" << letter << std::endl;\n    \n    return 0;\n}",
+          "output": "Original: 42.7\nstatic_cast to int: 42\nChar from 66: B"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Narrowing Conversions and Data Loss"
+        },
+        {
+          "type": "paragraph",
+          "value": "When casting from a larger type to a smaller type, data can be lost. C++11 introduced **list initialization** with `{}` which prevents narrowing conversions — the compiler will throw an error if data loss would occur."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    double big = 3.9;\n    \n    // This works but loses data\n    int small1 = big;\n    std::cout << \"Direct assign: \" << small1 << std::endl;\n    \n    // This would cause a compile error in C++11+ (narrowing):\n    // int small2{big};  // ERROR: narrowing conversion\n    \n    // Safe: only if no data loss\n    int exact = 5;\n    double precise{exact};  // OK: int to double is safe\n    std::cout << \"Safe init: \" << precise << std::endl;\n    \n    return 0;\n}",
+          "output": "Direct assign: 3\nSafe init: 5"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the result of static_cast<int>(5.9)?",
+          "options": [
+            "6",
+            "5.9",
+            "5",
+            "Error"
+          ],
+          "correctAnswer": "5",
+          "explanation": "Casting a double to int truncates (cuts off) the decimal part. It does NOT round. static_cast<int>(5.9) gives 5."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which C++11 initialization syntax prevents narrowing conversions?",
+          "options": [
+            "int x = 5.5;",
+            "int x(5.5);",
+            "int x{5.5};",
+            "int x; x = 5.5;"
+          ],
+          "correctAnswer": "int x{5.5};",
+          "explanation": "Brace initialization {} prevents narrowing. int x{5.5} would cause a compile error because 5.5 cannot fit in an int without data loss."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which modern C++ cast operator is recommended for standard type conversions?",
+          "correctAnswer": "static_cast",
+          "explanation": "static_cast<type>(value) is the recommended way for explicit conversions in modern C++. It is safer and more explicit than C-style casts."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: If-Else Conditional Statements",
+      "badge": "Logic",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Making Decisions in Code"
+        },
+        {
+          "type": "paragraph",
+          "value": "Programs need to make decisions. Conditional statements let your code execute different blocks based on whether a condition is true or false. In C++, conditions use curly braces `{}` to define blocks — unlike Python which uses indentation."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Decision tree diagram showing if, else if, else branches with conditions and outcomes",
+          "caption": "Conditional statements create branches in your program's execution flow"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Flowchart — A top-down diamond-shaped flowchart: Start → Diamond 'score >= 90?' → Yes branch → 'Grade A' → End. No branch → Diamond 'score >= 80?' → Yes → 'Grade B' → End. No → Diamond 'score >= 70?' → Yes → 'Grade C' → End. No → 'Grade F' → End. Use different colors for each grade path."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The if Statement"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `if` statement executes a block of code only if its condition evaluates to true. The condition goes inside parentheses `()`, and the block goes inside curly braces `{}`."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int age = 20;\n    \n    if (age >= 18) {\n        std::cout << \"You are an adult.\" << std::endl;\n    }\n    \n    if (age < 13) {\n        std::cout << \"You are a child.\" << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "You are an adult."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "if-else and else-if"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `else` to run code when the if condition is false. Use `else if` to check additional conditions. C++ checks conditions from top to bottom and stops at the first true condition."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int score = 85;\n    \n    if (score >= 90) {\n        std::cout << \"Grade: A\" << std::endl;\n    } else if (score >= 80) {\n        std::cout << \"Grade: B\" << std::endl;\n    } else if (score >= 70) {\n        std::cout << \"Grade: C\" << std::endl;\n    } else if (score >= 60) {\n        std::cout << \"Grade: D\" << std::endl;\n    } else {\n        std::cout << \"Grade: F\" << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "Grade: B"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Nested if Statements"
+        },
+        {
+          "type": "paragraph",
+          "value": "You can place if statements inside other if statements. This is called nesting. Be careful with too many levels — it makes code harder to read. Each nested block needs its own set of curly braces."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    bool hasTicket = true;\n    bool isVIP = false;\n    \n    if (hasTicket) {\n        if (isVIP) {\n            std::cout << \"VIP entrance\" << std::endl;\n        } else {\n            std::cout << \"General entrance\" << std::endl;\n        }\n    } else {\n        std::cout << \"No entry\" << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "General entrance"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Ternary Operator"
+        },
+        {
+          "type": "paragraph",
+          "value": "For simple if-else assignments, C++ offers the ternary operator: `condition ? value_if_true : value_if_false`. It is a compact one-liner but should only be used for simple cases to keep code readable."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int age = 20;\n    \n    // Ternary operator: condition ? true_value : false_value\n    std::string status = (age >= 18) ? \"Adult\" : \"Minor\";\n    \n    std::cout << \"Status: \" << status << std::endl;\n    \n    // Equivalent if-else (longer)\n    std::string status2;\n    if (age >= 18) {\n        status2 = \"Adult\";\n    } else {\n        status2 = \"Minor\";\n    }\n    \n    std::cout << \"Status2: \" << status2 << std::endl;\n    \n    return 0;\n}",
+          "output": "Status: Adult\nStatus2: Adult"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What brackets define a code block in C++ conditionals?",
+          "options": [
+            "Parentheses ()",
+            "Curly braces {}",
+            "Square brackets []",
+            "Indentation"
+          ],
+          "correctAnswer": "Curly braces {}",
+          "explanation": "C++ uses curly braces {} to define code blocks. Unlike Python, indentation is for readability only and does not affect block structure."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does this ternary expression return? int x = (5 > 10) ? 100 : 200;",
+          "options": [
+            "100",
+            "200",
+            "5",
+            "10"
+          ],
+          "correctAnswer": "200",
+          "explanation": "5 > 10 is false, so the ternary operator returns the value after the colon, which is 200."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword marks the block that runs when all previous if conditions are false?",
+          "correctAnswer": "else",
+          "explanation": "The else block runs only when none of the preceding if or else if conditions were true."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Switch Statements",
+      "badge": "Logic",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Switch: A Cleaner Alternative to Many if-else"
+        },
+        {
+          "type": "paragraph",
+          "value": "When you need to compare a single variable against many constant values, `switch` is cleaner and often faster than a chain of if-else statements. The switch statement compares an expression against case labels and jumps directly to the matching one."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing switch statement jumping directly to matching case label",
+          "caption": "Switch jumps directly to the matching case — often faster than multiple if-else checks"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A box labeled 'switch(day)' with arrows jumping directly to case labels: case 1 → Monday, case 2 → Tuesday, etc. Show a 'default' arrow for unmatched values. Use a clean routing/jump visual with distinct colors per case."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Basic Switch Syntax"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `switch` statement evaluates an expression and matches it against `case` labels. Each case ends with `break` to prevent fall-through to the next case. The `default` case handles unmatched values."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int day = 3;\n    \n    switch (day) {\n        case 1:\n            std::cout << \"Monday\" << std::endl;\n            break;\n        case 2:\n            std::cout << \"Tuesday\" << std::endl;\n            break;\n        case 3:\n            std::cout << \"Wednesday\" << std::endl;\n            break;\n        case 4:\n            std::cout << \"Thursday\" << std::endl;\n            break;\n        case 5:\n            std::cout << \"Friday\" << std::endl;\n            break;\n        case 6:\n        case 7:\n            std::cout << \"Weekend!\" << std::endl;\n            break;\n        default:\n            std::cout << \"Invalid day\" << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "Wednesday"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fall-Through Behavior"
+        },
+        {
+          "type": "paragraph",
+          "value": "Without `break`, execution falls through to the next case. This is sometimes intentional (like cases 6 and 7 sharing the same code above), but usually it's a bug. Always include `break` unless fall-through is deliberate."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    char grade = 'B';\n    \n    switch (grade) {\n        case 'A':\n            std::cout << \"Excellent!\" << std::endl;\n            break;\n        case 'B':\n            std::cout << \"Good job!\" << std::endl;\n            // Missing break - falls through!\n        case 'C':\n            std::cout << \"You passed.\" << std::endl;\n            break;\n        case 'D':\n            std::cout << \"Barely passed.\" << std::endl;\n            break;\n        case 'F':\n            std::cout << \"Failed.\" << std::endl;\n            break;\n        default:\n            std::cout << \"Invalid grade\" << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "Good job!\nYou passed."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Switch Limitations"
+        },
+        {
+          "type": "paragraph",
+          "value": "Switch has important restrictions:\n• The expression must be an integer, char, or enum (NOT float, double, or string)\n• Case values must be constant expressions (not variables)\n• You cannot use ranges like `case > 5:`\n• For strings or ranges, use if-else instead"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nint main() {\n    // Switch works with char\n    char choice = 'y';\n    \n    switch (choice) {\n        case 'y':\n        case 'Y':\n            std::cout << \"You said yes!\" << std::endl;\n            break;\n        case 'n':\n        case 'N':\n            std::cout << \"You said no.\" << std::endl;\n            break;\n        default:\n            std::cout << \"Invalid choice.\" << std::endl;\n    }\n    \n    // Strings CANNOT be used in switch:\n    // std::string name = \"Alice\";\n    // switch (name) { ... }  // COMPILE ERROR!\n    \n    return 0;\n}",
+          "output": "You said yes!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you forget break in a switch case?",
+          "options": [
+            "The program crashes",
+            "Execution falls through to the next case",
+            "The case is skipped",
+            "A compile error occurs"
+          ],
+          "correctAnswer": "Execution falls through to the next case",
+          "explanation": "Without break, execution continues into the next case. This is called fall-through and is usually a bug unless intentionally used."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which of these CANNOT be used as a switch expression in C++?",
+          "options": [
+            "int",
+            "char",
+            "float",
+            "enum"
+          ],
+          "correctAnswer": "float",
+          "explanation": "Switch expressions must be integral types (int, char, enum). Floating-point types like float and double are not allowed because exact equality comparisons are unreliable with floats."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword handles values that don't match any case in a switch?",
+          "correctAnswer": "default",
+          "explanation": "The default case runs when no other case matches. It is optional but recommended for handling unexpected values."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: For Loops",
+      "badge": "Iteration",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Iterating with For Loops"
+        },
+        {
+          "type": "paragraph",
+          "value": "A for loop lets you repeat a block of code a specific number of times. The C++ for loop has three parts: initialization, condition, and update — all separated by semicolons and enclosed in parentheses."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing for loop structure: init, condition, update, and body with arrows",
+          "caption": "The three parts of a C++ for loop: initialization, condition, and update"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A circular flowchart showing for loop anatomy: Box 'int i = 0' (init) → Diamond 'i < 5?' (condition) → Yes → Box 'cout << i' (body) → Box 'i++' (update) → back to diamond. No → End. Label each part clearly with arrows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Basic For Loop"
+        },
+        {
+          "type": "paragraph",
+          "value": "The for loop syntax is: `for (initialization; condition; update) { body }`. The initialization runs once, the condition is checked before each iteration, and the update runs after each iteration."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // Print numbers 0 to 4\n    for (int i = 0; i < 5; i++) {\n        std::cout << i << \" \";\n    }\n    std::cout << std::endl;\n    \n    // Count from 1 to 10\n    for (int i = 1; i <= 10; i++) {\n        std::cout << i << \" \";\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "0 1 2 3 4 \n1 2 3 4 5 6 7 8 9 10"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "For Loop Variations"
+        },
+        {
+          "type": "paragraph",
+          "value": "You can customize the initialization, condition, and update. Count backwards, use different increments, or start from any value. You can also declare the loop variable outside the for statement (older C++ style)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // Count backwards from 5 to 1\n    for (int i = 5; i >= 1; i--) {\n        std::cout << i << \" \";\n    }\n    std::cout << std::endl;\n    \n    // Count by 2s\n    for (int i = 0; i <= 10; i += 2) {\n        std::cout << i << \" \";\n    }\n    std::cout << std::endl;\n    \n    // Multiple variables in for loop\n    for (int i = 0, j = 10; i < j; i++, j--) {\n        std::cout << \"i=\" << i << \" j=\" << j << \" \";\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "5 4 3 2 1 \n0 2 4 6 8 10 \ni=0 j=10 i=1 j=9 i=2 j=8 i=3 j=7 i=4 j=6 "
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "break and continue"
+        },
+        {
+          "type": "paragraph",
+          "value": "`break` exits the loop immediately. `continue` skips the rest of the current iteration and moves to the next one. These work the same way in for loops as they do in while loops."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // break example\n    std::cout << \"break at 5: \";\n    for (int i = 0; i < 10; i++) {\n        if (i == 5) {\n            break;\n        }\n        std::cout << i << \" \";\n    }\n    std::cout << std::endl;\n    \n    // continue example\n    std::cout << \"skip 3: \";\n    for (int i = 0; i < 6; i++) {\n        if (i == 3) {\n            continue;\n        }\n        std::cout << i << \" \";\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "break at 5: 0 1 2 3 4 \nskip 3: 0 1 2 4 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Range-Based For Loop (C++11)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Modern C++ introduces the range-based for loop, which iterates over collections without managing an index. It is cleaner and less error-prone than traditional for loops when you don't need the index."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int numbers[] = {10, 20, 30, 40, 50};\n    \n    // Traditional for loop\n    std::cout << \"Traditional: \";\n    for (int i = 0; i < 5; i++) {\n        std::cout << numbers[i] << \" \";\n    }\n    std::cout << std::endl;\n    \n    // Range-based for loop (C++11)\n    std::cout << \"Range-based: \";\n    for (int num : numbers) {\n        std::cout << num << \" \";\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "Traditional: 10 20 30 40 50 \nRange-based: 10 20 30 40 50"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How many times does this loop run? for (int i = 0; i < 5; i++)",
+          "options": [
+            "4 times",
+            "5 times",
+            "6 times",
+            "Infinite loop"
+          ],
+          "correctAnswer": "5 times",
+          "explanation": "The loop runs while i < 5, so i takes values 0, 1, 2, 3, 4 — that's 5 iterations. When i becomes 5, the condition is false and the loop stops."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does continue do inside a for loop?",
+          "options": [
+            "Exits the loop completely",
+            "Skips to the next iteration",
+            "Restarts from the beginning",
+            "Pauses the loop"
+          ],
+          "correctAnswer": "Skips to the next iteration",
+          "explanation": "continue stops the current iteration early and jumps to the update expression, then checks the condition for the next iteration."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which C++11 loop syntax iterates over a collection without an index variable?",
+          "correctAnswer": "range-based for",
+          "explanation": "The range-based for loop (for (auto item : collection)) iterates over each element directly without managing an index counter."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 11: While and Do-While Loops",
+      "badge": "Iteration",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Repeating with Conditions"
+        },
+        {
+          "type": "paragraph",
+          "value": "While loops repeat a block of code as long as a condition remains true. Use them when you don't know in advance how many times to loop — for example, waiting for user input or processing data until a condition is met."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Flowchart showing while loop: check condition, execute block, repeat until false",
+          "caption": "A while loop checks the condition BEFORE each iteration"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Flowchart — Circular flowchart: Diamond 'count > 0?' → Yes → Box 'cout << count' → Box 'count--' → back to diamond. No → 'End'. Show counter changing from 3 → 2 → 1 → 0. Use a clean loop arrow style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "While Loop"
+        },
+        {
+          "type": "paragraph",
+          "value": "The while loop checks the condition before each iteration. If the condition is false from the start, the loop body never executes."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int count = 3;\n    \n    while (count > 0) {\n        std::cout << count << \"...\" << std::endl;\n        count--;\n    }\n    \n    std::cout << \"Blast off!\" << std::endl;\n    \n    return 0;\n}",
+          "output": "3...\n2...\n1...\nBlast off!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Do-While Loop"
+        },
+        {
+          "type": "paragraph",
+          "value": "The do-while loop checks the condition AFTER each iteration. This guarantees the body runs at least once. Use it when you need to execute code before checking the condition — like menu systems."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int number;\n    \n    do {\n        std::cout << \"Enter a positive number: \";\n        std::cin >> number;\n        \n        if (number <= 0) {\n            std::cout << \"That's not positive. Try again.\" << std::endl;\n        }\n    } while (number <= 0);\n    \n    std::cout << \"You entered: \" << number << std::endl;\n    \n    return 0;\n}",
+          "output": "Enter a positive number: -5\nThat's not positive. Try again.\nEnter a positive number: 0\nThat's not positive. Try again.\nEnter a positive number: 7\nYou entered: 7"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Infinite Loops and How to Avoid Them"
+        },
+        {
+          "type": "paragraph",
+          "value": "If your condition never becomes false, the loop runs forever. Always ensure something inside the loop changes the condition variable. Use Ctrl+C to terminate an infinite loop in the terminal."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // SAFE pattern: user-controlled loop\n    int choice;\n    \n    while (true) {\n        std::cout << \"\\n1. Play\\n2. Settings\\n3. Quit\\nChoice: \";\n        std::cin >> choice;\n        \n        if (choice == 3) {\n            std::cout << \"Goodbye!\" << std::endl;\n            break;\n        }\n        \n        std::cout << \"You chose option \" << choice << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "\n1. Play\n2. Settings\n3. Quit\nChoice: 1\nYou chose option 1\n\n1. Play\n2. Settings\n3. Quit\nChoice: 3\nGoodbye!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "While vs Do-While vs For"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Use for** when you know the exact number of iterations (e.g., counting 1 to 10).\n**Use while** when you don't know the count but have a clear condition (e.g., reading until EOF).\n**Use do-while** when the body must run at least once (e.g., input validation menus)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the key difference between while and do-while?",
+          "options": [
+            "while is faster",
+            "do-while checks condition after the body runs",
+            "while can only use int conditions",
+            "do-while cannot use break"
+          ],
+          "correctAnswer": "do-while checks condition after the body runs",
+          "explanation": "do-while guarantees the body executes at least once because the condition is checked after each iteration, not before."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which loop type is best for a menu that must display at least once?",
+          "options": [
+            "for loop",
+            "while loop",
+            "do-while loop",
+            "No loop needed"
+          ],
+          "correctAnswer": "do-while loop",
+          "explanation": "do-while is perfect for menus because it always shows the menu at least once, then repeats based on user input."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator decreases a variable by 1 in C++?",
+          "correctAnswer": "--",
+          "explanation": "The -- operator decrements a variable by 1. It can be prefix (--x) or postfix (x--)."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Arrays — Fixed-Size Collections",
+      "badge": "Collections",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Your First Collection: Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "An array is a fixed-size collection of elements of the same type, stored in contiguous memory. Once declared, the size cannot change. Arrays are the foundation of all other collections in C++ and are essential for understanding memory layout."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Memory diagram showing array elements stored contiguously in RAM with indices",
+          "caption": "Array elements are stored side-by-side in contiguous memory locations"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A horizontal RAM strip showing 5 contiguous memory blocks. Each block labeled with index (0-4) and value. Show memory addresses increasing by 4 bytes (for int array). Use a technical memory visualization style with hex addresses."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Declaring and Initializing Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "Arrays are declared with the type, name, and size in square brackets. You can initialize them at declaration or assign values later. The size must be a constant expression — you cannot use a variable for the size in standard C++ arrays."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // Declare and initialize\n    int scores[5] = {85, 92, 78, 95, 88};\n    \n    // Compiler infers size\n    double prices[] = {9.99, 19.99, 29.99};\n    \n    // Partial initialization (rest are 0)\n    int counts[5] = {1, 2};  // {1, 2, 0, 0, 0}\n    \n    // All zeros\n    int zeros[10] = {};\n    \n    std::cout << \"First score: \" << scores[0] << std::endl;\n    std::cout << \"Prices count: \" << sizeof(prices) / sizeof(prices[0]) << std::endl;\n    \n    return 0;\n}",
+          "output": "First score: 85\nPrices count: 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Accessing and Modifying Array Elements"
+        },
+        {
+          "type": "paragraph",
+          "value": "Access elements using square brackets with the index (starting at 0). You can read and write to any valid index. Accessing an index outside the array bounds causes **undefined behavior** — the program may crash, corrupt memory, or appear to work. C++ does NOT check bounds automatically."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int numbers[5] = {10, 20, 30, 40, 50};\n    \n    // Access elements\n    std::cout << \"First: \" << numbers[0] << std::endl;\n    std::cout << \"Last: \" << numbers[4] << std::endl;\n    \n    // Modify an element\n    numbers[2] = 99;\n    std::cout << \"Modified third: \" << numbers[2] << std::endl;\n    \n    // Loop through array\n    std::cout << \"All elements: \";\n    for (int i = 0; i < 5; i++) {\n        std::cout << numbers[i] << \" \";\n    }\n    std::cout << std::endl;\n    \n    // DANGER: This is out of bounds!\n    // std::cout << numbers[10];  // UNDEFINED BEHAVIOR!\n    \n    return 0;\n}",
+          "output": "First: 10\nLast: 50\nModified third: 99\nAll elements: 10 20 99 40 50"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Finding Array Size"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `sizeof(array) / sizeof(array[0])` to calculate the number of elements. This only works with actual arrays (not pointers). Forgetting to calculate size correctly is a common source of bugs."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    int data[] = {5, 10, 15, 20, 25, 30};\n    \n    int size = sizeof(data) / sizeof(data[0]);\n    \n    std::cout << \"Array size: \" << size << std::endl;\n    std::cout << \"Total bytes: \" << sizeof(data) << std::endl;\n    std::cout << \"Element size: \" << sizeof(data[0]) << std::endl;\n    \n    // Safe iteration using calculated size\n    for (int i = 0; i < size; i++) {\n        std::cout << data[i] << \" \";\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "Array size: 6\nTotal bytes: 24\nElement size: 4\n5 10 15 20 25 30"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Multidimensional Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ supports arrays with multiple dimensions. A 2D array is like a grid or table — rows and columns. You can have 3D, 4D, and higher, but they become complex to manage."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint main() {\n    // 2D array: 3 rows, 4 columns\n    int matrix[3][4] = {\n        {1, 2, 3, 4},\n        {5, 6, 7, 8},\n        {9, 10, 11, 12}\n    };\n    \n    // Access element at row 1, column 2\n    std::cout << \"matrix[1][2] = \" << matrix[1][2] << std::endl;\n    \n    // Print entire matrix\n    std::cout << \"Matrix:\" << std::endl;\n    for (int i = 0; i < 3; i++) {\n        for (int j = 0; j < 4; j++) {\n            std::cout << matrix[i][j] << \" \";\n        }\n        std::cout << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "matrix[1][2] = 7\nMatrix:\n1 2 3 4 \n5 6 7 8 \n9 10 11 12"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the index of the first element in a C++ array?",
+          "options": [
+            "1",
+            "0",
+            "-1",
+            "Depends on the type"
+          ],
+          "correctAnswer": "0",
+          "explanation": "C++ uses zero-based indexing. The first element is always at index 0. This is the same as Python and most C-family languages."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you access an array index that is out of bounds?",
+          "options": [
+            "Array automatically resizes",
+            "Compile error",
+            "Undefined behavior (may crash or corrupt memory)",
+            "Returns 0"
+          ],
+          "correctAnswer": "Undefined behavior (may crash or corrupt memory)",
+          "explanation": "C++ does NOT perform bounds checking on arrays. Accessing out-of-bounds memory causes undefined behavior — the program might crash, read garbage data, or silently corrupt memory."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which formula calculates the number of elements in a C++ array?",
+          "correctAnswer": "sizeof(array) / sizeof(array[0])",
+          "explanation": "sizeof(array) gives total bytes, sizeof(array[0]) gives bytes per element. Dividing them gives the element count. This only works with actual arrays, not pointers."
+        }
+      ]
     }
   ]
 }
