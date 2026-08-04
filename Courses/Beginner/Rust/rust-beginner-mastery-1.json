@@ -608,6 +608,562 @@
           "explanation": "The syntax start..=end creates an inclusive range. 1..=3 includes 1, 2, and 3. The exclusive range 1..4 includes 1, 2, 3 but not 4."
         }
       ]
+    },
+    {
+      "partTitle": "Part 6: Ownership — What Is It?",
+      "badge": "Ownership",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Core Concept of Rust"
+        },
+        {
+          "type": "paragraph",
+          "value": "Ownership is Rust's most unique and important feature. It is the mechanism by which Rust manages memory without a garbage collector. Understanding ownership is essential to writing Rust code. Once you understand ownership, everything else in Rust becomes much easier."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Three Ownership Rules"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust's ownership system is governed by three simple rules that the compiler enforces:\n\n1. Each value in Rust has an owner.\n2. There can only be one owner at a time.\n3. When the owner goes out of scope, the value will be dropped.\n\nThese rules seem simple, but they have profound implications for how you write code."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Variable Scope"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // s is not valid here — it has not been declared yet\n    \n    {\n        let s = \"hello\";  // s is valid from this point forward\n        println!(\"{}\", s); // s is still valid\n    }                      // this scope ends, s is no longer valid\n    \n    // println!(\"{}\", s); // This would cause a compile error!\n}",
+          "output": "hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "Scope is the range within a program for which an item is valid. When a variable comes into scope, it is valid. It remains valid until it goes out of scope. For heap-allocated data, going out of scope means the memory is automatically freed."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The String Type and Memory Allocation"
+        },
+        {
+          "type": "paragraph",
+          "value": "String literals (like \"hello\") are stored in the binary and are immutable. The String type, however, is allocated on the heap and can grow. Understanding how String works is key to understanding ownership."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    // String literal — stored in binary, immutable, fast\n    let s1 = \"hello\";\n    \n    // String type — allocated on heap, mutable, growable\n    let mut s2 = String::from(\"hello\");\n    s2.push_str(\", world!\");  // Append to the string\n    \n    println!(\"s1 = {}\", s1);\n    println!(\"s2 = {}\", s2);\n}",
+          "output": "s1 = hello\ns2 = hello, world!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Move Semantics"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s1 = String::from(\"hello\");\n    let s2 = s1;  // s1 is MOVED into s2\n    \n    // println!(\"{}\", s1);  // ERROR! s1 is no longer valid\n    println!(\"{}\", s2);     // This works fine\n}",
+          "output": "hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "When s1 is assigned to s2, Rust does NOT copy the heap data. Instead, it invalidates s1 and makes s2 the sole owner. This is called a move. Rust never automatically creates deep copies of heap data. This prevents double-free errors and ensures only one owner manages the memory."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Clone for Deep Copies"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s1 = String::from(\"hello\");\n    let s2 = s1.clone();  // Explicit deep copy\n    \n    println!(\"s1 = {}\", s1);  // Both are valid!\n    println!(\"s2 = {}\", s2);\n}",
+          "output": "s1 = hello\ns2 = hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "If you truly need a deep copy of heap data, use the clone method. This is explicit and signals to the reader that an expensive operation is occurring. Stack-only data (like integers) implements the Copy trait, so they are copied rather than moved."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Copy Trait for Stack Data"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let x = 5;\n    let y = x;  // x is copied, not moved (i32 implements Copy)\n    \n    println!(\"x = {}, y = {}\", x, y);  // Both valid!\n}",
+          "output": "x = 5, y = 5"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens when you assign a String to another variable?",
+          "options": [
+            "Both variables point to the same data",
+            "The first variable is moved and becomes invalid",
+            "A deep copy is made automatically",
+            "The program crashes"
+          ],
+          "correctAnswer": "The first variable is moved and becomes invalid",
+          "explanation": "Rust moves ownership. The original variable is invalidated to prevent double-free errors. Use .clone() for an explicit deep copy."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which types automatically implement the Copy trait?",
+          "options": [
+            "Only integers",
+            "Types stored entirely on the stack",
+            "Only booleans",
+            "All types by default"
+          ],
+          "correctAnswer": "Types stored entirely on the stack",
+          "explanation": "Types that don't own heap data (integers, floats, booleans, chars, tuples of Copy types) implement Copy and are copied rather than moved."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method creates an explicit deep copy of a String?",
+          "correctAnswer": "clone",
+          "explanation": "The .clone() method creates a deep copy of heap data. It's expensive but explicit, making the cost visible in your code."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: Ownership and Functions",
+      "badge": "Ownership",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Ownership with Functions"
+        },
+        {
+          "type": "paragraph",
+          "value": "Passing a value to a function follows the same ownership rules as assignment. The function parameter becomes the new owner. Understanding how ownership interacts with functions is critical for writing correct Rust code."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Passing Ownership to Functions"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s = String::from(\"hello\");\n    takes_ownership(s);  // s moves into the function\n    // println!(\"{}\", s);  // ERROR! s is no longer valid\n    \n    let x = 5;\n    makes_copy(x);       // x is copied (i32 implements Copy)\n    println!(\"x = {}\", x); // x is still valid!\n}\n\nfn takes_ownership(some_string: String) {\n    println!(\"{}\", some_string);\n}  // some_string goes out of scope and is dropped\n\nfn makes_copy(some_integer: i32) {\n    println!(\"{}\", some_integer);\n}  // some_integer goes out of scope, nothing special happens",
+          "output": "hello\nx = 5"
+        },
+        {
+          "type": "paragraph",
+          "value": "When a String is passed to a function, ownership moves to the function parameter. When the function ends, the parameter is dropped and the memory is freed. The original variable is no longer valid. For Copy types like i32, the value is copied and the original remains valid."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Returning Ownership from Functions"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s1 = gives_ownership();\n    println!(\"s1 = {}\", s1);\n    \n    let s2 = String::from(\"hello\");\n    let s3 = takes_and_gives_back(s2);\n    println!(\"s3 = {}\", s3);\n    // s2 is invalid, s3 is valid\n}\n\nfn gives_ownership() -> String {\n    let some_string = String::from(\"yours\");\n    some_string  // Return value moves ownership to caller\n}\n\nfn takes_and_gives_back(a_string: String) -> String {\n    a_string  // Return the same string, moving ownership back\n}",
+          "output": "s1 = yours\ns3 = hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "Returning a value from a function transfers ownership to the caller. This is how you can get data back from a function. However, taking and returning ownership for every function call is tedious. The next chapter introduces borrowing, which solves this problem elegantly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Problem: Too Much Ownership Transfer"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s1 = String::from(\"hello\");\n    \n    let (s2, len) = calculate_length(s1);\n    \n    println!(\"The length of '{}' is {}.\", s2, len);\n}\n\nfn calculate_length(s: String) -> (String, usize) {\n    let length = s.len();\n    (s, length)  // Return both the string and its length\n}",
+          "output": "The length of 'hello' is 5."
+        },
+        {
+          "type": "paragraph",
+          "value": "This pattern of returning a tuple to give back ownership is cumbersome. What if we want to use the string after calling calculate_length? We have to return it. This is where references and borrowing come in — they let us use a value without taking ownership."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens to a String parameter when a function ends?",
+          "options": [
+            "It is returned automatically",
+            "It is dropped and memory is freed",
+            "It remains in scope forever",
+            "It is converted to a reference"
+          ],
+          "correctAnswer": "It is dropped and memory is freed",
+          "explanation": "When a function parameter goes out of scope, its destructor runs and the heap memory is freed. This is why ownership moves into functions."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is returning a tuple with the original value cumbersome?",
+          "options": [
+            "It is too slow",
+            "It requires manually passing ownership back for every function call",
+            "It causes memory leaks",
+            "It is not allowed in Rust"
+          ],
+          "correctAnswer": "It requires manually passing ownership back for every function call",
+          "explanation": "Returning tuples to give back ownership is verbose. Borrowing (references) solves this by letting functions use values without taking ownership."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword/construct will we learn next to avoid moving ownership into functions?",
+          "correctAnswer": "references",
+          "explanation": "References (borrowing) allow functions to use a value without taking ownership, solving the problem of excessive ownership transfer."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: References and Borrowing",
+      "badge": "Ownership",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Borrowing: Using Values Without Taking Ownership"
+        },
+        {
+          "type": "paragraph",
+          "value": "References allow you to refer to a value without taking ownership of it. This is called borrowing. When you borrow a value, you create a reference to it using the & symbol. The value you reference still belongs to the original owner."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating References"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s1 = String::from(\"hello\");\n    \n    let len = calculate_length(&s1);  // Pass a reference to s1\n    \n    println!(\"The length of '{}' is {}.\", s1, len);\n    // s1 is still valid because we only borrowed it!\n}\n\nfn calculate_length(s: &String) -> usize {\n    s.len()\n}  // s goes out of scope, but it does not own the data,\n   // so nothing is dropped",
+          "output": "The length of 'hello' is 5."
+        },
+        {
+          "type": "paragraph",
+          "value": "The &s1 syntax creates a reference that refers to s1 but does not own it. The function parameter &String indicates it takes a reference. Because the reference does not own the data, the original variable s1 remains valid after the function call."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Mutable References"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let mut s = String::from(\"hello\");\n    \n    change(&mut s);  // Pass a mutable reference\n    \n    println!(\"{}\", s);\n}\n\nfn change(some_string: &mut String) {\n    some_string.push_str(\", world\");\n}",
+          "output": "hello, world"
+        },
+        {
+          "type": "paragraph",
+          "value": "Mutable references allow you to modify the borrowed value. You must declare the original variable as mut, use &mut to create the reference, and declare the function parameter as &mut. This explicitness makes it clear where mutation can occur."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The Borrowing Rules"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust enforces strict borrowing rules to prevent data races:\n\n1. At any given time, you can have EITHER one mutable reference OR any number of immutable references.\n2. References must always be valid (no dangling references).\n\nThese rules are checked at compile time, preventing data races without runtime overhead."
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let mut s = String::from(\"hello\");\n    \n    let r1 = &s;  // Immutable reference\n    let r2 = &s;  // Another immutable reference — OK!\n    println!(\"{} and {}\", r1, r2);\n    // r1 and r2 are no longer used after this point\n    \n    let r3 = &mut s;  // Mutable reference — OK now!\n    println!(\"{}\", r3);\n}",
+          "output": "hello and hello\nhello"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Dangling References"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "// This code will NOT compile:\n// fn main() {\n//     let reference_to_nothing = dangle();\n// }\n//\n// fn dangle() -> &String {\n//     let s = String::from(\"hello\");\n//     &s  // ERROR: s will be dropped, reference becomes dangling!\n// }\n\n// Correct version:\nfn main() {\n    let s = no_dangle();\n    println!(\"{}\", s);\n}\n\nfn no_dangle() -> String {\n    let s = String::from(\"hello\");\n    s  // Return the String itself, ownership moves to caller\n}",
+          "output": "hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "Rust prevents dangling references at compile time. If you try to return a reference to data that will be dropped, the compiler will refuse to compile. You must return the owned value instead."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How many mutable references can you have to a value at one time?",
+          "options": [
+            "Any number",
+            "Exactly one",
+            "Up to two",
+            "It depends on the type"
+          ],
+          "correctAnswer": "Exactly one",
+          "explanation": "Rust allows only ONE mutable reference at a time to prevent data races. This is checked at compile time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What symbol creates a reference in Rust?",
+          "options": [
+            "*",
+            "&",
+            "@",
+            "#"
+          ],
+          "correctAnswer": "&",
+          "explanation": "The ampersand & creates a reference. &mut creates a mutable reference. The asterisk * is used to dereference."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the term for using a reference to access data without taking ownership?",
+          "correctAnswer": "borrowing",
+          "explanation": "Borrowing is the act of creating a reference to use a value temporarily without taking ownership. The original owner retains control."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Slices",
+      "badge": "Ownership",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Slices: References to a Sequence"
+        },
+        {
+          "type": "paragraph",
+          "value": "A slice is a reference to a contiguous sequence of elements in a collection rather than the whole collection. Slices are a special kind of reference that lets you work with a portion of a collection safely."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "String Slices"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s = String::from(\"hello world\");\n    \n    let hello = &s[0..5];   // Slice from index 0 to 4\n    let world = &s[6..11];  // Slice from index 6 to 10\n    \n    println!(\"hello = {}\", hello);\n    println!(\"world = {}\", world);\n    \n    // Shorthand syntax\n    let slice1 = &s[..5];   // From start to index 4\n    let slice2 = &s[6..];   // From index 6 to end\n    let slice3 = &s[..];    // Entire string\n    \n    println!(\"slice1 = {}, slice2 = {}, slice3 = {}\", slice1, slice2, slice3);\n}",
+          "output": "hello = hello\nworld = world\nslice1 = hello, slice2 = world, slice3 = hello world"
+        },
+        {
+          "type": "paragraph",
+          "value": "A string slice (&str) is a reference to part of a String. The syntax [start..end] creates a slice from start (inclusive) to end (exclusive). Omitting the start means from the beginning; omitting the end means to the end."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "String Slices as Function Parameters"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let my_string = String::from(\"hello world\");\n    \n    // Works with String\n    let word = first_word(&my_string);\n    println!(\"First word: {}\", word);\n    \n    // Works with string literals too!\n    let my_string_literal = \"hello world\";\n    let word2 = first_word(my_string_literal);\n    println!(\"First word: {}\", word2);\n}\n\nfn first_word(s: &str) -> &str {\n    let bytes = s.as_bytes();\n    \n    for (i, &item) in bytes.iter().enumerate() {\n        if item == b' ' {\n            return &s[0..i];\n        }\n    }\n    \n    &s[..]\n}",
+          "output": "First word: hello\nFirst word: hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "Using &str as a parameter type is more flexible than &String because it accepts both String references and string literals. A string literal is itself a &str (a slice pointing to a string in the binary). This is why &str is the idiomatic type for string parameters."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Array Slices"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let a = [1, 2, 3, 4, 5];\n    \n    let slice = &a[1..3];  // Elements at index 1 and 2\n    \n    println!(\"slice = {:?}\", slice);\n    println!(\"First element: {}\", slice[0]);\n    println!(\"Length: {}\", slice.len());\n}",
+          "output": "slice = [2, 3]\nFirst element: 2\nLength: 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Slice Safety"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "fn main() {\n    let s = String::from(\"hello\");\n    \n    // let slice = &s[0..20];  // ERROR! Panics at runtime\n    \n    // Safe: Rust checks bounds at runtime for slices\n    let slice = &s[0..5];\n    println!(\"{}\", slice);\n}",
+          "output": "hello"
+        },
+        {
+          "type": "paragraph",
+          "value": "Slice indices are checked at runtime. If you try to create a slice beyond the bounds of the data, the program will panic. This prevents buffer overruns, a common source of security vulnerabilities in C and C++."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the type of a string literal like \"hello\"?",
+          "options": [
+            "String",
+            "&str",
+            "char",
+            "&String"
+          ],
+          "correctAnswer": "&str",
+          "explanation": "String literals are stored in the program binary and are of type &str — a slice pointing to that string data."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is &str preferred over &String for function parameters?",
+          "options": [
+            "It is faster",
+            "It accepts both String references and string literals",
+            "It uses less memory",
+            "It is required by the compiler"
+          ],
+          "correctAnswer": "It accepts both String references and string literals",
+          "explanation": "&str is more flexible because it can accept both &String (via deref coercion) and string literals directly."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What does the slice syntax [..] represent?",
+          "correctAnswer": "the entire collection",
+          "explanation": "The [..] slice syntax creates a reference to the entire collection, from start to end."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: Structs — Defining Custom Types",
+      "badge": "Structs",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Creating Your Own Data Types"
+        },
+        {
+          "type": "paragraph",
+          "value": "A struct (short for structure) is a custom data type that lets you package together multiple related values. Unlike tuples, each piece of data in a struct has a name, making the code more readable and self-documenting."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Defining and Instantiating Structs"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct User {\n    username: String,\n    email: String,\n    sign_in_count: u64,\n    active: bool,\n}\n\nfn main() {\n    let user1 = User {\n        email: String::from(\"alice@example.com\"),\n        username: String::from(\"alice123\"),\n        active: true,\n        sign_in_count: 1,\n    };\n    \n    println!(\"Username: {}\", user1.username);\n    println!(\"Email: {}\", user1.email);\n    println!(\"Active: {}\", user1.active);\n    println!(\"Sign-ins: {}\", user1.sign_in_count);\n}",
+          "output": "Username: alice123\nEmail: alice@example.com\nActive: true\nSign-ins: 1"
+        },
+        {
+          "type": "paragraph",
+          "value": "Structs are defined with the struct keyword followed by the name and a block of named fields. Each field has a name and a type. To create an instance, specify the struct name and provide values for each field using field_name: value syntax."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Mutable Structs"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct User {\n    username: String,\n    email: String,\n    sign_in_count: u64,\n    active: bool,\n}\n\nfn main() {\n    let mut user1 = User {\n        email: String::from(\"alice@example.com\"),\n        username: String::from(\"alice123\"),\n        active: true,\n        sign_in_count: 1,\n    };\n    \n    user1.email = String::from(\"alice.new@example.com\");\n    user1.sign_in_count += 1;\n    \n    println!(\"New email: {}\", user1.email);\n    println!(\"Sign-ins: {}\", user1.sign_in_count);\n}",
+          "output": "New email: alice.new@example.com\nSign-ins: 2"
+        },
+        {
+          "type": "paragraph",
+          "value": "Entire instances must be mutable; Rust does not allow marking individual fields as mutable. Use the mut keyword before the instance name to make all fields mutable."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Struct Update Syntax"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct User {\n    username: String,\n    email: String,\n    sign_in_count: u64,\n    active: bool,\n}\n\nfn main() {\n    let user1 = User {\n        email: String::from(\"alice@example.com\"),\n        username: String::from(\"alice123\"),\n        active: true,\n        sign_in_count: 1,\n    };\n    \n    // Create user2 based on user1, changing only the email\n    let user2 = User {\n        email: String::from(\"bob@example.com\"),\n        ..user1  // Use the remaining fields from user1\n    };\n    \n    println!(\"user2: {} at {}\", user2.username, user2.email);\n    // user1.username is now invalid (moved)!\n}",
+          "output": "user2: alice123 at bob@example.com"
+        },
+        {
+          "type": "paragraph",
+          "value": "The ..user1 syntax copies or moves the remaining fields from user1. Be careful: if a field implements Copy, it's copied; otherwise, it's moved and the original instance can no longer use that field."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Tuple Structs"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct Color(i32, i32, i32);\nstruct Point(i32, i32, i32);\n\nfn main() {\n    let black = Color(0, 0, 0);\n    let origin = Point(0, 0, 0);\n    \n    // Access by index\n    println!(\"Red: {}\", black.0);\n    println!(\"X: {}\", origin.0);\n    \n    // Color and Point are different types!\n    // let p: Color = origin;  // ERROR: mismatched types\n}",
+          "output": "Red: 0\nX: 0"
+        },
+        {
+          "type": "paragraph",
+          "value": "Tuple structs are useful when you want a tuple with a name to distinguish it from other tuples. Color and Point both contain three i32 values, but they are different types. You access fields with dot notation and the index."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Unit-Like Structs"
+        },
+        {
+          "type": "code",
+          "language": "rust",
+          "value": "struct AlwaysEqual;\n\nfn main() {\n    let subject = AlwaysEqual;\n    // Useful for traits and type-level programming\n}",
+          "output": ""
+        },
+        {
+          "type": "paragraph",
+          "value": "Unit-like structs have no fields. They are useful when you need to implement a trait on a type but don't need to store any data. We'll cover traits in a later chapter."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Can you mark individual fields of a struct as mutable?",
+          "options": [
+            "Yes, with the mut keyword on the field",
+            "No, the entire instance must be mutable",
+            "Yes, but only for Copy types",
+            "Only inside unsafe blocks"
+          ],
+          "correctAnswer": "No, the entire instance must be mutable",
+          "explanation": "Rust does not allow field-level mutability. You must mark the entire instance as mut to change any field."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the ..instance syntax do in struct initialization?",
+          "options": [
+            "It deletes the instance",
+            "It copies/moves remaining fields from another instance",
+            "It creates a deep clone",
+            "It compares two instances"
+          ],
+          "correctAnswer": "It copies/moves remaining fields from another instance",
+          "explanation": "The .. syntax in struct initialization uses the remaining fields from another instance. Copy types are copied; non-Copy types are moved."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword is used to define a custom data type with named fields?",
+          "correctAnswer": "struct",
+          "explanation": "The struct keyword defines a structure — a custom type with named fields that package related data together."
+        }
+      ]
     }
   ]
 }
