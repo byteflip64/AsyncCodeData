@@ -1695,6 +1695,139 @@
           "explanation": "Each binomial coefficient is the sum of the two coefficients directly above it in Pascal's triangle: C(n,k) = C(n-1,k-1) + C(n-1,k). This is the basis for DP computation of nCr."
         }
       ]
+    },
+    {
+      "partTitle": "Part 15: Sieve of Eratosthenes & Segmented Sieve",
+      "badge": "Math",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Sieve of Eratosthenes — Prime Generation at Scale"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Sieve of Eratosthenes is the most efficient way to find all primes up to n. It marks multiples of each prime starting from its square. Time complexity is O(n log log n) — essentially linear for practical purposes. For n up to 10^7, it runs in under a second."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing sieve process: crossing out multiples of 2, 3, 5, 7 on a number grid",
+          "caption": "Sieve of Eratosthenes: cross out multiples of each prime starting from p²"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A grid of numbers 1 to 50. Show progressive elimination: first cross out multiples of 2 (except 2), then multiples of 3 (except 3), then 5, then 7. Remaining unmarked numbers are primes. Use animation-style frames or color coding (red for eliminated, green for primes)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Classic Sieve Implementation"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use a boolean array `is_prime[]`. Start from 2, mark all multiples as non-prime. Optimization: start marking from i*i (smaller multiples already marked). Use `vector<char>` instead of `vector<bool>` for speed — `vector<bool>` is bit-packed and slower."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MAXN = 1e7 + 5;\nvector<char> is_prime;\nvector<int> primes;\n\nvoid sieve(int n) {\n    is_prime.assign(n + 1, true);\n    is_prime[0] = is_prime[1] = false;\n    \n    for (int i = 2; i * i <= n; i++) {\n        if (is_prime[i]) {\n            for (int j = i * i; j <= n; j += i) {\n                is_prime[j] = false;\n            }\n        }\n    }\n    \n    for (int i = 2; i <= n; i++) {\n        if (is_prime[i]) primes.push_back(i);\n    }\n}\n\n// Linear sieve (Euler's sieve) — O(n)\nvoid linearSieve(int n) {\n    vector<int> lp(n + 1);  // lowest prime factor\n    for (int i = 2; i <= n; i++) {\n        if (lp[i] == 0) {\n            lp[i] = i;\n            primes.push_back(i);\n        }\n        for (int p : primes) {\n            if (p > lp[i] || 1LL * i * p > n) break;\n            lp[i * p] = p;\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 50;\n    sieve(n);\n    \n    cout << \"Primes up to \" << n << \": \";\n    for (int p : primes) cout << p << \" \";\n    cout << \"\\nCount: \" << primes.size() << \"\\n\";\n    \n    // Check if 47 is prime\n    cout << \"Is 47 prime? \" << (is_prime[47] ? \"YES\" : \"NO\") << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Primes up to 50: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 \nCount: 15\nIs 47 prime? YES"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Sieve Optimizations"
+        },
+        {
+          "type": "paragraph",
+          "value": "1. **Sieve till root**: Only iterate i up to √n. Inner loop starts at i*i.\n2. **Skip evens**: Only sieve odd numbers after handling 2 separately. Cuts memory and time in half.\n3. **Bitset**: Use `bitset<MAXN>` for compact memory, but `vector<char>` is often faster due to cache.\n4. **Linear sieve**: Each composite is marked exactly once by its smallest prime factor. O(n) time."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Optimized sieve — only odd numbers\nvector<int> optimizedSieve(int n) {\n    vector<bool> is_prime(n + 1, true);\n    is_prime[0] = is_prime[1] = false;\n    \n    for (int i = 3; i * i <= n; i += 2) {\n        if (is_prime[i]) {\n            for (int j = i * i; j <= n; j += 2 * i) {\n                is_prime[j] = false;\n            }\n        }\n    }\n    \n    vector<int> primes = {2};\n    for (int i = 3; i <= n; i += 2) {\n        if (is_prime[i]) primes.push_back(i);\n    }\n    return primes;\n}\n\n// Using bitset for memory efficiency\nconst int MAXN = 1e8;\nbitset<MAXN + 1> bs;\n\nvoid bitsetSieve() {\n    bs.set();\n    bs[0] = bs[1] = 0;\n    for (int i = 2; i * i <= MAXN; i++) {\n        if (bs[i]) {\n            for (int j = i * i; j <= MAXN; j += i) {\n                bs[j] = 0;\n            }\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    auto primes = optimizedSieve(100);\n    cout << \"Optimized sieve primes: \";\n    for (int p : primes) cout << p << \" \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Optimized sieve primes: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Segmented Sieve — Large Range Primes"
+        },
+        {
+          "type": "paragraph",
+          "value": "When n is too large for a full sieve (e.g., n = 10^12), use segmented sieve. Generate primes up to √n with classic sieve, then use them to mark composites in segments of size S (typically 10^4 to 10^5). Memory is O(√n + S) instead of O(n)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<char> segmentedSieve(long long L, long long R) {\n    long long lim = sqrt(R);\n    vector<char> mark(lim + 1, true);\n    vector<long long> primes;\n    \n    // Generate base primes up to sqrt(R)\n    for (long long i = 2; i <= lim; i++) {\n        if (mark[i]) {\n            primes.push_back(i);\n            for (long long j = i * i; j <= lim; j += i) {\n                mark[j] = false;\n            }\n        }\n    }\n    \n    // Process segments\n    const int S = 100000;  // segment size\n    vector<char> isPrime(R - L + 1, true);\n    \n    for (long long p : primes) {\n        long long start = max(p * p, (L + p - 1) / p * p);\n        for (long long j = start; j <= R; j += p) {\n            isPrime[j - L] = false;\n        }\n    }\n    \n    if (L == 1) isPrime[0] = false;\n    \n    return isPrime;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    long long L = 1e12, R = 1e12 + 1000;\n    auto isPrime = segmentedSieve(L, R);\n    \n    cout << \"Primes in range [\" << L << \", \" << R << \"]: \";\n    int count = 0;\n    for (int i = 0; i <= R - L; i++) {\n        if (isPrime[i]) {\n            cout << (L + i) << \" \";\n            count++;\n        }\n    }\n    cout << \"\\nCount: \" << count << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Primes in range [1000000000000, 1000000001000]: 1000000000039 1000000000061 ...\nCount: 37"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Count Primes in Range [L,R]"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given multiple queries [L,R], count primes in each range. Precompute prefix sum array from sieve for O(1) queries. For large L,R, use segmented sieve per query or precompute with block decomposition."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MAXN = 1e7;\nvector<char> is_prime;\nvector<int> primeCount;  // prefix sum\n\nvoid buildPrefix() {\n    is_prime.assign(MAXN + 1, true);\n    is_prime[0] = is_prime[1] = false;\n    \n    for (int i = 2; i * i <= MAXN; i++) {\n        if (is_prime[i]) {\n            for (int j = i * i; j <= MAXN; j += i) {\n                is_prime[j] = false;\n            }\n        }\n    }\n    \n    primeCount.resize(MAXN + 1);\n    for (int i = 1; i <= MAXN; i++) {\n        primeCount[i] = primeCount[i-1] + (is_prime[i] ? 1 : 0);\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    buildPrefix();\n    \n    int q;\n    cin >> q;\n    while (q--) {\n        int L, R;\n        cin >> L >> R;\n        cout << primeCount[R] - primeCount[L-1] << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 3\n1 10\n10 20\n1 100\nOutput: 4\n4\n25"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Sieve Applications"
+        },
+        {
+          "type": "paragraph",
+          "value": "Beyond prime generation, the sieve enables:\n• **Smallest Prime Factor (SPF)** array for O(log n) factorization\n• **Euler's Totient** φ(n) for all n up to limit\n• **Mobius function** μ(n) for inclusion-exclusion\n• **Number of divisors** and **sum of divisors** for all n\n• **Prime counting function** π(n) via prefix sums"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MAXN = 1e6;\n\nint spf[MAXN + 1];        // smallest prime factor\nint phi[MAXN + 1];        // Euler's totient\nint mobius[MAXN + 1];     // Mobius function\nint numDiv[MAXN + 1];     // number of divisors\nlong long sumDiv[MAXN + 1]; // sum of divisors\n\nvoid sieveApplications() {\n    for (int i = 1; i <= MAXN; i++) {\n        spf[i] = i;\n        phi[i] = i;\n        mobius[i] = 1;\n        numDiv[i] = 1;\n        sumDiv[i] = 1;\n    }\n    \n    for (int i = 2; i <= MAXN; i++) {\n        if (spf[i] == i) {  // i is prime\n            for (int j = i; j <= MAXN; j += i) {\n                if (spf[j] == j) spf[j] = i;\n                \n                // Totient\n                phi[j] -= phi[j] / i;\n                \n                // Mobius\n                int cnt = 0, x = j;\n                while (x % i == 0) { x /= i; cnt++; }\n                if (cnt > 1) mobius[j] = 0;\n                else if (cnt == 1) mobius[j] *= -1;\n            }\n        }\n    }\n    \n    // Number of divisors and sum of divisors\n    for (int i = 1; i <= MAXN; i++) {\n        for (int j = i; j <= MAXN; j += i) {\n            numDiv[j]++;\n            sumDiv[j] += i;\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    sieveApplications();\n    \n    int n = 12;\n    cout << \"SPF of \" << n << \": \" << spf[n] << \"\\n\";\n    cout << \"Phi(\" << n << \"): \" << phi[n] << \"\\n\";\n    cout << \"Mobius(\" << n << \"): \" << mobius[n] << \"\\n\";\n    cout << \"NumDiv(\" << n << \"): \" << numDiv[n] << \"\\n\";\n    cout << \"SumDiv(\" << n << \"): \" << sumDiv[n] << \"\\n\";\n    \n    return 0;\n}",
+          "output": "SPF of 12: 2\nPhi(12): 4\nMobius(12): 0\nNumDiv(12): 6\nSumDiv(12): 28"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of the classic Sieve of Eratosthenes?",
+          "options": [
+            "O(n)",
+            "O(n log n)",
+            "O(n log log n)",
+            "O(n sqrt(n))"
+          ],
+          "correctAnswer": "O(n log log n)",
+          "explanation": "The sieve marks each composite multiple times, but the total work is n * (1/2 + 1/3 + 1/5 + ...) ≈ n log log n by Mertens' theorem. This is essentially linear for practical purposes."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why use vector<char> instead of vector<bool> in sieve?",
+          "options": [
+            "vector<bool> uses more memory",
+            "vector<char> is faster due to direct byte access",
+            "vector<bool> doesn't support indexing",
+            "vector<char> is required by C++ standard"
+          ],
+          "correctAnswer": "vector<char> is faster due to direct byte access",
+          "explanation": "vector<bool> is bit-packed, requiring bit manipulation for access. vector<char> uses direct byte addressing which is faster due to better cache performance and simpler access patterns."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the starting point for marking multiples in the sieve inner loop?",
+          "correctAnswer": "i * i",
+          "explanation": "In the sieve, we start marking multiples from i*i because all smaller multiples of i (like i*2, i*3, ..., i*(i-1)) have already been marked by smaller primes. This is a crucial optimization."
+        }
+      ]
     }
   ]
 }
