@@ -1727,6 +1727,587 @@
           "explanation": "The Stream API provides declarative operations like filter, map, sorted, and collect. It enables functional-style processing of collections without modifying the source."
         }
       ]
+    },
+    {
+      "partTitle": "Part 21: JDBC and Database Connectivity",
+      "badge": "Database",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Connecting Java to Databases"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java Database Connectivity (JDBC) is the standard API for connecting Java applications to relational databases. It provides a uniform interface to interact with MySQL, PostgreSQL, SQLite, Oracle, and others. Modern Java also offers higher-level alternatives like JPA/Hibernate, but understanding JDBC is essential."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Setting Up JDBC"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Maven dependency for SQLite (zero-config, great for learning)\n// <dependency>\n//   <groupId>org.xerial</groupId>\n//   <artifactId>sqlite-jdbc</artifactId>\n//   <version>3.45.0.0</version>\n// </dependency>\n\nimport java.sql.*;\n\npublic class JdbcSetup {\n    public static void main(String[] args) {\n        String url = \"jdbc:sqlite:mydb.db\";\n        \n        // Load driver (optional in modern JDBC — auto-loaded)\n        try {\n            Class.forName(\"org.sqlite.JDBC\");\n        } catch (ClassNotFoundException e) {\n            e.printStackTrace();\n        }\n        \n        // Establish connection\n        try (Connection conn = DriverManager.getConnection(url)) {\n            if (conn != null) {\n                DatabaseMetaData meta = conn.getMetaData();\n                System.out.println(\"Driver: \" + meta.getDriverName());\n                System.out.println(\"Database: \" + meta.getDatabaseProductName());\n            }\n        } catch (SQLException e) {\n            System.out.println(e.getMessage());\n        }\n    }\n}",
+          "output": "Driver: SQLite JDBC\nDatabase: SQLite"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CRUD Operations"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.sql.*;\nimport java.util.*;\n\npublic class JdbcCrud {\n    private static final String URL = \"jdbc:sqlite:company.db\";\n    \n    public static void init() {\n        String sql = \"CREATE TABLE IF NOT EXISTS employees (\" +\n                     \"id INTEGER PRIMARY KEY AUTOINCREMENT,\" +\n                     \"name TEXT NOT NULL,\" +\n                     \"department TEXT,\" +\n                     \"salary REAL)\";\n        try (Connection conn = DriverManager.getConnection(URL);\n             Statement stmt = conn.createStatement()) {\n            stmt.execute(sql);\n            System.out.println(\"Table created\");\n        } catch (SQLException e) {\n            e.printStackTrace();\n        }\n    }\n    \n    // CREATE\n    public static void insert(String name, String dept, double salary) {\n        String sql = \"INSERT INTO employees(name, department, salary) VALUES(?, ?, ?)\";\n        try (Connection conn = DriverManager.getConnection(URL);\n             PreparedStatement pstmt = conn.prepareStatement(sql)) {\n            pstmt.setString(1, name);\n            pstmt.setString(2, dept);\n            pstmt.setDouble(3, salary);\n            pstmt.executeUpdate();\n            System.out.println(\"Inserted: \" + name);\n        } catch (SQLException e) {\n            e.printStackTrace();\n        }\n    }\n    \n    // READ\n    public static List<Employee> getAll() {\n        List<Employee> list = new ArrayList<>();\n        String sql = \"SELECT * FROM employees\";\n        try (Connection conn = DriverManager.getConnection(URL);\n             Statement stmt = conn.createStatement();\n             ResultSet rs = stmt.executeQuery(sql)) {\n            while (rs.next()) {\n                list.add(new Employee(\n                    rs.getInt(\"id\"),\n                    rs.getString(\"name\"),\n                    rs.getString(\"department\"),\n                    rs.getDouble(\"salary\")\n                ));\n            }\n        } catch (SQLException e) {\n            e.printStackTrace();\n        }\n        return list;\n    }\n    \n    // UPDATE\n    public static void updateSalary(int id, double newSalary) {\n        String sql = \"UPDATE employees SET salary = ? WHERE id = ?\";\n        try (Connection conn = DriverManager.getConnection(URL);\n             PreparedStatement pstmt = conn.prepareStatement(sql)) {\n            pstmt.setDouble(1, newSalary);\n            pstmt.setInt(2, id);\n            int rows = pstmt.executeUpdate();\n            System.out.println(rows + \" row(s) updated\");\n        } catch (SQLException e) {\n            e.printStackTrace();\n        }\n    }\n    \n    // DELETE\n    public static void delete(int id) {\n        String sql = \"DELETE FROM employees WHERE id = ?\";\n        try (Connection conn = DriverManager.getConnection(URL);\n             PreparedStatement pstmt = conn.prepareStatement(sql)) {\n            pstmt.setInt(1, id);\n            pstmt.executeUpdate();\n            System.out.println(\"Deleted ID: \" + id);\n        } catch (SQLException e) {\n            e.printStackTrace();\n        }\n    }\n    \n    public static void main(String[] args) {\n        init();\n        insert(\"Alice\", \"Engineering\", 85000);\n        insert(\"Bob\", \"HR\", 60000);\n        insert(\"Charlie\", \"Engineering\", 92000);\n        \n        System.out.println(\"\\nAll employees:\");\n        getAll().forEach(System.out::println);\n        \n        updateSalary(2, 65000);\n        delete(3);\n        \n        System.out.println(\"\\nAfter updates:\");\n        getAll().forEach(System.out::println);\n    }\n}\n\nrecord Employee(int id, String name, String department, double salary) {}",
+          "output": "Table created\nInserted: Alice\nInserted: Bob\nInserted: Charlie\n\nAll employees:\nEmployee[id=1, name=Alice, department=Engineering, salary=85000.0]\nEmployee[id=2, name=Bob, department=HR, salary=60000.0]\nEmployee[id=3, name=Charlie, department=Engineering, salary=92000.0]\n\n1 row(s) updated\nDeleted ID: 3\n\nAfter updates:\nEmployee[id=1, name=Alice, department=Engineering, salary=85000.0]\nEmployee[id=2, name=Bob, department=HR, salary=65000.0]"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "PreparedStatement vs Statement"
+        },
+        {
+          "type": "paragraph",
+          "value": "Always use PreparedStatement for queries with parameters. It prevents SQL injection attacks by escaping special characters, and it's more efficient for repeated executions because the database can cache the execution plan. Statement is only safe for static queries with no user input."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Connection Pooling with HikariCP"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import com.zaxxer.hikari.HikariConfig;\nimport com.zaxxer.hikari.HikariDataSource;\nimport java.sql.*;\n\npublic class ConnectionPool {\n    private static final HikariDataSource dataSource;\n    \n    static {\n        HikariConfig config = new HikariConfig();\n        config.setJdbcUrl(\"jdbc:postgresql://localhost/mydb\");\n        config.setUsername(\"user\");\n        config.setPassword(\"pass\");\n        config.setMaximumPoolSize(10);\n        config.setConnectionTimeout(30000);\n        dataSource = new HikariDataSource(config);\n    }\n    \n    public static Connection getConnection() throws SQLException {\n        return dataSource.getConnection();\n    }\n    \n    public static void close() {\n        dataSource.close();\n    }\n    \n    // Usage: try (Connection conn = ConnectionPool.getConnection()) { ... }\n}",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which class prevents SQL injection when executing queries with parameters?",
+          "options": [
+            "Statement",
+            "PreparedStatement",
+            "ResultSet",
+            "Connection"
+          ],
+          "correctAnswer": "PreparedStatement",
+          "explanation": "PreparedStatement pre-compiles the SQL and safely binds parameters, preventing SQL injection. Never concatenate user input into Statement queries."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all JDBC components needed for a complete database query:",
+          "options": [
+            "DriverManager",
+            "Connection",
+            "Statement / PreparedStatement",
+            "ResultSet",
+            "DatabaseMetaData"
+          ],
+          "correctAnswers": [
+            "Connection",
+            "Statement / PreparedStatement",
+            "ResultSet"
+          ],
+          "explanation": "The minimum required components are: Connection (to the DB), Statement/PreparedStatement (to execute SQL), and ResultSet (to read results). DriverManager is only used to obtain the connection, and DatabaseMetaData is optional for introspection."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does try-with-resources automatically close in JDBC?",
+          "options": [
+            "Only Connection",
+            "Connection and Statement",
+            "Connection, Statement, and ResultSet",
+            "Nothing — manual close required"
+          ],
+          "correctAnswer": "Connection, Statement, and ResultSet",
+          "explanation": "All three implement AutoCloseable. When declared in try-with-resources, they are closed in reverse order of opening, even if an exception occurs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What interface is used to iterate over query results row by row?",
+          "correctAnswer": "ResultSet",
+          "explanation": "ResultSet represents the results of a query. Use rs.next() to iterate rows, and rs.getInt(), rs.getString(), etc. to extract column values."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 22: Java Memory Management and JVM",
+      "badge": "JVM",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Understanding the Java Virtual Machine"
+        },
+        {
+          "type": "paragraph",
+          "value": "The JVM (Java Virtual Machine) is what makes Java platform-independent. Understanding how it manages memory, executes code, and optimizes performance is crucial for writing efficient Java applications and debugging memory issues."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "JVM Architecture Overview"
+        },
+        {
+          "type": "paragraph",
+          "value": "The JVM consists of several components:\n• Class Loader: Loads .class files into memory\n• Runtime Data Areas: Method Area, Heap, Stack, PC Register, Native Method Stack\n• Execution Engine: Interpreter, JIT Compiler, Garbage Collector\n• Native Method Interface: Bridges Java and native (C/C++) code"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Heap Memory Structure"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class HeapDemo {\n    public static void main(String[] args) {\n        // Get runtime info\n        Runtime runtime = Runtime.getRuntime();\n        \n        long maxMemory = runtime.maxMemory();\n        long totalMemory = runtime.totalMemory();\n        long freeMemory = runtime.freeMemory();\n        long usedMemory = totalMemory - freeMemory;\n        \n        System.out.println(\"Max heap: \" + bytesToMB(maxMemory) + \" MB\");\n        System.out.println(\"Total heap: \" + bytesToMB(totalMemory) + \" MB\");\n        System.out.println(\"Free heap: \" + bytesToMB(freeMemory) + \" MB\");\n        System.out.println(\"Used heap: \" + bytesToMB(usedMemory) + \" MB\");\n        \n        // Allocate objects to see heap grow\n        for (int i = 0; i < 1_000_000; i++) {\n            new Object();  // These become eligible for GC immediately\n        }\n        \n        System.gc();  // Suggest GC (not guaranteed)\n        \n        System.out.println(\"\\nAfter allocation + GC suggestion:\");\n        System.out.println(\"Used heap: \" + bytesToMB(runtime.totalMemory() - runtime.freeMemory()) + \" MB\");\n    }\n    \n    static long bytesToMB(long bytes) {\n        return bytes / (1024 * 1024);\n    }\n}",
+          "output": "Max heap: 4096 MB\nTotal heap: 256 MB\nFree heap: 245 MB\nUsed heap: 11 MB\n\nAfter allocation + GC suggestion:\nUsed heap: 8 MB"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Garbage Collection"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class GarbageCollection {\n    public static void main(String[] args) {\n        // Object 1: referenced, NOT eligible for GC\n        Person p1 = new Person(\"Alice\");\n        \n        // Object 2: loses reference, becomes eligible for GC\n        Person p2 = new Person(\"Bob\");\n        p2 = null;\n        \n        // Object 3: reference reassigned, old object eligible for GC\n        Person p3 = new Person(\"Charlie\");\n        p3 = new Person(\"Dave\");  // \"Charlie\" object is now unreachable\n        \n        // Object 4: inside method, eligible after method returns\n        createTemporary();\n        \n        // Request GC (for demonstration only — never do this in production)\n        System.gc();\n        \n        System.out.println(\"Still alive: \" + p1.name);\n        System.out.println(\"Still alive: \" + p3.name);\n    }\n    \n    static void createTemporary() {\n        Person temp = new Person(\"Temporary\");\n        // temp is eligible for GC after this method returns\n    }\n}\n\nclass Person {\n    String name;\n    Person(String name) { this.name = name; }\n    \n    @Override\n    protected void finalize() {\n        System.out.println(name + \" is being garbage collected\");\n    }\n}",
+          "output": "Bob is being garbage collected\nCharlie is being garbage collected\nTemporary is being garbage collected\nStill alive: Alice\nStill alive: Dave"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stack vs Heap"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Feature | Stack | Heap |\n|---------|-------|------|\n| Stores | Local variables, method calls | Objects and instance variables |\n| Size | Small, fixed per thread | Large, shared across threads |\n| Lifetime | Method execution | Until garbage collected |\n| Speed | Very fast allocation/deallocation | Slower, requires GC |\n| Thread-safe | Yes (each thread has its own) | No (shared, needs synchronization) |\n\nPrimitives and object references live on the stack. Actual objects live on the heap."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common JVM Flags"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Set initial and maximum heap size\njava -Xms512m -Xmx2g MyApp\n\n# Print GC details\njava -XX:+PrintGCDetails -XX:+PrintGCTimeStamps MyApp\n\n# Use G1 Garbage Collector (default in Java 9+)\njava -XX:+UseG1GC MyApp\n\n# Generate heap dump on OutOfMemoryError\njava -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/dump.hprof MyApp\n\n# Enable JVM ergonomics for containers\njava -XX:+UseContainerSupport MyApp",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Where are Java objects stored?",
+          "options": [
+            "Stack",
+            "Heap",
+            "Method Area",
+            "PC Register"
+          ],
+          "correctAnswer": "Heap",
+          "explanation": "All objects and their instance variables are allocated on the heap. The stack only holds primitive values and object references (pointers)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all things that are stored on the Java stack:",
+          "options": [
+            "Local variables",
+            "Object references",
+            "Actual objects",
+            "Method parameters",
+            "Static fields",
+            "Return addresses"
+          ],
+          "correctAnswers": [
+            "Local variables",
+            "Object references",
+            "Method parameters",
+            "Return addresses"
+          ],
+          "explanation": "The stack stores local variables, method parameters, object references (not the objects themselves), and return addresses. Actual objects and static fields live on the heap or method area."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What makes an object eligible for garbage collection?",
+          "options": [
+            "Calling delete() on it",
+            "No reachable references point to it",
+            "Calling System.gc()",
+            "Setting all fields to null"
+          ],
+          "correctAnswer": "No reachable references point to it",
+          "explanation": "An object is GC-eligible when it has no reachable references from any GC root (local variables, static fields, active threads). System.gc() is only a suggestion, not a command."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What flag sets the maximum heap size for the JVM?",
+          "correctAnswer": "-Xmx",
+          "explanation": "-Xmx sets the maximum heap size (e.g., -Xmx2g for 2GB). -Xms sets the initial heap size. These are the most commonly tuned JVM parameters."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 23: Unit Testing with JUnit 5",
+      "badge": "Testing",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Writing Reliable Tests"
+        },
+        {
+          "type": "paragraph",
+          "value": "Testing is essential for maintaining code quality. JUnit 5 (Jupiter) is the modern standard for Java unit testing. It provides annotations, assertions, parameterized tests, and extension mechanisms. Combined with Mockito for mocking dependencies, you can test classes in isolation."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "JUnit 5 Basics"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import org.junit.jupiter.api.*;\nimport static org.junit.jupiter.api.Assertions.*;\n\npublic class CalculatorTest {\n    private Calculator calc;\n    \n    @BeforeAll  // Runs once before all tests\n    static void initAll() {\n        System.out.println(\"Starting test suite\");\n    }\n    \n    @BeforeEach  // Runs before each test method\n    void init() {\n        calc = new Calculator();\n    }\n    \n    @Test\n    @DisplayName(\"Adding two positive numbers\")\n    void testAdd() {\n        assertEquals(5, calc.add(2, 3), \"2 + 3 should equal 5\");\n    }\n    \n    @Test\n    void testDivide() {\n        assertEquals(2.5, calc.divide(5, 2));\n    }\n    \n    @Test\n    void testDivideByZero() {\n        Exception exception = assertThrows(ArithmeticException.class, () -> {\n            calc.divide(1, 0);\n        });\n        assertEquals(\"Cannot divide by zero\", exception.getMessage());\n    }\n    \n    @Test\n    void testMultipleAssertions() {\n        assertAll(\"Calculator operations\",\n            () -> assertEquals(4, calc.add(2, 2)),\n            () -> assertEquals(0, calc.subtract(2, 2)),\n            () -> assertEquals(4, calc.multiply(2, 2))\n        );\n    }\n    \n    @RepeatedTest(3)\n    void repeatedTest() {\n        assertTrue(calc.add(1, 1) == 2);\n    }\n    \n    @AfterEach\n    void tearDown() {\n        calc = null;\n    }\n    \n    @AfterAll\n    static void tearDownAll() {\n        System.out.println(\"Test suite complete\");\n    }\n}\n\nclass Calculator {\n    int add(int a, int b) { return a + b; }\n    int subtract(int a, int b) { return a - b; }\n    int multiply(int a, int b) { return a * b; }\n    double divide(int a, int b) {\n        if (b == 0) throw new ArithmeticException(\"Cannot divide by zero\");\n        return (double) a / b;\n    }\n}",
+          "output": "Starting test suite\nTest suite complete"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Parameterized and Dynamic Tests"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import org.junit.jupiter.params.*;\nimport org.junit.jupiter.params.provider.*;\nimport static org.junit.jupiter.api.Assertions.*;\n\npublic class ParameterizedTestDemo {\n    \n    // Run same test with multiple values\n    @ParameterizedTest\n    @ValueSource(strings = {\"racecar\", \"radar\", \"level\", \"madam\"})\n    void isPalindrome(String candidate) {\n        assertTrue(isPalindrome(candidate), candidate + \" should be palindrome\");\n    }\n    \n    // CSV source for multiple parameters\n    @ParameterizedTest\n    @CsvSource({\n        \"1, 1, 2\",      // a, b, expected\n        \"2, 3, 5\",\n        \"10, 20, 30\",\n        \"-5, 5, 0\"\n    })\n    void add(int a, int b, int expected) {\n        Calculator calc = new Calculator();\n        assertEquals(expected, calc.add(a, b));\n    }\n    \n    // Method source for complex data\n    @ParameterizedTest\n    @MethodSource(\"provideStringsForIsBlank\")\n    void isBlank(String input, boolean expected) {\n        assertEquals(expected, input == null || input.trim().isEmpty());\n    }\n    \n    static Stream<Arguments> provideStringsForIsBlank() {\n        return Stream.of(\n            Arguments.of(null, true),\n            Arguments.of(\"\", true),\n            Arguments.of(\"  \", true),\n            Arguments.of(\"not blank\", false)\n        );\n    }\n    \n    boolean isPalindrome(String s) {\n        return s.equals(new StringBuilder(s).reverse().toString());\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Mocking with Mockito"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import org.junit.jupiter.api.Test;\nimport org.mockito.*;\nimport static org.mockito.Mockito.*;\nimport static org.junit.jupiter.api.Assertions.*;\n\npublic class MockitoDemo {\n    \n    @Test\n    void testWithMock() {\n        // Create mock object\n        List<String> mockedList = mock(List.class);\n        \n        // Define behavior\n        when(mockedList.get(0)).thenReturn(\"first\");\n        when(mockedList.size()).thenReturn(100);\n        \n        // Use mock\n        assertEquals(\"first\", mockedList.get(0));\n        assertEquals(100, mockedList.size());\n        \n        // Verify interactions\n        verify(mockedList).get(0);\n        verify(mockedList, times(1)).size();\n    }\n    \n    @Test\n    void testServiceWithMockRepository() {\n        // Arrange\n        UserRepository mockRepo = mock(UserRepository.class);\n        when(mockRepo.findById(1)).thenReturn(new User(\"Alice\"));\n        \n        UserService service = new UserService(mockRepo);\n        \n        // Act\n        User user = service.getUser(1);\n        \n        // Assert\n        assertNotNull(user);\n        assertEquals(\"Alice\", user.getName());\n        verify(mockRepo).findById(1);\n    }\n}\n\n// Classes under test\nclass User {\n    private String name;\n    User(String name) { this.name = name; }\n    String getName() { return name; }\n}\n\ninterface UserRepository {\n    User findById(int id);\n}\n\nclass UserService {\n    private final UserRepository repo;\n    UserService(UserRepository repo) { this.repo = repo; }\n    User getUser(int id) { return repo.findById(id); }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Test Lifecycle Annotations"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Annotation | Scope | When it runs |\n|------------|-------|-------------|\n| @BeforeAll | Class | Once before all tests |\n| @BeforeEach | Method | Before every test |\n| @AfterEach | Method | After every test |\n| @AfterAll | Class | Once after all tests |\n| @Test | Method | Marks a test method |\n| @Disabled | Method/Class | Skips the test |\n| @Tag | Method/Class | Categorizes tests |\n\nUse @BeforeEach to create fresh objects, preventing test interdependence."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which assertion checks that code throws a specific exception?",
+          "options": [
+            "assertThrows",
+            "assertException",
+            "assertError",
+            "assertCatch"
+          ],
+          "correctAnswer": "assertThrows",
+          "explanation": "assertThrows(ExceptionClass.class, executable) verifies that the given lambda throws the expected exception. It returns the exception object for further assertion on its message."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid JUnit 5 lifecycle annotations:",
+          "options": [
+            "@BeforeAll",
+            "@BeforeEach",
+            "@BeforeTest",
+            "@AfterAll",
+            "@AfterEach",
+            "@AfterTest",
+            "@Setup",
+            "@Teardown"
+          ],
+          "correctAnswers": [
+            "@BeforeAll",
+            "@BeforeEach",
+            "@AfterAll",
+            "@AfterEach"
+          ],
+          "explanation": "JUnit 5 uses @BeforeAll, @BeforeEach, @AfterEach, and @AfterAll. @Before/@After are from JUnit 4. @Setup/@Teardown and @BeforeTest/@AfterTest are not valid JUnit annotations."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main purpose of Mockito in testing?",
+          "options": [
+            "To speed up test execution",
+            "To create fake/mock objects for dependencies",
+            "To generate test data automatically",
+            "To compile tests faster"
+          ],
+          "correctAnswer": "To create fake/mock objects for dependencies",
+          "explanation": "Mockito creates mock objects that simulate real dependencies (databases, APIs). This lets you test a class in isolation without needing the actual dependency."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What annotation marks a method as a parameterized test in JUnit 5?",
+          "correctAnswer": "@ParameterizedTest",
+          "explanation": "@ParameterizedTest runs the same test logic with different inputs. Pair it with @ValueSource, @CsvSource, or @MethodSource to provide test data."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 24: Design Patterns in Java",
+      "badge": "Patterns",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Proven Solutions to Common Problems"
+        },
+        {
+          "type": "paragraph",
+          "value": "Design patterns are reusable solutions to common software design problems. They are categorized into Creational (object creation), Structural (class/object composition), and Behavioral (communication between objects). Knowing patterns helps you write maintainable, scalable code and communicate effectively with other developers."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Singleton Pattern (Creational)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class Singleton {\n    // Eager initialization\n    private static final Singleton INSTANCE = new Singleton();\n    \n    private Singleton() {\n        System.out.println(\"Singleton created\");\n    }\n    \n    public static Singleton getInstance() {\n        return INSTANCE;\n    }\n    \n    public void doSomething() {\n        System.out.println(\"Doing something\");\n    }\n}\n\n// Thread-safe lazy initialization (better for heavy objects)\nclass LazySingleton {\n    private static volatile LazySingleton instance;\n    \n    private LazySingleton() {}\n    \n    public static LazySingleton getInstance() {\n        if (instance == null) {\n            synchronized (LazySingleton.class) {\n                if (instance == null) {\n                    instance = new LazySingleton();\n                }\n            }\n        }\n        return instance;\n    }\n}\n\n// Modern approach: enum singleton (serialization-safe, thread-safe)\nenum EnumSingleton {\n    INSTANCE;\n    \n    public void doSomething() {\n        System.out.println(\"Enum singleton working\");\n    }\n}\n\n// Usage\npublic class SingletonDemo {\n    public static void main(String[] args) {\n        Singleton s1 = Singleton.getInstance();\n        Singleton s2 = Singleton.getInstance();\n        System.out.println(\"Same instance? \" + (s1 == s2));\n        \n        EnumSingleton.INSTANCE.doSomething();\n    }\n}",
+          "output": "Singleton created\nSame instance? true\nEnum singleton working"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Factory Pattern (Creational)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Product interface\ninterface Notification {\n    void send(String message);\n}\n\n// Concrete products\nclass EmailNotification implements Notification {\n    public void send(String message) {\n        System.out.println(\"Sending EMAIL: \" + message);\n    }\n}\n\nclass SmsNotification implements Notification {\n    public void send(String message) {\n        System.out.println(\"Sending SMS: \" + message);\n    }\n}\n\nclass PushNotification implements Notification {\n    public void send(String message) {\n        System.out.println(\"Sending PUSH: \" + message);\n    }\n}\n\n// Factory\nclass NotificationFactory {\n    public Notification createNotification(String channel) {\n        return switch (channel.toLowerCase()) {\n            case \"email\" -> new EmailNotification();\n            case \"sms\" -> new SmsNotification();\n            case \"push\" -> new PushNotification();\n            default -> throw new IllegalArgumentException(\"Unknown channel: \" + channel);\n        };\n    }\n}\n\n// Usage\npublic class FactoryDemo {\n    public static void main(String[] args) {\n        NotificationFactory factory = new NotificationFactory();\n        \n        Notification email = factory.createNotification(\"email\");\n        email.send(\"Hello via email\");\n        \n        Notification sms = factory.createNotification(\"sms\");\n        sms.send(\"Hello via SMS\");\n    }\n}",
+          "output": "Sending EMAIL: Hello via email\nSending SMS: Hello via SMS"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Observer Pattern (Behavioral)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\n\n// Subject\ninterface NewsAgency {\n    void register(Observer observer);\n    void unregister(Observer observer);\n    void notifyObservers(String news);\n}\n\n// Observer\ninterface Observer {\n    void update(String news);\n}\n\nclass BBCNews implements NewsAgency {\n    private final List<Observer> observers = new ArrayList<>();\n    \n    public void register(Observer o) { observers.add(o); }\n    public void unregister(Observer o) { observers.remove(o); }\n    \n    public void notifyObservers(String news) {\n        for (Observer o : observers) {\n            o.update(news);\n        }\n    }\n    \n    public void publishNews(String news) {\n        System.out.println(\"BBC Publishing: \" + news);\n        notifyObservers(news);\n    }\n}\n\nclass NewsChannel implements Observer {\n    private final String name;\n    \n    NewsChannel(String name) { this.name = name; }\n    \n    public void update(String news) {\n        System.out.println(name + \" received: \" + news);\n    }\n}\n\npublic class ObserverDemo {\n    public static void main(String[] args) {\n        BBCNews bbc = new BBCNews();\n        \n        NewsChannel cnn = new NewsChannel(\"CNN\");\n        NewsChannel fox = new NewsChannel(\"Fox News\");\n        NewsChannel aljazeera = new NewsChannel(\"Al Jazeera\");\n        \n        bbc.register(cnn);\n        bbc.register(fox);\n        bbc.register(aljazeera);\n        \n        bbc.publishNews(\"Breaking: Java 25 released!\");\n        \n        bbc.unregister(fox);\n        System.out.println(\"\\nAfter Fox unsubscribed:\");\n        bbc.publishNews(\"Markets hit record high\");\n    }\n}",
+          "output": "BBC Publishing: Breaking: Java 25 released!\nCNN received: Breaking: Java 25 released!\nFox News received: Breaking: Java 25 released!\nAl Jazeera received: Breaking: Java 25 released!\n\nAfter Fox unsubscribed:\nBBC Publishing: Markets hit record high\nCNN received: Markets hit record high\nAl Jazeera received: Markets hit record high"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Strategy Pattern (Behavioral)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\n\n// Strategy interface\ninterface PaymentStrategy {\n    void pay(double amount);\n}\n\nclass CreditCardPayment implements PaymentStrategy {\n    private String cardNumber;\n    CreditCardPayment(String cardNumber) { this.cardNumber = cardNumber; }\n    public void pay(double amount) {\n        System.out.println(\"Paid $\" + amount + \" using Credit Card ending in \" + cardNumber.substring(12));\n    }\n}\n\nclass PayPalPayment implements PaymentStrategy {\n    private String email;\n    PayPalPayment(String email) { this.email = email; }\n    public void pay(double amount) {\n        System.out.println(\"Paid $\" + amount + \" using PayPal account \" + email);\n    }\n}\n\nclass CryptoPayment implements PaymentStrategy {\n    private String walletAddress;\n    CryptoPayment(String wallet) { this.walletAddress = wallet; }\n    public void pay(double amount) {\n        System.out.println(\"Paid $\" + amount + \" using Crypto wallet \" + walletAddress.substring(0, 6) + \"...\");\n    }\n}\n\n// Context\nclass ShoppingCart {\n    private PaymentStrategy strategy;\n    private final List<Double> items = new ArrayList<>();\n    \n    public void setPaymentStrategy(PaymentStrategy strategy) {\n        this.strategy = strategy;\n    }\n    \n    public void addItem(double price) { items.add(price); }\n    \n    public void checkout() {\n        double total = items.stream().mapToDouble(Double::doubleValue).sum();\n        strategy.pay(total);\n    }\n}\n\npublic class StrategyDemo {\n    public static void main(String[] args) {\n        ShoppingCart cart = new ShoppingCart();\n        cart.addItem(50.0);\n        cart.addItem(25.0);\n        cart.addItem(75.0);\n        \n        // Pay with credit card\n        cart.setPaymentStrategy(new CreditCardPayment(\"1234567890123456\"));\n        cart.checkout();\n        \n        // Switch to PayPal\n        cart.setPaymentStrategy(new PayPalPayment(\"user@example.com\"));\n        cart.checkout();\n        \n        // Switch to crypto\n        cart.setPaymentStrategy(new CryptoPayment(\"0x71C7656EC7ab88b098defB751B7401B5f6d8976F\"));\n        cart.checkout();\n    }\n}",
+          "output": "Paid $150.0 using Credit Card ending in 3456\nPaid $150.0 using PayPal account user@example.com\nPaid $150.0 using Crypto wallet 0x71C7..."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Pattern Quick Reference"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Pattern | Category | Purpose |\n|---------|----------|---------|\n| Singleton | Creational | One instance globally |\n| Factory | Creational | Delegate object creation |\n| Builder | Creational | Construct complex objects step by step |\n| Adapter | Structural | Convert one interface to another |\n| Decorator | Structural | Add behavior dynamically |\n| Observer | Behavioral | Notify dependents of state changes |\n| Strategy | Behavioral | Swap algorithms at runtime |\n| Command | Behavioral | Encapsulate requests as objects |\n\nModern Java features like lambdas, streams, and records reduce the need for some patterns (e.g., Strategy is often replaced by passing a lambda)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which pattern ensures only one instance of a class exists?",
+          "options": [
+            "Factory",
+            "Singleton",
+            "Observer",
+            "Strategy"
+          ],
+          "correctAnswer": "Singleton",
+          "explanation": "Singleton restricts object creation to one instance. Use enum singleton for thread-safety and serialization safety. Be cautious — singletons can make testing difficult."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all creational design patterns:",
+          "options": [
+            "Singleton",
+            "Factory",
+            "Observer",
+            "Builder",
+            "Strategy",
+            "Adapter",
+            "Decorator"
+          ],
+          "correctAnswers": [
+            "Singleton",
+            "Factory",
+            "Builder"
+          ],
+          "explanation": "Creational patterns deal with object creation: Singleton, Factory, Builder, Abstract Factory, Prototype. Observer and Strategy are Behavioral. Adapter and Decorator are Structural."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In the Strategy pattern, what allows switching behavior at runtime?",
+          "options": [
+            "Inheritance",
+            "Composition",
+            "Polymorphism",
+            "Encapsulation"
+          ],
+          "correctAnswer": "Composition",
+          "explanation": "Strategy uses composition — the context class HAS-A strategy interface reference. You can swap the concrete strategy object at runtime, unlike inheritance which is fixed at compile time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Java feature often replaces the Strategy pattern?",
+          "correctAnswer": "lambda",
+          "explanation": "Lambdas let you pass behavior directly as functions, eliminating the need for separate strategy classes. For example, Comparator is now commonly used as a lambda instead of a named class."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 25: Modern Java — Records, Sealed Classes, and Virtual Threads",
+      "badge": "Modern",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Java 14–21 Features You Should Know"
+        },
+        {
+          "type": "paragraph",
+          "value": "Modern Java has evolved significantly. Records (Java 16) reduce boilerplate for data carriers. Sealed classes (Java 17) give you fine-grained control over inheritance. Pattern matching simplifies instanceof checks. Virtual threads (Java 21, Project Loom) revolutionize concurrency by making millions of lightweight threads practical."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Records"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Old way: verbose POJO\nclass OldPerson {\n    private final String name;\n    private final int age;\n    \n    OldPerson(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n    \n    public String getName() { return name; }\n    public int getAge() { return age; }\n    \n    @Override public boolean equals(Object o) { /* ... */ }\n    @Override public int hashCode() { /* ... */ }\n    @Override public String toString() { /* ... */ }\n}\n\n// Modern way: record (immutable, auto-generates constructor, getters, equals, hashCode, toString)\npublic record Person(String name, int age) {}\n\n// Records can have methods and compact constructors\npublic record Point(int x, int y) {\n    // Compact constructor: validation before field assignment\n    public Point {\n        if (x < 0 || y < 0) {\n            throw new IllegalArgumentException(\"Coordinates must be non-negative\");\n        }\n    }\n    \n    // Custom method\n    public double distanceFromOrigin() {\n        return Math.sqrt(x * x + y * y);\n    }\n}\n\npublic class RecordDemo {\n    public static void main(String[] args) {\n        Person p1 = new Person(\"Alice\", 30);\n        Person p2 = new Person(\"Alice\", 30);\n        \n        System.out.println(p1);                    // Person[name=Alice, age=30]\n        System.out.println(p1.name());             // Alice (accessor, not getter!)\n        System.out.println(p1.equals(p2));         // true\n        System.out.println(p1.hashCode() == p2.hashCode()); // true\n        \n        Point pt = new Point(3, 4);\n        System.out.println(\"Distance: \" + pt.distanceFromOrigin());\n    }\n}",
+          "output": "Person[name=Alice, age=30]\nAlice\ntrue\ntrue\nDistance: 5.0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Sealed Classes"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Sealed class: only permits listed subclasses\npublic abstract sealed class Shape\n    permits Circle, Rectangle, Triangle {}\n\npublic final class Circle extends Shape {\n    private final double radius;\n    public Circle(double radius) { this.radius = radius; }\n    public double area() { return Math.PI * radius * radius; }\n}\n\npublic final class Rectangle extends Shape {\n    private final double width, height;\n    public Rectangle(double w, double h) { this.width = w; this.height = h; }\n    public double area() { return width * height; }\n}\n\npublic non-sealed class Triangle extends Shape {\n    // Can be extended further (non-sealed)\n    public double area() { return 0; }\n}\n\n// Exhaustive pattern matching with switch (Java 21)\npublic class SealedDemo {\n    public static void main(String[] args) {\n        Shape shape = new Circle(5);\n        \n        // Compiler knows all possible subtypes — no default needed!\n        String description = switch (shape) {\n            case Circle c -> \"Circle with radius \" + c.area();\n            case Rectangle r -> \"Rectangle with area \" + r.area();\n            case Triangle t -> \"Triangle\";\n        };\n        \n        System.out.println(description);\n    }\n}",
+          "output": "Circle with radius 78.53981633974483"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Virtual Threads (Project Loom, Java 21)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.concurrent.*;\nimport java.util.stream.*;\n\npublic class VirtualThreads {\n    public static void main(String[] args) throws Exception {\n        // Traditional platform threads (expensive, limited to ~10K)\n        System.out.println(\"=== Platform Threads ===\");\n        long start = System.currentTimeMillis();\n        try (var executor = Executors.newFixedThreadPool(100)) {\n            IntStream.range(0, 10_000).forEach(i ->\n                executor.submit(() -> {\n                    Thread.sleep(10);\n                    return i;\n                })\n            );\n        }\n        System.out.println(\"Platform threads took: \" + (System.currentTimeMillis() - start) + \"ms\");\n        \n        // Virtual threads (lightweight, millions possible)\n        System.out.println(\"\\n=== Virtual Threads ===\");\n        start = System.currentTimeMillis();\n        try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {\n            IntStream.range(0, 10_000).forEach(i ->\n                executor.submit(() -> {\n                    Thread.sleep(10);\n                    return i;\n                })\n            );\n        }\n        System.out.println(\"Virtual threads took: \" + (System.currentTimeMillis() - start) + \"ms\");\n        \n        // Virtual thread with Thread.startVirtualThread (Java 21)\n        Thread.startVirtualThread(() -> {\n            System.out.println(\"Running on virtual thread: \" + Thread.currentThread());\n        });\n        \n        Thread.sleep(100);  // Let virtual thread finish\n    }\n}",
+          "output": "=== Platform Threads ===\nPlatform threads took: 1250ms\n\n=== Virtual Threads ===\nVirtual threads took: 180ms\nRunning on virtual thread: VirtualThread[#23]/runnable@ForkJoinPool-1-worker-1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Pattern Matching for switch (Java 21)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class PatternMatching {\n    public static void main(String[] args) {\n        System.out.println(formatter(42));\n        System.out.println(formatter(\"hello\"));\n        System.out.println(formatter(3.14));\n        System.out.println(formatter(null));\n        System.out.println(formatter(new int[]{1, 2, 3}));\n    }\n    \n    static String formatter(Object obj) {\n        return switch (obj) {\n            case Integer i -> \"Integer: \" + i;\n            case String s -> \"String: \" + s.toUpperCase();\n            case Double d -> \"Double: \" + String.format(\"%.2f\", d);\n            case null -> \"null value\";\n            case int[] arr -> \"Array of length \" + arr.length;\n            default -> \"Unknown type: \" + obj.getClass().getSimpleName();\n        };\n    }\n}",
+          "output": "Integer: 42\nString: HELLO\nDouble: 3.14\nnull value\nArray of length 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Text Blocks (Java 15)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class TextBlocks {\n    public static void main(String[] args) {\n        // Old way: messy string concatenation\n        String oldJson = \"{\\n\" +\n            \"  \\\"name\\\": \\\"Alice\\\",\\n\" +\n            \"  \\\"age\\\": 30\\n\" +\n            \"}\";\n        \n        // Modern way: text block (triple quotes)\n        String newJson = \"\"\"\n            {\n              \"name\": \"Alice\",\n              \"age\": 30\n            }\n            \"\"\";\n        \n        // String templates (Java 21 preview) — STR processor\n        String name = \"Bob\";\n        int age = 25;\n        // String message = STR.\"Hello, \\{name}! You are \\{age} years old.\";\n        \n        System.out.println(\"Old JSON:\");\n        System.out.println(oldJson);\n        System.out.println(\"\\nNew JSON:\");\n        System.out.println(newJson);\n    }\n}",
+          "output": "Old JSON:\n{\n  \"name\": \"Alice\",\n  \"age\": 30\n}\n\nNew JSON:\n{\n  \"name\": \"Alice\",\n  \"age\": 30\n}"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does a Java record automatically generate?",
+          "options": [
+            "Only constructor",
+            "Constructor, getters, equals, hashCode, toString",
+            "Only getters and setters",
+            "Nothing — you write everything"
+          ],
+          "correctAnswer": "Constructor, getters, equals, hashCode, toString",
+          "explanation": "Records are immutable data carriers. They auto-generate: canonical constructor, accessor methods (name(), not getName()), equals(), hashCode(), and toString()."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all features introduced in Java 21:",
+          "options": [
+            "Records",
+            "Virtual Threads",
+            "Sealed Classes",
+            "Pattern Matching for switch",
+            "Text Blocks",
+            "var keyword"
+          ],
+          "correctAnswers": [
+            "Virtual Threads",
+            "Pattern Matching for switch"
+          ],
+          "explanation": "Records (Java 16), Sealed Classes (Java 17), Text Blocks (Java 15), and var (Java 10) came earlier. Virtual Threads and Pattern Matching for switch were finalized in Java 21."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main advantage of virtual threads over platform threads?",
+          "options": [
+            "They run faster CPU calculations",
+            "They are lightweight and support millions of concurrent threads",
+            "They use more memory for better caching",
+            "They require no synchronization"
+          ],
+          "correctAnswer": "They are lightweight and support millions of concurrent threads",
+          "explanation": "Virtual threads are managed by the JVM, not the OS. They're cheap to create and block, allowing millions of concurrent threads — ideal for I/O-bound workloads like web servers."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword declares a class that restricts which classes can extend it?",
+          "correctAnswer": "sealed",
+          "explanation": "sealed class Foo permits Bar, Baz {} restricts inheritance to only the listed permitted subclasses. Subclasses must be final, sealed, or non-sealed."
+        }
+      ]
     }
   ]
 }
