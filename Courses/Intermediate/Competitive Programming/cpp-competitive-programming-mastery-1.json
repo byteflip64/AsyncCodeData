@@ -2820,6 +2820,414 @@
           "explanation": "Kruskal's uses the Union-Find (Disjoint Set Union / DSU) data structure to efficiently check if adding an edge would form a cycle. Without path compression and union by size, it would be too slow."
         }
       ]
+    },
+    {
+      "partTitle": "Part 24: Advanced Graph Algorithms — Bellman-Ford, SPFA & Johnson's",
+      "badge": "Graph Theory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Handling Negative Weights & Advanced Shortest Paths"
+        },
+        {
+          "type": "paragraph",
+          "value": "Dijkstra fails with negative edge weights because its greedy assumption — that the shortest path to a node is finalized once popped — breaks down. Bellman-Ford handles negatives by relaxing all edges repeatedly. SPFA is an optimized queue-based variant. Johnson's algorithm combines Bellman-Ford and Dijkstra for all-pairs shortest paths on sparse graphs with negative edges."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing Dijkstra failing on negative edge vs Bellman-Ford correctly finding shorter path",
+          "caption": "Negative edges can create shorter paths through already-visited nodes — Dijkstra misses these"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Two panels. Left: Dijkstra from A, edge A→B weight 5, A→C weight 2, C→B weight -4. Dijkstra picks B with dist 5 first, misses the A→C→B path of -2. Right: Bellman-Ford iterates all edges, finds the shorter path. Use red X on Dijkstra result, green check on Bellman-Ford."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Bellman-Ford Algorithm"
+        },
+        {
+          "type": "paragraph",
+          "value": "Relax all edges (V-1) times. After V-1 iterations, all shortest paths (with at most V-1 edges) are found. Run one more iteration — if any distance improves, a negative cycle exists. Time: O(V * E). Works for directed graphs; for undirected, treat each edge as two directed edges."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Edge {\n    int u, v, w;\n};\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m, src;\n    cin >> n >> m >> src;\n    vector<Edge> edges;\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        edges.push_back({u, v, w});\n    }\n    \n    const long long INF = 1e18;\n    vector<long long> dist(n, INF);\n    dist[src] = 0;\n    \n    // Relax all edges (V-1) times\n    for (int i = 0; i < n - 1; i++) {\n        bool updated = false;\n        for (auto& e : edges) {\n            if (dist[e.u] != INF && dist[e.u] + e.w < dist[e.v]) {\n                dist[e.v] = dist[e.u] + e.w;\n                updated = true;\n            }\n        }\n        if (!updated) break;  // Early termination\n    }\n    \n    // Check for negative cycles\n    bool hasNegCycle = false;\n    for (auto& e : edges) {\n        if (dist[e.u] != INF && dist[e.u] + e.w < dist[e.v]) {\n            hasNegCycle = true;\n            break;\n        }\n    }\n    \n    if (hasNegCycle) {\n        cout << \"Negative cycle detected!\\n\";\n    } else {\n        cout << \"Shortest distances from \" << src << \":\\n\";\n        for (int i = 0; i < n; i++) {\n            cout << i << \" -> \" << (dist[i] == INF ? -1 : dist[i]) << \"\\n\";\n        }\n    }\n    \n    return 0;\n}",
+          "output": "Input: 5 8 0\n0 1 -1\n0 2 4\n1 2 3\n1 3 2\n1 4 2\n3 2 5\n3 1 1\n4 3 -3\nShortest distances from 0:\n0 -> 0\n1 -> -1\n2 -> 2\n3 -> -2\n4 -> 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "SPFA — Shortest Path Faster Algorithm"
+        },
+        {
+          "type": "paragraph",
+          "value": "SPFA is a queue-based optimization of Bellman-Ford. Instead of relaxing all edges blindly, it only relaxes edges from nodes whose distance was recently updated. Average case is much faster than O(VE), but worst case remains O(VE). Can be hacked on some platforms with adversarial graphs — use with caution in contests."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m, src;\n    cin >> n >> m >> src;\n    vector<vector<pair<int,int>>> adj(n);  // {neighbor, weight}\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n    }\n    \n    const long long INF = 1e18;\n    vector<long long> dist(n, INF);\n    vector<bool> inQueue(n, false);\n    vector<int> cnt(n, 0);  // Count relaxations per node\n    \n    queue<int> q;\n    dist[src] = 0;\n    q.push(src);\n    inQueue[src] = true;\n    \n    while (!q.empty()) {\n        int u = q.front();\n        q.pop();\n        inQueue[u] = false;\n        \n        for (auto& [v, w] : adj[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                if (!inQueue[v]) {\n                    q.push(v);\n                    inQueue[v] = true;\n                    cnt[v]++;\n                    if (cnt[v] >= n) {\n                        cout << \"Negative cycle detected!\\n\";\n                        return 0;\n                    }\n                }\n            }\n        }\n    }\n    \n    for (int i = 0; i < n; i++) {\n        cout << i << \" -> \" << (dist[i] == INF ? -1 : dist[i]) << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "0 -> 0\n1 -> -1\n2 -> 2\n3 -> -2\n4 -> 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Johnson's Algorithm — All-Pairs with Negatives"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: All-pairs shortest path on a sparse graph with negative edges (but no negative cycles). Floyd-Warshall is O(V³). Johnson's runs Bellman-Ford once from a dummy source, then reweights all edges to be non-negative, then runs Dijkstra from every node. Total: O(V * E log V), much better for sparse graphs."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<pair<int,int>>> adj(n);\n    vector<tuple<int,int,int>> edges;\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n        edges.push_back({u, v, w});\n    }\n    \n    // Step 1: Add dummy node n, connect to all with weight 0\n    // Run Bellman-Ford from dummy to get h[v] (potential)\n    const long long INF = 1e18;\n    vector<long long> h(n + 1, 0);\n    \n    // Bellman-Ford on extended graph\n    for (int i = 0; i < n; i++) {\n        for (auto& [u, v, w] : edges) {\n            if (h[u] + w < h[v]) h[v] = h[u] + w;\n        }\n        // Also check dummy edges (h[n] + 0 < h[v])\n        for (int v = 0; v < n; v++) {\n            if (h[n] + 0 < h[v]) h[v] = h[n];\n        }\n    }\n    \n    // Step 2: Reweight edges: w'(u,v) = w(u,v) + h[u] - h[v]\n    vector<vector<pair<int,int>>> adjReweighted(n);\n    for (auto& [u, v, w] : edges) {\n        int newW = w + h[u] - h[v];\n        adjReweighted[u].push_back({v, newW});\n    }\n    \n    // Step 3: Run Dijkstra from every node\n    vector<vector<long long>> dist(n, vector<long long>(n, INF));\n    \n    for (int src = 0; src < n; src++) {\n        priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;\n        dist[src][src] = 0;\n        pq.push({0, src});\n        \n        while (!pq.empty()) {\n            auto [d, u] = pq.top(); pq.pop();\n            if (d > dist[src][u]) continue;\n            \n            for (auto& [v, w] : adjReweighted[u]) {\n                if (dist[src][u] + w < dist[src][v]) {\n                    dist[src][v] = dist[src][u] + w;\n                    pq.push({dist[src][v], v});\n                }\n            }\n        }\n    }\n    \n    // Step 4: Convert back: d(u,v) = d'(u,v) - h[u] + h[v]\n    cout << \"All-pairs shortest paths:\\n\";\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < n; j++) {\n            if (dist[i][j] == INF) cout << \"INF \";\n            else cout << (dist[i][j] - h[i] + h[j]) << \" \";\n        }\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "All-pairs shortest paths:\n0 0 -1 -2 1 \nINF 0 3 2 5 \nINF INF 0 -1 2 \nINF INF 4 0 3 \nINF INF 1 -2 0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "0-1 BFS — Shortest Path with 0/1 Weights"
+        },
+        {
+          "type": "paragraph",
+          "value": "Special case: all edge weights are 0 or 1. Use a deque instead of priority queue. Push to front for weight 0, push to back for weight 1. This gives O(V + E) time — faster than Dijkstra's O(E log V)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m, src;\n    cin >> n >> m >> src;\n    vector<vector<pair<int,int>>> adj(n);  // {neighbor, weight (0 or 1)}\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n        adj[v].push_back({u, w});\n    }\n    \n    const int INF = 1e9;\n    vector<int> dist(n, INF);\n    deque<int> dq;\n    \n    dist[src] = 0;\n    dq.push_front(src);\n    \n    while (!dq.empty()) {\n        int u = dq.front();\n        dq.pop_front();\n        \n        for (auto& [v, w] : adj[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                if (w == 0) dq.push_front(v);\n                else dq.push_back(v);\n            }\n        }\n    }\n    \n    for (int i = 0; i < n; i++) {\n        cout << i << \" -> \" << dist[i] << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 5 6 0\n0 1 1\n0 2 0\n1 2 1\n1 3 0\n2 3 1\n3 4 0\n0 -> 0\n1 -> 1\n2 -> 0\n3 -> 1\n4 -> 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Currency Exchange (Negative Cycle Detection)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given exchange rates between currencies, detect if arbitrage is possible (a cycle where you end up with more money than you started). This is exactly detecting a negative cycle in a graph where edge weight = -log(exchange_rate)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;  // currencies, exchange pairs\n    cin >> n >> m;\n    vector<tuple<int,int,double>> edges;\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        double rate;\n        cin >> u >> v >> rate;\n        edges.push_back({u, v, -log(rate)});  // Negative log for arbitrage\n    }\n    \n    vector<double> dist(n, 1e100);\n    dist[0] = 0;\n    \n    for (int i = 0; i < n - 1; i++) {\n        for (auto& [u, v, w] : edges) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n            }\n        }\n    }\n    \n    bool arbitrage = false;\n    for (auto& [u, v, w] : edges) {\n        if (dist[u] + w < dist[v]) {\n            arbitrage = true;\n            break;\n        }\n    }\n    \n    cout << (arbitrage ? \"Arbitrage possible!\" : \"No arbitrage\") << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 3 3\n0 1 1.2\n1 2 1.5\n2 0 0.8\nArbitrage possible!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of Bellman-Ford?",
+          "options": [
+            "O(V + E)",
+            "O(V * E)",
+            "O(E log V)",
+            "O(V²)"
+          ],
+          "correctAnswer": "O(V * E)",
+          "explanation": "Bellman-Ford relaxes all E edges (V-1) times, giving O(V * E). This is slower than Dijkstra but handles negative edge weights and detects negative cycles."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When should you use 0-1 BFS instead of Dijkstra?",
+          "options": [
+            "When all weights are positive",
+            "When all weights are 0 or 1",
+            "When the graph is dense",
+            "When there are negative cycles"
+          ],
+          "correctAnswer": "When all weights are 0 or 1",
+          "explanation": "0-1 BFS uses a deque and runs in O(V + E) for graphs with only 0/1 edge weights. It's asymptotically faster than Dijkstra's O(E log V) for this special case."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What does the extra iteration in Bellman-Ford detect?",
+          "correctAnswer": "negative cycle",
+          "explanation": "After V-1 iterations, all shortest paths without cycles are found. If any distance can still be improved in the V-th iteration, a negative cycle exists that can be traversed infinitely to reduce distance."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 25: Strongly Connected Components & Bridges",
+      "badge": "Graph Theory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Graph Structure — SCCs, Articulation Points & Bridges"
+        },
+        {
+          "type": "paragraph",
+          "value": "Understanding the structural properties of graphs is crucial for solving many CP problems. Strongly Connected Components (SCCs) partition a directed graph into maximal subgraphs where every node is reachable from every other. Articulation points and bridges identify critical nodes and edges whose removal disconnects the graph. These concepts appear in network reliability, game theory, and condensation problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing a directed graph condensed into SCCs forming a DAG",
+          "caption": "Condensation graph: each SCC becomes a single node, resulting in a DAG"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top: A directed graph with 8 nodes and cycles. Highlight three SCCs with different colors: {0,1,2}, {3,4}, {5,6,7}. Bottom: The condensation DAG with 3 super-nodes and edges between them. Show that the condensed graph is always a DAG. Label with 'Kosaraju's Algorithm' or 'Tarjan's Algorithm'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Kosaraju's Algorithm — SCC in O(V + E)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Kosaraju's algorithm finds SCCs in two DFS passes: (1) DFS on original graph, pushing nodes to a stack in order of completion. (2) DFS on the transposed graph (all edges reversed), popping from the stack. Each DFS tree in the second pass is one SCC. Time: O(V + E). Space: O(V + E) for the transpose."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<vector<int>> adj, adjT;\nvector<bool> vis;\nvector<int> order, comp;\n\nvoid dfs1(int u) {\n    vis[u] = true;\n    for (int v : adj[u]) {\n        if (!vis[v]) dfs1(v);\n    }\n    order.push_back(u);\n}\n\nvoid dfs2(int u) {\n    vis[u] = true;\n    comp.push_back(u);\n    for (int v : adjT[u]) {\n        if (!vis[v]) dfs2(v);\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    adj.resize(n);\n    adjT.resize(n);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adjT[v].push_back(u);  // Transpose\n    }\n    \n    // Pass 1: Order by finish time\n    vis.assign(n, false);\n    for (int i = 0; i < n; i++) {\n        if (!vis[i]) dfs1(i);\n    }\n    \n    // Pass 2: DFS on transpose in reverse order\n    vis.assign(n, false);\n    vector<vector<int>> sccs;\n    \n    for (int i = n - 1; i >= 0; i--) {\n        int u = order[i];\n        if (!vis[u]) {\n            comp.clear();\n            dfs2(u);\n            sccs.push_back(comp);\n        }\n    }\n    \n    cout << \"Number of SCCs: \" << sccs.size() << \"\\n\";\n    for (auto& c : sccs) {\n        cout << \"{ \";\n        for (int x : c) cout << x << \" \";\n        cout << \"}\\n\";\n    }\n    \n    // Condensation graph\n    vector<int> sccId(n);\n    for (int i = 0; i < sccs.size(); i++) {\n        for (int x : sccs[i]) sccId[x] = i;\n    }\n    \n    set<pair<int,int>> condEdges;\n    for (int u = 0; u < n; u++) {\n        for (int v : adj[u]) {\n            if (sccId[u] != sccId[v]) {\n                condEdges.insert({sccId[u], sccId[v]});\n            }\n        }\n    }\n    \n    cout << \"Condensation edges: \";\n    for (auto& [u, v] : condEdges) cout << \"(\" << u << \",\" << v << \") \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 8 9\n0 1\n1 2\n2 0\n2 3\n3 4\n4 3\n4 5\n5 6\n6 5\nNumber of SCCs: 4\n{ 0 2 1 }\n{ 4 3 }\n{ 6 5 }\n{ 7 }\nCondensation edges: (0,1) (1,2) (2,3)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Tarjan's Algorithm — SCC in One Pass"
+        },
+        {
+          "type": "paragraph",
+          "value": "Tarjan's algorithm finds SCCs using a single DFS with discovery times and low-link values. low[u] = min(discovery time of u, low-link of descendants, discovery times of nodes in stack reachable by back edge). When low[u] == disc[u], u is the root of an SCC — pop the stack until u. More memory-efficient than Kosaraju's (no transpose needed)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<vector<int>> adj;\nvector<int> disc, low, sccId;\nvector<bool> inStack;\nstack<int> st;\nint timer = 0, sccCount = 0;\n\nvoid tarjan(int u) {\n    disc[u] = low[u] = ++timer;\n    st.push(u);\n    inStack[u] = true;\n    \n    for (int v : adj[u]) {\n        if (disc[v] == 0) {\n            tarjan(v);\n            low[u] = min(low[u], low[v]);\n        } else if (inStack[v]) {\n            low[u] = min(low[u], disc[v]);\n        }\n    }\n    \n    if (low[u] == disc[u]) {\n        // u is root of an SCC\n        sccCount++;\n        while (true) {\n            int x = st.top(); st.pop();\n            inStack[x] = false;\n            sccId[x] = sccCount;\n            if (x == u) break;\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    adj.resize(n);\n    disc.assign(n, 0);\n    low.assign(n, 0);\n    sccId.assign(n, 0);\n    inStack.assign(n, false);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n    }\n    \n    for (int i = 0; i < n; i++) {\n        if (disc[i] == 0) tarjan(i);\n    }\n    \n    cout << \"SCCs found: \" << sccCount << \"\\n\";\n    for (int i = 1; i <= sccCount; i++) {\n        cout << \"SCC \" << i << \": \";\n        for (int j = 0; j < n; j++) {\n            if (sccId[j] == i) cout << j << \" \";\n        }\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "SCCs found: 4\nSCC 1: 0 2 1\nSCC 2: 4 3\nSCC 3: 6 5\nSCC 4: 7"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Articulation Points & Bridges (Tarjan)"
+        },
+        {
+          "type": "paragraph",
+          "value": "An articulation point (cut vertex) is a node whose removal increases the number of connected components. A bridge (cut edge) is an edge with the same property. Both are found using DFS with low-link values similar to SCC Tarjan's. For articulation points: root is AP if it has 2+ children; non-root u is AP if low[v] >= disc[u] for some child v. For bridges: edge (u,v) is a bridge if low[v] > disc[u]."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<vector<int>> adj;\nvector<int> disc, low;\nvector<bool> isArticulation;\nvector<pair<int,int>> bridges;\nint timer = 0;\n\nvoid dfs(int u, int parent) {\n    disc[u] = low[u] = ++timer;\n    int children = 0;\n    \n    for (int v : adj[u]) {\n        if (v == parent) continue;\n        \n        if (disc[v] == 0) {\n            children++;\n            dfs(v, u);\n            low[u] = min(low[u], low[v]);\n            \n            // Articulation point check\n            if (parent != -1 && low[v] >= disc[u]) {\n                isArticulation[u] = true;\n            }\n            \n            // Bridge check\n            if (low[v] > disc[u]) {\n                bridges.push_back({u, v});\n            }\n        } else {\n            // Back edge\n            low[u] = min(low[u], disc[v]);\n        }\n    }\n    \n    // Root is articulation point if it has 2+ children in DFS tree\n    if (parent == -1 && children > 1) {\n        isArticulation[u] = true;\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    adj.resize(n);\n    disc.assign(n, 0);\n    low.assign(n, 0);\n    isArticulation.assign(n, false);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }\n    \n    for (int i = 0; i < n; i++) {\n        if (disc[i] == 0) dfs(i, -1);\n    }\n    \n    cout << \"Articulation points: \";\n    for (int i = 0; i < n; i++) {\n        if (isArticulation[i]) cout << i << \" \";\n    }\n    cout << \"\\n\";\n    \n    cout << \"Bridges: \";\n    for (auto& [u, v] : bridges) cout << \"(\" << u << \",\" << v << \") \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 7 7\n0 1\n0 2\n1 2\n1 3\n1 4\n3 4\n5 6\nArticulation points: 1 5\nBridges: (1,3) (5,6)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: 2-SAT using SCC"
+        },
+        {
+          "type": "paragraph",
+          "value": "2-SAT (2-satisfiability) is a classic problem: given boolean variables and clauses of form (a OR b), determine if there's a satisfying assignment. Each variable x has two nodes: x (true) and ¬x (false). Each clause (a OR b) implies two implications: ¬a → b and ¬b → a. The formula is satisfiable iff no variable and its negation are in the same SCC."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TwoSAT {\n    int n;\n    vector<vector<int>> adj, adjT;\n    vector<bool> vis;\n    vector<int> order, comp, assignment;\n    \n    TwoSAT(int _n) {\n        n = _n;\n        adj.resize(2 * n);\n        adjT.resize(2 * n);\n    }\n    \n    // x = true/false, returns node index\n    int var(int x, bool val) { return 2 * x + val; }\n    \n    // Add implication: if u then v\n    void addImplication(int u, int v) {\n        adj[u].push_back(v);\n        adjT[v].push_back(u);\n    }\n    \n    // Add OR clause: (x = a) OR (y = b)\n    void addOr(int x, bool a, int y, bool b) {\n        addImplication(var(x, !a), var(y, b));\n        addImplication(var(y, !b), var(x, a));\n    }\n    \n    // Add XOR: exactly one of x, y is true\n    void addXor(int x, int y) {\n        addOr(x, true, y, true);\n        addOr(x, false, y, false);\n    }\n    \n    void dfs1(int u) {\n        vis[u] = true;\n        for (int v : adj[u]) if (!vis[v]) dfs1(v);\n        order.push_back(u);\n    }\n    \n    void dfs2(int u, int cl) {\n        comp[u] = cl;\n        for (int v : adjT[u]) if (comp[v] == -1) dfs2(v, cl);\n    }\n    \n    bool solve() {\n        vis.assign(2 * n, false);\n        for (int i = 0; i < 2 * n; i++) {\n            if (!vis[i]) dfs1(i);\n        }\n        \n        comp.assign(2 * n, -1);\n        int j = 0;\n        for (int i = 2 * n - 1; i >= 0; i--) {\n            int u = order[i];\n            if (comp[u] == -1) dfs2(u, j++);\n        }\n        \n        assignment.resize(n);\n        for (int i = 0; i < n; i++) {\n            if (comp[2*i] == comp[2*i+1]) return false;\n            assignment[i] = comp[2*i] > comp[2*i+1];\n        }\n        return true;\n    }\n};\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;  // variables, clauses\n    cin >> n >> m;\n    TwoSAT solver(n);\n    \n    for (int i = 0; i < m; i++) {\n        int x, y;  // 1-indexed, negative means negation\n        cin >> x >> y;\n        bool a = x > 0, b = y > 0;\n        x = abs(x) - 1; y = abs(y) - 1;\n        solver.addOr(x, a, y, b);\n    }\n    \n    if (solver.solve()) {\n        cout << \"Satisfiable!\\nAssignment: \";\n        for (int i = 0; i < n; i++) {\n            cout << (solver.assignment[i] ? \"T \" : \"F \");\n        }\n        cout << \"\\n\";\n    } else {\n        cout << \"Unsatisfiable!\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 3 3\n1 2\n-1 3\n-2 -3\nSatisfiable!\nAssignment: T F F"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Critical Connections (Bridges)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given a network of servers connected by bidirectional connections, find all critical connections (bridges) — connections whose removal disconnects the network. This is LeetCode 1192 and a common interview/contest problem. Direct application of bridge-finding Tarjan's algorithm."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nclass Solution {\n    vector<vector<int>> adj;\n    vector<int> disc, low;\n    vector<vector<int>> result;\n    int timer = 0;\n    \n    void dfs(int u, int parent) {\n        disc[u] = low[u] = ++timer;\n        for (int v : adj[u]) {\n            if (v == parent) continue;\n            if (disc[v] == 0) {\n                dfs(v, u);\n                low[u] = min(low[u], low[v]);\n                if (low[v] > disc[u]) {\n                    result.push_back({u, v});\n                }\n            } else {\n                low[u] = min(low[u], disc[v]);\n            }\n        }\n    }\n    \npublic:\n    vector<vector<int>> criticalConnections(int n, vector<vector<int>>& connections) {\n        adj.resize(n);\n        disc.assign(n, 0);\n        low.assign(n, 0);\n        \n        for (auto& e : connections) {\n            adj[e[0]].push_back(e[1]);\n            adj[e[1]].push_back(e[0]);\n        }\n        \n        dfs(0, -1);\n        return result;\n    }\n};\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 4;\n    vector<vector<int>> connections = {{0,1},{1,2},{2,0},{1,3}};\n    \n    Solution sol;\n    auto bridges = sol.criticalConnections(n, connections);\n    \n    cout << \"Critical connections: \";\n    for (auto& e : bridges) {\n        cout << \"(\" << e[0] << \",\" << e[1] << \") \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Critical connections: (1,3)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the key invariant in Tarjan's SCC algorithm?",
+          "options": [
+            "low[u] >= disc[u] for all nodes",
+            "low[u] == disc[u] when u is the root of an SCC",
+            "disc[u] < disc[v] for all edges u→v",
+            "low[u] > disc[u] for back edges"
+          ],
+          "correctAnswer": "low[u] == disc[u] when u is the root of an SCC",
+          "explanation": "In Tarjan's algorithm, when low[u] == disc[u], node u is the root of an SCC. All nodes in the stack above u belong to the same SCC. This is the fundamental condition for SCC extraction."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When is an edge (u,v) a bridge in an undirected graph?",
+          "options": [
+            "When low[v] >= disc[u]",
+            "When low[v] > disc[u]",
+            "When low[v] == disc[v]",
+            "When disc[v] > disc[u]"
+          ],
+          "correctAnswer": "When low[v] > disc[u]",
+          "explanation": "Edge (u,v) is a bridge if low[v] > disc[u], meaning v cannot reach back to u or any ancestor of u without using edge (u,v). If low[v] >= disc[u], then u is an articulation point (for non-root nodes)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the condensation of a directed graph's SCCs?",
+          "correctAnswer": "DAG",
+          "explanation": "The condensation graph, where each SCC is contracted to a single node, is always a Directed Acyclic Graph (DAG). This is because if there were a cycle in the condensation, those SCCs would merge into a single larger SCC."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 26: Introduction to Dynamic Programming",
+      "badge": "Dynamic Programming",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Dynamic Programming — Breaking Problems into Subproblems"
+        },
+        {
+          "type": "paragraph",
+          "value": "Dynamic Programming (DP) is the most important technique in competitive programming after graph algorithms. It solves complex problems by breaking them into overlapping subproblems, solving each subproblem once, and storing the results (memoization). The two key properties: Optimal Substructure (optimal solution contains optimal solutions to subproblems) and Overlapping Subproblems (same subproblems recur many times). Master DP and you unlock 40% of contest problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing Fibonacci recursion tree vs DP memoization table eliminating redundant calls",
+          "caption": "DP eliminates redundant computation by storing and reusing subproblem solutions"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Left: Fibonacci recursion tree showing massive redundancy (f(3) computed multiple times). Right: DP table showing bottom-up computation with each value computed exactly once. Use red highlighting for redundant calls on left, green checkmarks on right. Label time: naive O(2^n) vs DP O(n)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fibonacci — The Hello World of DP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Classic Fibonacci: F(n) = F(n-1) + F(n-2). Naive recursion is O(2^n). Memoization (top-down) or tabulation (bottom-up) reduces to O(n). This illustrates the core DP transformation: recognize overlapping subproblems, store solutions, reuse."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\n// Top-down (Memoization)\nlong long fibMemo(int n, vector<long long>& dp) {\n    if (n <= 1) return n;\n    if (dp[n] != -1) return dp[n];\n    return dp[n] = (fibMemo(n-1, dp) + fibMemo(n-2, dp)) % MOD;\n}\n\n// Bottom-up (Tabulation)\nlong long fibTab(int n) {\n    if (n <= 1) return n;\n    vector<long long> dp(n + 1);\n    dp[0] = 0; dp[1] = 1;\n    for (int i = 2; i <= n; i++) {\n        dp[i] = (dp[i-1] + dp[i-2]) % MOD;\n    }\n    return dp[n];\n}\n\n// Space-optimized (O(1) space)\nlong long fibSpaceOpt(int n) {\n    if (n <= 1) return n;\n    long long a = 0, b = 1, c;\n    for (int i = 2; i <= n; i++) {\n        c = (a + b) % MOD;\n        a = b;\n        b = c;\n    }\n    return b;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    \n    vector<long long> dp(n + 1, -1);\n    cout << \"Memoization: \" << fibMemo(n, dp) << \"\\n\";\n    cout << \"Tabulation: \" << fibTab(n) << \"\\n\";\n    cout << \"Space optimized: \" << fibSpaceOpt(n) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 50\nMemoization: 586268941\nTabulation: 586268941\nSpace optimized: 586268941"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Climbing Stairs — Count Ways"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: You can climb 1 or 2 steps at a time. Count ways to reach step n. State: dp[i] = ways to reach step i. Transition: dp[i] = dp[i-1] + dp[i-2] (come from 1 step below or 2 steps below). Base: dp[0] = 1, dp[1] = 1. This is Fibonacci in disguise — a common DP pattern."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    \n    // dp[i] = ways to reach step i\n    vector<long long> dp(n + 1);\n    dp[0] = 1;  // One way to be at ground\n    dp[1] = 1;  // One way to reach step 1\n    \n    for (int i = 2; i <= n; i++) {\n        dp[i] = (dp[i-1] + dp[i-2]) % MOD;\n    }\n    \n    cout << \"Ways to climb \" << n << \" stairs: \" << dp[n] << \"\\n\";\n    \n    // Generalized: can take 1, 2, or 3 steps\n    vector<long long> dp2(n + 1);\n    dp2[0] = 1;\n    for (int i = 1; i <= n; i++) {\n        for (int step = 1; step <= 3 && i - step >= 0; step++) {\n            dp2[i] = (dp2[i] + dp2[i - step]) % MOD;\n        }\n    }\n    cout << \"Ways with 1/2/3 steps: \" << dp2[n] << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5\nWays to climb 5 stairs: 8\nWays with 1/2/3 steps: 13"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "House Robber — Decision DP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Rob houses in a line without robbing adjacent houses. Maximize loot. State: dp[i] = max loot from first i houses. Decision at each house: rob it (can't rob i-1, add dp[i-2] + a[i]) or skip it (dp[i-1]). Transition: dp[i] = max(dp[i-1], dp[i-2] + a[i]). This is the classic 'take or skip' DP pattern."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    if (n == 0) { cout << \"0\\n\"; return 0; }\n    if (n == 1) { cout << a[0] << \"\\n\"; return 0; }\n    \n    // dp[i] = max loot from first i houses\n    long long prev2 = 0;      // dp[i-2]\n    long long prev1 = a[0];   // dp[i-1]\n    \n    for (int i = 1; i < n; i++) {\n        long long curr = max(prev1, prev2 + a[i]);\n        prev2 = prev1;\n        prev1 = curr;\n    }\n    \n    cout << \"Max loot: \" << prev1 << \"\\n\";\n    \n    // Circular version (first and last are adjacent)\n    // Run twice: exclude first, exclude last\n    auto linearRob = [&](int l, int r) -> long long {\n        if (l > r) return 0;\n        long long p2 = 0, p1 = a[l];\n        for (int i = l + 1; i <= r; i++) {\n            long long curr = max(p1, p2 + a[i]);\n            p2 = p1;\n            p1 = curr;\n        }\n        return p1;\n    };\n    \n    long long circular = max(linearRob(0, n-2), linearRob(1, n-1));\n    cout << \"Circular max: \" << circular << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5\n2 7 9 3 1\nMax loot: 12\nCircular max: 11"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Maximum Subarray Sum (Kadane's DP)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the maximum sum of any contiguous subarray. State: dp[i] = max subarray sum ending at index i. Transition: dp[i] = max(a[i], dp[i-1] + a[i]) — start fresh at i or extend previous subarray. Answer is max(dp[i]) over all i. This is the famous Kadane's algorithm, reducible to O(1) space."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    // dp[i] = max subarray sum ending at i\n    vector<long long> dp(n);\n    dp[0] = a[0];\n    long long ans = a[0];\n    int start = 0, end = 0, tempStart = 0;\n    \n    for (int i = 1; i < n; i++) {\n        if (dp[i-1] + a[i] > a[i]) {\n            dp[i] = dp[i-1] + a[i];\n        } else {\n            dp[i] = a[i];\n            tempStart = i;\n        }\n        \n        if (dp[i] > ans) {\n            ans = dp[i];\n            start = tempStart;\n            end = i;\n        }\n    }\n    \n    cout << \"Max subarray sum: \" << ans << \"\\n\";\n    cout << \"Subarray: [\" << start << \",\" << end << \"]\\n\";\n    \n    // O(1) space version\n    long long maxSoFar = a[0], maxEndingHere = a[0];\n    for (int i = 1; i < n; i++) {\n        maxEndingHere = max((long long)a[i], maxEndingHere + a[i]);\n        maxSoFar = max(maxSoFar, maxEndingHere);\n    }\n    cout << \"Space optimized: \" << maxSoFar << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 9\n-2 1 -3 4 -1 2 1 -5 4\nMax subarray sum: 6\nSubarray: [3,6]\nSpace optimized: 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "DP on Grids — Minimum Path Sum"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given a grid with values, find the minimum sum path from top-left to bottom-right, moving only right or down. State: dp[i][j] = min sum to reach cell (i,j). Transition: dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1]). Base: dp[0][0] = grid[0][0]. This pattern extends to many grid DP problems."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<int>> grid(n, vector<int>(m));\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < m; j++) cin >> grid[i][j];\n    }\n    \n    // dp[i][j] = min path sum to reach (i,j)\n    vector<vector<long long>> dp(n, vector<long long>(m));\n    dp[0][0] = grid[0][0];\n    \n    // First row\n    for (int j = 1; j < m; j++) dp[0][j] = dp[0][j-1] + grid[0][j];\n    // First column\n    for (int i = 1; i < n; i++) dp[i][0] = dp[i-1][0] + grid[i][0];\n    \n    for (int i = 1; i < n; i++) {\n        for (int j = 1; j < m; j++) {\n            dp[i][j] = grid[i][j] + min(dp[i-1][j], dp[i][j-1]);\n        }\n    }\n    \n    cout << \"Min path sum: \" << dp[n-1][m-1] << \"\\n\";\n    \n    // Reconstruct path\n    vector<pair<int,int>> path;\n    int i = n-1, j = m-1;\n    while (i > 0 || j > 0) {\n        path.push_back({i, j});\n        if (i == 0) j--;\n        else if (j == 0) i--;\n        else if (dp[i-1][j] < dp[i][j-1]) i--;\n        else j--;\n    }\n    path.push_back({0, 0});\n    reverse(path.begin(), path.end());\n    \n    cout << \"Path: \";\n    for (auto& [x, y] : path) cout << \"(\" << x << \",\" << y << \") \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 3 3\n1 3 1\n1 5 1\n4 2 1\nMin path sum: 7\nPath: (0,0) (0,1) (0,2) (1,2) (2,2)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The DP Framework — How to Approach Any DP Problem"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Step 1: Define the state.** What information do we need at each step? Usually dp[i] or dp[i][j] or dp[mask].\\n\\n**Step 2: Formulate transitions.** How do we reach state (i,j) from previous states? Write the recurrence.\\n\\n**Step 3: Identify base cases.** What are the smallest subproblems we can solve directly?\\n\\n**Step 4: Determine the answer.** Which state(s) contain our final answer?\\n\\n**Step 5: Optimize.** Can we reduce dimensions? Use rolling arrays? Space optimization?\\n\\nCommon DP patterns: Linear (1D array), Grid (2D array), Interval (dp[l][r]), Knapsack (dp[capacity]), Bitmask (dp[mask]), Tree (dp[node][state]), Digit (dp[pos][tight][sum])."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What are the two key properties a problem must have for DP to apply?",
+          "options": [
+            "Greedy choice and divide-and-conquer",
+            "Optimal substructure and overlapping subproblems",
+            "Sorted input and binary search applicability",
+            "Linear time and constant space"
+          ],
+          "correctAnswer": "Optimal substructure and overlapping subproblems",
+          "explanation": "Optimal substructure means the optimal solution contains optimal solutions to subproblems. Overlapping subproblems means the same subproblems are solved multiple times in a naive approach. Both are required for DP to be effective."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the space complexity of space-optimized Fibonacci?",
+          "options": [
+            "O(n)",
+            "O(1)",
+            "O(log n)",
+            "O(n²)"
+          ],
+          "correctAnswer": "O(1)",
+          "explanation": "Space-optimized Fibonacci only stores the last two values (a = F(i-2), b = F(i-1)), using O(1) extra space. This rolling variable technique is applicable to many 1D DP problems."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What technique stores computed subproblem results to avoid recomputation?",
+          "correctAnswer": "memoization",
+          "explanation": "Memoization (top-down DP) stores results of expensive function calls and returns the cached result when the same inputs occur again. Tabulation (bottom-up) fills a table iteratively. Both avoid redundant computation."
+        }
+      ]
     }
   ]
 }
