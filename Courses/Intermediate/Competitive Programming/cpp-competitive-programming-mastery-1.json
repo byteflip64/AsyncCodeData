@@ -1828,6 +1828,478 @@
           "explanation": "In the sieve, we start marking multiples from i*i because all smaller multiples of i (like i*2, i*3, ..., i*(i-1)) have already been marked by smaller primes. This is a crucial optimization."
         }
       ]
+    },
+    {
+      "partTitle": "Part 16: Recursion & Backtracking",
+      "badge": "Techniques",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Recursion & Backtracking — Thinking in Self-Similarity"
+        },
+        {
+          "type": "paragraph",
+          "value": "Recursion is when a function calls itself to solve smaller instances of the same problem. It's the natural way to think about tree traversals, divide-and-conquer, and problems with self-similar structure. Backtracking is recursion with the ability to undo choices — essential for generating permutations, combinations, and solving constraint satisfaction problems like N-Queens and Sudoku."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing recursion tree for factorial(5) with calls unwinding",
+          "caption": "Recursion tree: each call branches into a smaller subproblem until reaching the base case"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A vertical tree showing factorial(5) → factorial(4) → ... → factorial(1) as downward arrows. Then upward arrows showing return values 1, 2, 6, 24, 120. Use a clean tree layout with base case highlighted in green."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Recursion Fundamentals"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every recursive function needs:\\n1. **Base case** — the simplest instance that returns directly (prevents infinite recursion)\\n2. **Recursive case** — breaks the problem into smaller subproblems and calls itself\\n\\nKey insight: trust that the recursive call works for the smaller problem. You only need to handle one level of logic.\\n\\n**Time complexity** depends on the number of recursive calls. A binary recursion tree with n levels is O(2^n). Divide-and-conquer with halving is O(n log n) or O(log n)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Factorial — classic recursion\nlong long factorial(int n) {\n    if (n <= 1) return 1;  // Base case\n    return n * factorial(n - 1);  // Recursive case\n}\n\n// Fibonacci — tree recursion (inefficient without memoization)\nint fib(int n) {\n    if (n <= 1) return n;\n    return fib(n - 1) + fib(n - 2);\n}\n\n// Memoized Fibonacci — O(n) time\nlong long fibMemo(int n, vector<long long>& dp) {\n    if (n <= 1) return n;\n    if (dp[n] != -1) return dp[n];\n    return dp[n] = fibMemo(n - 1, dp) + fibMemo(n - 2, dp);\n}\n\n// Power using recursion — O(log n)\nlong long power(long long base, int exp) {\n    if (exp == 0) return 1;\n    long long half = power(base, exp / 2);\n    if (exp % 2 == 0) return half * half;\n    return half * half * base;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cout << \"5! = \" << factorial(5) << \"\\n\";\n    \n    vector<long long> dp(51, -1);\n    cout << \"Fib(50) = \" << fibMemo(50, dp) << \"\\n\";\n    \n    cout << \"2^10 = \" << power(2, 10) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "5! = 120\nFib(50) = 12586269025\n2^10 = 1024"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Backtracking — The Art of Trial and Undo"
+        },
+        {
+          "type": "paragraph",
+          "value": "Backtracking explores all possible configurations by making a choice, recursively exploring, then undoing the choice (backtracking). It's exhaustive search with pruning — when a partial solution can't possibly lead to a valid complete solution, we abandon that branch early.\\n\\nThe pattern: choose → explore → unchoose. This is implemented by modifying a shared state (like an array or board), recursing, then restoring the state."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Generate all permutations of a string\nvoid permute(string& s, int l, int r, vector<string>& result) {\n    if (l == r) {\n        result.push_back(s);\n        return;\n    }\n    for (int i = l; i <= r; i++) {\n        swap(s[l], s[i]);           // Choose\n        permute(s, l + 1, r, result); // Explore\n        swap(s[l], s[i]);           // Unchoose (backtrack)\n    }\n}\n\n// Generate all subsets (power set)\nvoid subsets(vector<int>& nums, int index, vector<int>& current, vector<vector<int>>& result) {\n    if (index == nums.size()) {\n        result.push_back(current);\n        return;\n    }\n    // Exclude\n    subsets(nums, index + 1, current, result);\n    // Include\n    current.push_back(nums[index]);\n    subsets(nums, index + 1, current, result);\n    current.pop_back();  // Backtrack\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    string s = \"abc\";\n    vector<string> perms;\n    permute(s, 0, s.size() - 1, perms);\n    cout << \"Permutations: \";\n    for (auto& p : perms) cout << p << \" \";\n    cout << \"\\n\";\n    \n    vector<int> nums = {1, 2, 3};\n    vector<vector<int>> allSubsets;\n    vector<int> current;\n    subsets(nums, 0, current, allSubsets);\n    cout << \"Subsets: \" << allSubsets.size() << \" total\\n\";\n    \n    return 0;\n}",
+          "output": "Permutations: abc acb bac bca cab cba \nSubsets: 8 total"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: N-Queens (Classic Backtracking)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Place N queens on an N×N chessboard such that no two queens attack each other. Use backtracking: place a queen in each row, checking column and diagonal conflicts. If a placement leads to a dead end, backtrack and try the next column."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint n;\nvector<vector<string>> solutions;\n\nbool isSafe(vector<string>& board, int row, int col) {\n    // Check column\n    for (int i = 0; i < row; i++)\n        if (board[i][col] == 'Q') return false;\n    // Check upper-left diagonal\n    for (int i = row - 1, j = col - 1; i >= 0 && j >= 0; i--, j--)\n        if (board[i][j] == 'Q') return false;\n    // Check upper-right diagonal\n    for (int i = row - 1, j = col + 1; i >= 0 && j < n; i--, j++)\n        if (board[i][j] == 'Q') return false;\n    return true;\n}\n\nvoid solve(vector<string>& board, int row) {\n    if (row == n) {\n        solutions.push_back(board);\n        return;\n    }\n    for (int col = 0; col < n; col++) {\n        if (isSafe(board, row, col)) {\n            board[row][col] = 'Q';      // Place queen\n            solve(board, row + 1);      // Recurse to next row\n            board[row][col] = '.';      // Backtrack\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cin >> n;\n    vector<string> board(n, string(n, '.'));\n    solve(board, 0);\n    \n    cout << \"Total solutions: \" << solutions.size() << \"\\n\";\n    for (auto& sol : solutions) {\n        for (auto& row : sol) cout << row << \"\\n\";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 4\nTotal solutions: 2\n.Q..\n...Q\nQ...\n..Q.\n\n..Q.\nQ...\n...Q\n.Q.."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Rat in a Maze"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find all paths from top-left to bottom-right in a maze where 1 represents open path and 0 is a wall. Can only move right or down. Use backtracking: try right, if dead end backtrack and try down. Mark visited cells to avoid cycles."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint n;\nint maze[10][10];\nbool visited[10][10];\nvector<string> paths;\n\nvoid findPaths(int x, int y, string path) {\n    if (x == n - 1 && y == n - 1) {\n        paths.push_back(path);\n        return;\n    }\n    // Down\n    if (x + 1 < n && maze[x + 1][y] == 1 && !visited[x + 1][y]) {\n        visited[x + 1][y] = true;\n        findPaths(x + 1, y, path + 'D');\n        visited[x + 1][y] = false;\n    }\n    // Right\n    if (y + 1 < n && maze[x][y + 1] == 1 && !visited[x][y + 1]) {\n        visited[x][y + 1] = true;\n        findPaths(x, y + 1, path + 'R');\n        visited[x][y + 1] = false;\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cin >> n;\n    for (int i = 0; i < n; i++)\n        for (int j = 0; j < n; j++)\n            cin >> maze[i][j];\n    \n    if (maze[0][0] == 1) {\n        visited[0][0] = true;\n        findPaths(0, 0, \"\");\n    }\n    \n    for (auto& p : paths) cout << p << \" \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 4\n1 0 0 0\n1 1 0 1\n1 1 0 0\n0 1 1 1\nOutput: DDRDRR DRDDRR"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of generating all permutations of n elements using backtracking?",
+          "options": [
+            "O(n!)",
+            "O(n^2)",
+            "O(2^n)",
+            "O(n log n)"
+          ],
+          "correctAnswer": "O(n!)",
+          "explanation": "There are n! permutations of n elements. Backtracking generates each exactly once, and each permutation requires O(n) work to build, giving O(n * n!) total time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What are the two essential components of every recursive function?",
+          "options": [
+            "Loop and condition",
+            "Base case and recursive case",
+            "Stack and heap",
+            "Pointer and reference"
+          ],
+          "correctAnswer": "Base case and recursive case",
+          "explanation": "Every recursive function must have a base case (stopping condition) and a recursive case (where it calls itself with a smaller subproblem). Without a base case, recursion never terminates."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the key operation in backtracking that allows exploring different choices?",
+          "correctAnswer": "undo",
+          "explanation": "Backtracking works by making a choice (modifying state), exploring recursively, then undoing that choice (restoring state) to try alternative paths. This 'undo' operation is what distinguishes backtracking from pure recursion."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Linked Lists",
+      "badge": "Data Structures",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Linked Lists — Dynamic Chain Structures"
+        },
+        {
+          "type": "paragraph",
+          "value": "A linked list is a linear collection of nodes where each node contains data and a pointer to the next node. Unlike arrays, linked lists allow O(1) insertion and deletion at known positions, but O(n) access by index. In CP, they're less common than arrays but appear in problems requiring frequent insertions/deletions at arbitrary positions."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing singly linked list nodes connected by pointers",
+          "caption": "Singly linked list: each node stores data and a pointer to the next node"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A horizontal chain of boxes. Each box split into two: left half contains data (e.g., 10, 20, 30), right half contains arrow pointing to next node. Last node points to NULL. Show head pointer at first node. Clean, minimal style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Singly Linked List Implementation"
+        },
+        {
+          "type": "paragraph",
+          "value": "A basic node structure contains `data` and `next` pointer. Operations include insertion at head/tail, deletion by value, and traversal. For CP, you often need to implement from scratch since STL doesn't provide a standard linked list optimized for competitive use."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\n// Insert at head\nvoid insertAtHead(Node*& head, int val) {\n    Node* newNode = new Node(val);\n    newNode->next = head;\n    head = newNode;\n}\n\n// Insert at tail\nvoid insertAtTail(Node*& head, int val) {\n    Node* newNode = new Node(val);\n    if (!head) { head = newNode; return; }\n    Node* temp = head;\n    while (temp->next) temp = temp->next;\n    temp->next = newNode;\n}\n\n// Delete by value\nvoid deleteNode(Node*& head, int val) {\n    if (!head) return;\n    if (head->data == val) {\n        Node* temp = head;\n        head = head->next;\n        delete temp;\n        return;\n    }\n    Node* curr = head;\n    while (curr->next && curr->next->data != val)\n        curr = curr->next;\n    if (curr->next) {\n        Node* temp = curr->next;\n        curr->next = curr->next->next;\n        delete temp;\n    }\n}\n\n// Print list\nvoid printList(Node* head) {\n    while (head) {\n        cout << head->data << \" -> \";\n        head = head->next;\n    }\n    cout << \"NULL\\n\";\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    Node* head = nullptr;\n    insertAtTail(head, 10);\n    insertAtTail(head, 20);\n    insertAtTail(head, 30);\n    insertAtHead(head, 5);\n    \n    cout << \"List: \";\n    printList(head);\n    \n    deleteNode(head, 20);\n    cout << \"After deleting 20: \";\n    printList(head);\n    \n    return 0;\n}",
+          "output": "List: 5 -> 10 -> 20 -> 30 -> NULL\nAfter deleting 20: 5 -> 10 -> 30 -> NULL"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fast & Slow Pointers — The Linked List Trick"
+        },
+        {
+          "type": "paragraph",
+          "value": "The fast and slow pointer technique (tortoise and hare) is the most powerful linked list pattern. The slow pointer moves 1 step, fast moves 2 steps.\\n\\n**Applications:**\\n• **Middle of list** — when fast reaches end, slow is at middle\\n• **Cycle detection** — if fast meets slow, there's a cycle (Floyd's algorithm)\\n• **Cycle start** — move one pointer to head, both move 1 step, meeting point is start\\n• **Kth from end** — fast moves k ahead, then both move together"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\n// Find middle using fast/slow pointers\nNode* findMiddle(Node* head) {\n    Node *slow = head, *fast = head;\n    while (fast && fast->next) {\n        slow = slow->next;\n        fast = fast->next->next;\n    }\n    return slow;\n}\n\n// Detect cycle (Floyd's algorithm)\nbool hasCycle(Node* head) {\n    Node *slow = head, *fast = head;\n    while (fast && fast->next) {\n        slow = slow->next;\n        fast = fast->next->next;\n        if (slow == fast) return true;\n    }\n    return false;\n}\n\n// Find cycle start\nNode* detectCycleStart(Node* head) {\n    Node *slow = head, *fast = head;\n    while (fast && fast->next) {\n        slow = slow->next;\n        fast = fast->next->next;\n        if (slow == fast) break;\n    }\n    if (!fast || !fast->next) return nullptr;\n    \n    slow = head;\n    while (slow != fast) {\n        slow = slow->next;\n        fast = fast->next;\n    }\n    return slow;\n}\n\n// Kth node from end\nNode* kthFromEnd(Node* head, int k) {\n    Node *fast = head, *slow = head;\n    for (int i = 0; i < k; i++) {\n        if (!fast) return nullptr;\n        fast = fast->next;\n    }\n    while (fast) {\n        fast = fast->next;\n        slow = slow->next;\n    }\n    return slow;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Create list: 1 -> 2 -> 3 -> 4 -> 5\n    Node* head = new Node(1);\n    head->next = new Node(2);\n    head->next->next = new Node(3);\n    head->next->next->next = new Node(4);\n    head->next->next->next->next = new Node(5);\n    \n    Node* mid = findMiddle(head);\n    cout << \"Middle: \" << mid->data << \"\\n\";\n    \n    cout << \"Has cycle: \" << hasCycle(head) << \"\\n\";\n    \n    Node* kth = kthFromEnd(head, 2);\n    cout << \"2nd from end: \" << kth->data << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Middle: 3\nHas cycle: 0\n2nd from end: 4"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Reverse Linked List"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Reverse a linked list. Use three pointers: prev, curr, next. Iterate through, reversing the next pointer of each node. This is O(n) time and O(1) space — the optimal solution."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\nNode* reverseList(Node* head) {\n    Node *prev = nullptr, *curr = head, *next = nullptr;\n    while (curr) {\n        next = curr->next;    // Store next\n        curr->next = prev;    // Reverse link\n        prev = curr;          // Move prev forward\n        curr = next;          // Move curr forward\n    }\n    return prev;  // New head\n}\n\n// Recursive reverse\nNode* reverseRecursive(Node* head) {\n    if (!head || !head->next) return head;\n    Node* rest = reverseRecursive(head->next);\n    head->next->next = head;\n    head->next = nullptr;\n    return rest;\n}\n\nvoid printList(Node* head) {\n    while (head) {\n        cout << head->data << \" -> \";\n        head = head->next;\n    }\n    cout << \"NULL\\n\";\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    Node* head = new Node(1);\n    head->next = new Node(2);\n    head->next->next = new Node(3);\n    head->next->next->next = new Node(4);\n    \n    cout << \"Original: \";\n    printList(head);\n    \n    head = reverseList(head);\n    cout << \"Reversed: \";\n    printList(head);\n    \n    return 0;\n}",
+          "output": "Original: 1 -> 2 -> 3 -> 4 -> NULL\nReversed: 4 -> 3 -> 2 -> 1 -> NULL"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Merge Two Sorted Lists"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Merge two sorted linked lists into one sorted list. Use a dummy head to simplify edge cases, then iterate comparing nodes from both lists. This is O(n + m) time and O(1) extra space."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\nNode* mergeSorted(Node* l1, Node* l2) {\n    Node dummy(0);\n    Node* tail = &dummy;\n    \n    while (l1 && l2) {\n        if (l1->data < l2->data) {\n            tail->next = l1;\n            l1 = l1->next;\n        } else {\n            tail->next = l2;\n            l2 = l2->next;\n        }\n        tail = tail->next;\n    }\n    \n    tail->next = l1 ? l1 : l2;\n    return dummy.next;\n}\n\nvoid printList(Node* head) {\n    while (head) {\n        cout << head->data << \" -> \";\n        head = head->next;\n    }\n    cout << \"NULL\\n\";\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    Node* l1 = new Node(1);\n    l1->next = new Node(3);\n    l1->next->next = new Node(5);\n    \n    Node* l2 = new Node(2);\n    l2->next = new Node(4);\n    l2->next->next = new Node(6);\n    \n    Node* merged = mergeSorted(l1, l2);\n    cout << \"Merged: \";\n    printList(merged);\n    \n    return 0;\n}",
+          "output": "Merged: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> NULL"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of finding the middle of a linked list using fast/slow pointers?",
+          "options": [
+            "O(n)",
+            "O(n log n)",
+            "O(n^2)",
+            "O(1)"
+          ],
+          "correctAnswer": "O(n)",
+          "explanation": "Fast pointer traverses at most n nodes (moving 2 steps at a time), slow pointer traverses n/2 nodes. Total is O(n) time with O(1) space."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In Floyd's cycle detection, when do fast and slow pointers meet?",
+          "options": [
+n            "At the start of the cycle",
+            "Somewhere in the cycle",
+            "At the tail of the list",
+            "They never meet if there's a cycle"
+          ],
+          "correctAnswer": "Somewhere in the cycle",
+          "explanation": "If there's a cycle, fast pointer (moving 2x speed) will eventually catch up to slow pointer inside the cycle. They don't necessarily meet at the cycle start — that's found by a second pass."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which pointer technique finds the middle of a linked list in one pass?",
+          "correctAnswer": "fast and slow pointers",
+          "explanation": "The fast and slow pointer (tortoise and hare) technique moves fast pointer 2 steps and slow pointer 1 step. When fast reaches the end, slow is at the middle."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Trees — Binary Trees & Traversals",
+      "badge": "Data Structures",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Binary Trees — Hierarchical Data Structures"
+        },
+        {
+          "type": "paragraph",
+          "value": "A binary tree is a hierarchical structure where each node has at most two children (left and right). Trees are fundamental in CP — from expression parsing to segment trees to trie structures. Understanding tree traversals (inorder, preorder, postorder, level-order) is essential for solving tree-based problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing a binary tree with root, left subtree, and right subtree labeled",
+          "caption": "Binary tree: each node has at most two children — left and right"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A balanced binary tree with root 10, left child 5 (with children 3, 7), right child 15 (with children 12, 20). Show traversal paths with different colored arrows: inorder (left-root-right), preorder (root-left-right), postorder (left-right-root). Clean tree layout."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Tree Node Structure & Basic Operations"
+        },
+        {
+          "type": "paragraph",
+          "value": "A tree node contains data, left child pointer, and right child pointer. Key properties:\\n• **Height** — longest path from node to leaf (O(n) to compute)\\n• **Depth** — distance from root to node\\n• **Diameter** — longest path between any two nodes\\n• **Size** — total number of nodes in the tree\\n\\nFor CP, trees are often given as arrays (heap-style: left child at 2i+1, right at 2i+2) or as parent-child edge lists."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left;\n    TreeNode* right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Height of tree\nint height(TreeNode* root) {\n    if (!root) return -1;\n    return 1 + max(height(root->left), height(root->right));\n}\n\n// Size of tree\nint size(TreeNode* root) {\n    if (!root) return 0;\n    return 1 + size(root->left) + size(root->right);\n}\n\n// Diameter (longest path between any two nodes)\nint diameter(TreeNode* root, int& maxDiam) {\n    if (!root) return -1;\n    int leftH = diameter(root->left, maxDiam);\n    int rightH = diameter(root->right, maxDiam);\n    maxDiam = max(maxDiam, leftH + rightH + 2);\n    return 1 + max(leftH, rightH);\n}\n\nint getDiameter(TreeNode* root) {\n    int maxDiam = 0;\n    diameter(root, maxDiam);\n    return maxDiam;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Build tree:     1\n    //               /   \\\n    //              2     3\n    //             / \\\n    //            4   5\n    TreeNode* root = new TreeNode(1);\n    root->left = new TreeNode(2);\n    root->right = new TreeNode(3);\n    root->left->left = new TreeNode(4);\n    root->left->right = new TreeNode(5);\n    \n    cout << \"Height: \" << height(root) << \"\\n\";\n    cout << \"Size: \" << size(root) << \"\\n\";\n    cout << \"Diameter: \" << getDiameter(root) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Height: 2\nSize: 5\nDiameter: 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Tree Traversals — The Four Essential Patterns"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Inorder** (Left → Root → Right): Gives sorted order for BST\\n**Preorder** (Root → Left → Right): Useful for cloning, serialization\\n**Postorder** (Left → Right → Root): Useful for deletion, bottom-up DP\\n**Level-order** (BFS): Processes nodes level by level, useful for shortest path in unweighted tree\\n\\nAll DFS traversals are O(n) time and O(h) space (h = height, due to recursion stack). Level-order uses a queue: O(n) time and O(w) space (w = max width)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Inorder: Left, Root, Right\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\n// Preorder: Root, Left, Right\nvoid preorder(TreeNode* root) {\n    if (!root) return;\n    cout << root->val << \" \";\n    preorder(root->left);\n    preorder(root->right);\n}\n\n// Postorder: Left, Right, Root\nvoid postorder(TreeNode* root) {\n    if (!root) return;\n    postorder(root->left);\n    postorder(root->right);\n    cout << root->val << \" \";\n}\n\n// Level-order (BFS)\nvoid levelOrder(TreeNode* root) {\n    if (!root) return;\n    queue<TreeNode*> q;\n    q.push(root);\n    while (!q.empty()) {\n        TreeNode* curr = q.front(); q.pop();\n        cout << curr->val << \" \";\n        if (curr->left) q.push(curr->left);\n        if (curr->right) q.push(curr->right);\n    }\n}\n\n// Iterative inorder using stack\nvoid inorderIterative(TreeNode* root) {\n    stack<TreeNode*> st;\n    TreeNode* curr = root;\n    while (curr || !st.empty()) {\n        while (curr) {\n            st.push(curr);\n            curr = curr->left;\n        }\n        curr = st.top(); st.pop();\n        cout << curr->val << \" \";\n        curr = curr->right;\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(1);\n    root->left = new TreeNode(2);\n    root->right = new TreeNode(3);\n    root->left->left = new TreeNode(4);\n    root->left->right = new TreeNode(5);\n    \n    cout << \"Inorder: \"; inorder(root); cout << \"\\n\";\n    cout << \"Preorder: \"; preorder(root); cout << \"\\n\";\n    cout << \"Postorder: \"; postorder(root); cout << \"\\n\";\n    cout << \"Level-order: \"; levelOrder(root); cout << \"\\n\";\n    cout << \"Iterative inorder: \"; inorderIterative(root); cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Inorder: 4 2 5 1 3 \nPreorder: 1 2 4 5 3 \nPostorder: 4 5 2 3 1 \nLevel-order: 1 2 3 4 5 \nIterative inorder: 4 2 5 1 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Lowest Common Ancestor (LCA)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the lowest node that has both p and q as descendants. If we find a node where p is in one subtree and q in another (or one equals the current node), that's the LCA. This is a classic tree recursion problem."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nTreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {\n    if (!root || root == p || root == q) return root;\n    \n    TreeNode* left = lowestCommonAncestor(root->left, p, q);\n    TreeNode* right = lowestCommonAncestor(root->right, p, q);\n    \n    if (left && right) return root;  // p and q in different subtrees\n    return left ? left : right;       // Both in one subtree\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(3);\n    root->left = new TreeNode(5);\n    root->right = new TreeNode(1);\n    root->left->left = new TreeNode(6);\n    root->left->right = new TreeNode(2);\n    root->right->left = new TreeNode(0);\n    root->right->right = new TreeNode(8);\n    root->left->right->left = new TreeNode(7);\n    root->left->right->right = new TreeNode(4);\n    \n    TreeNode* p = root->left;   // node 5\n    TreeNode* q = root->right;  // node 1\n    \n    TreeNode* lca = lowestCommonAncestor(root, p, q);\n    cout << \"LCA of \" << p->val << \" and \" << q->val << \": \" << lca->val << \"\\n\";\n    \n    return 0;\n}",
+          "output": "LCA of 5 and 1: 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Maximum Path Sum in Binary Tree"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the maximum sum of any path between any two nodes in a binary tree. A path must go through at least one node and does not need to go through the root. Use postorder traversal: for each node, compute the max gain from left and right subtrees, update global max with left + node + right, and return node + max(left, right) to parent."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nint maxPathSum(TreeNode* root, int& maxSum) {\n    if (!root) return 0;\n    \n    // Max gain from left/right (ignore negative gains)\n    int leftGain = max(0, maxPathSum(root->left, maxSum));\n    int rightGain = max(0, maxPathSum(root->right, maxSum));\n    \n    // Price of path going through current node\n    int priceNewPath = root->val + leftGain + rightGain;\n    maxSum = max(maxSum, priceNewPath);\n    \n    // Return max gain if continue the same path\n    return root->val + max(leftGain, rightGain);\n}\n\nint getMaxPathSum(TreeNode* root) {\n    int maxSum = INT_MIN;\n    maxPathSum(root, maxSum);\n    return maxSum;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(-10);\n    root->left = new TreeNode(9);\n    root->right = new TreeNode(20);\n    root->right->left = new TreeNode(15);\n    root->right->right = new TreeNode(7);\n    \n    cout << \"Max path sum: \" << getMaxPathSum(root) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Max path sum: 42  (path: 15 -> 20 -> 7)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which traversal gives nodes in sorted order for a Binary Search Tree?",
+          "options": [
+            "Preorder",
+            "Inorder",
+            "Postorder",
+            "Level-order"
+          ],
+          "correctAnswer": "Inorder",
+          "explanation": "Inorder traversal (Left → Root → Right) visits nodes in ascending order for a BST because all left subtree values are smaller than root, and all right subtree values are larger."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the space complexity of recursive DFS tree traversal?",
+          "options": [
+            "O(1)",
+            "O(n)",
+            "O(h) where h is tree height",
+            "O(n^2)"
+          ],
+          "correctAnswer": "O(h) where h is tree height",
+          "explanation": "Recursive DFS uses the call stack. The maximum stack depth equals the tree height h. For a balanced tree h = O(log n), for a skewed tree h = O(n)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which traversal processes the root BEFORE its children?",
+          "correctAnswer": "preorder",
+          "explanation": "Preorder traversal visits Root → Left → Right, so the root is processed before any of its children. This is useful for cloning trees and prefix expression evaluation."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 19: Binary Search Tree (BST)",
+      "badge": "Data Structures",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Binary Search Tree — Ordered Hierarchical Storage"
+        },
+        {
+          "type": "paragraph",
+          "value": "A Binary Search Tree (BST) maintains the invariant: for every node, all values in the left subtree are smaller, and all values in the right subtree are larger. This gives O(log n) average-case search, insert, and delete — but O(n) worst case for a skewed tree. Self-balancing variants (AVL, Red-Black) guarantee O(log n) always. In CP, `std::set`/`std::map` use Red-Black trees, but knowing BST operations is essential for custom problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing BST with ordering invariant: left < root < right",
+          "caption": "BST invariant: left subtree values < root < right subtree values"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A BST with root 50, left subtree (30, 20, 40), right subtree (70, 60, 80). Show the ordering with inequality labels. Highlight a search path for value 60 (50 → 70 → 60). Use distinct colors for left/right subtrees."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "BST Operations — Search, Insert, Delete"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Search**: Compare target with current node, go left if smaller, right if larger. O(h).\\n**Insert**: Search for the position, insert as leaf. O(h).\\n**Delete**: Three cases — leaf (just remove), one child (replace with child), two children (replace with inorder successor/predecessor, then delete that node). O(h).\\n\\nFor balanced BSTs h = O(log n). For degenerate (sorted input) h = O(n)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Search\nTreeNode* search(TreeNode* root, int key) {\n    if (!root || root->val == key) return root;\n    if (key < root->val) return search(root->left, key);\n    return search(root->right, key);\n}\n\n// Insert\nTreeNode* insert(TreeNode* root, int key) {\n    if (!root) return new TreeNode(key);\n    if (key < root->val) root->left = insert(root->left, key);\n    else if (key > root->val) root->right = insert(root->right, key);\n    return root;\n}\n\n// Find minimum (leftmost)\nTreeNode* findMin(TreeNode* root) {\n    while (root->left) root = root->left;\n    return root;\n}\n\n// Delete\nTreeNode* deleteNode(TreeNode* root, int key) {\n    if (!root) return root;\n    \n    if (key < root->val) root->left = deleteNode(root->left, key);\n    else if (key > root->val) root->right = deleteNode(root->right, key);\n    else {\n        // Node found\n        if (!root->left) {\n            TreeNode* temp = root->right;\n            delete root;\n            return temp;\n        }\n        if (!root->right) {\n            TreeNode* temp = root->left;\n            delete root;\n            return temp;\n        }\n        // Two children: replace with inorder successor\n        TreeNode* temp = findMin(root->right);\n        root->val = temp->val;\n        root->right = deleteNode(root->right, temp->val);\n    }\n    return root;\n}\n\n// Inorder traversal (sorted order)\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = nullptr;\n    vector<int> keys = {50, 30, 70, 20, 40, 60, 80};\n    for (int k : keys) root = insert(root, k);\n    \n    cout << \"BST inorder: \"; inorder(root); cout << \"\\n\";\n    \n    // Search\n    cout << \"Search 40: \" << (search(root, 40) ? \"Found\" : \"Not found\") << \"\\n\";\n    \n    // Delete\n    root = deleteNode(root, 30);\n    cout << \"After deleting 30: \"; inorder(root); cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "BST inorder: 20 30 40 50 60 70 80 \nSearch 40: Found\nAfter deleting 30: 20 40 50 60 70 80"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "BST Validation & Construction"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Validate BST**: Inorder traversal should be sorted. Or recursively check that each node is within valid min-max bounds.\\n**Construct from traversal**: Preorder + inorder, or postorder + inorder uniquely defines a tree. Use the root position in inorder to split left/right subtrees.\\n**K-th smallest**: Inorder traversal with a counter, or maintain subtree sizes for O(log n) queries."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Validate BST using min/max bounds\nbool isValidBST(TreeNode* root, long long minVal, long long maxVal) {\n    if (!root) return true;\n    if (root->val <= minVal || root->val >= maxVal) return false;\n    return isValidBST(root->left, minVal, root->val) &&\n           isValidBST(root->right, root->val, maxVal);\n}\n\n// Build from preorder and inorder\nTreeNode* buildTree(vector<int>& preorder, int preStart, int preEnd,\n                    vector<int>& inorder, int inStart, int inEnd,\n                    unordered_map<int, int>& inMap) {\n    if (preStart > preEnd || inStart > inEnd) return nullptr;\n    \n    TreeNode* root = new TreeNode(preorder[preStart]);\n    int inRoot = inMap[root->val];\n    int numsLeft = inRoot - inStart;\n    \n    root->left = buildTree(preorder, preStart + 1, preStart + numsLeft,\n                           inorder, inStart, inRoot - 1, inMap);\n    root->right = buildTree(preorder, preStart + numsLeft + 1, preEnd,\n                            inorder, inRoot + 1, inEnd, inMap);\n    return root;\n}\n\n// K-th smallest element\nint kthSmallest(TreeNode* root, int& k) {\n    if (!root) return -1;\n    \n    int left = kthSmallest(root->left, k);\n    if (k == 0) return left;\n    \n    k--;\n    if (k == 0) return root->val;\n    \n    return kthSmallest(root->right, k);\n}\n\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Validate\n    TreeNode* root = new TreeNode(2);\n    root->left = new TreeNode(1);\n    root->right = new TreeNode(3);\n    cout << \"Is valid BST: \" << isValidBST(root, LLONG_MIN, LLONG_MAX) << \"\\n\";\n    \n    // Build from traversals\n    vector<int> preorder = {3, 9, 20, 15, 7};\n    vector<int> in = {9, 3, 15, 20, 7};\n    unordered_map<int, int> inMap;\n    for (int i = 0; i < in.size(); i++) inMap[in[i]] = i;\n    TreeNode* built = buildTree(preorder, 0, preorder.size() - 1, in, 0, in.size() - 1, inMap);\n    cout << \"Built tree inorder: \"; inorder(built); cout << \"\\n\";\n    \n    // K-th smallest\n    int k = 3;\n    int kk = k;\n    cout << k << \"-rd smallest: \" << kthSmallest(root, kk) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Is valid BST: 1\nBuilt tree inorder: 9 3 15 20 7 \n3-rd smallest: 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Convert Sorted Array to Balanced BST"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given a sorted array, construct a height-balanced BST. The middle element should be the root to ensure balance. Recursively apply to left and right halves. This gives O(n) time and O(log n) space for the recursion stack."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nTreeNode* sortedArrayToBST(vector<int>& nums, int left, int right) {\n    if (left > right) return nullptr;\n    int mid = left + (right - left) / 2;\n    TreeNode* root = new TreeNode(nums[mid]);\n    root->left = sortedArrayToBST(nums, left, mid - 1);\n    root->right = sortedArrayToBST(nums, mid + 1, right);\n    return root;\n}\n\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\nint height(TreeNode* root) {\n    if (!root) return -1;\n    return 1 + max(height(root->left), height(root->right));\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    vector<int> nums = {-10, -3, 0, 5, 9};\n    TreeNode* root = sortedArrayToBST(nums, 0, nums.size() - 1);\n    \n    cout << \"Inorder: \"; inorder(root); cout << \"\\n\";\n    cout << \"Height: \" << height(root) << \" (balanced)\\n\";\n    \n    return 0;\n}",
+          "output": "Inorder: -10 -3 0 5 9 \nHeight: 2 (balanced)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Range Sum Query in BST"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given a BST and range [low, high], return the sum of all node values in that range. Use BST property to prune: if current node < low, only search right; if > high, only search left. This is much faster than traversing all nodes."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nint rangeSumBST(TreeNode* root, int low, int high) {\n    if (!root) return 0;\n    \n    if (root->val < low) return rangeSumBST(root->right, low, high);\n    if (root->val > high) return rangeSumBST(root->left, low, high);\n    \n    // root->val is in range\n    return root->val + \n           rangeSumBST(root->left, low, high) + \n           rangeSumBST(root->right, low, high);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(10);\n    root->left = new TreeNode(5);\n    root->right = new TreeNode(15);\n    root->left->left = new TreeNode(3);\n    root->left->right = new TreeNode(7);\n    root->right->right = new TreeNode(18);\n    \n    cout << \"Range sum [7, 15]: \" << rangeSumBST(root, 7, 15) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Range sum [7, 15]: 32  (7 + 10 + 15)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the average-case time complexity of BST search?",
+          "options": [
+            "O(1)",
+            "O(log n)",
+            "O(n)",
+            "O(n log n)"
+          ],
+          "correctAnswer": "O(log n)",
+          "explanation": "In a balanced BST, each comparison eliminates half the remaining nodes, giving O(log n) average case. Worst case is O(n) for a skewed tree."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When deleting a BST node with two children, what replaces it?",
+          "options": [
+            "The root of the left subtree",
+            "The inorder successor (min of right subtree)",
+            "The parent node",
+            "A new node with average value"
+          ],
+          "correctAnswer": "The inorder successor (min of right subtree)",
+          "explanation": "The inorder successor (smallest node in right subtree) maintains the BST invariant when substituted. Alternatively, the inorder predecessor (largest in left subtree) can also be used."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which traversal of a BST produces values in sorted order?",
+          "correctAnswer": "inorder",
+          "explanation": "Inorder traversal (Left → Root → Right) visits nodes in ascending order in a BST because left < root < right by definition."
+        }
+      ]
     }
   ]
 }
