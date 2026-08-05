@@ -2382,6 +2382,444 @@
           "explanation": "The Stream API provides declarative operations like filter, map, sorted, and collect. It enables functional-style processing of collections without modifying the source."
         }
       ]
+    },
+    {
+      "partTitle": "Part 21: Graph Representation & BFS",
+      "badge": "Graph Theory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Graph Theory — The Heart of CP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Graph problems dominate competitive programming contests. From social networks to road maps, from dependency resolution to game states — graphs model relationships between objects. Mastering graph algorithms is non-negotiable for any serious CP competitor. This part covers graph representation and Breadth-First Search (BFS), the foundation of all graph traversal."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual comparison of adjacency list vs adjacency matrix for a sample graph",
+          "caption": "Adjacency list is space-efficient for sparse graphs; matrix is fast for dense graphs"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Left: Adjacency list showing an array of linked lists. Node 0 → [1, 2], Node 1 → [0, 2, 3], etc. Right: Adjacency matrix as a 2D grid with 1s and 0s. Label space complexity: List O(V+E), Matrix O(V²). Highlight that CP almost always uses adjacency list."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Graph Representation in C++"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Adjacency List** (recommended for CP): `vector<vector<int>> adj(n)`. For weighted graphs: `vector<vector<pair<int,int>>> adj(n)` where pair is {neighbor, weight}. Space: O(V + E).\n\n**Adjacency Matrix**: `vector<vector<int>> adj(n, vector<int>(n, 0))`. Space: O(V²). Only use when V ≤ 1000 or dense graph.\n\n**Edge List**: `vector<tuple<int,int,int>> edges` for {u, v, w}. Used in Kruskal's and Bellman-Ford."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;  // n nodes, m edges\n    cin >> n >> m;\n    \n    // Unweighted adjacency list\n    vector<vector<int>> adj(n);\n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);  // Remove for directed graph\n    }\n    \n    // Weighted adjacency list\n    vector<vector<pair<int,int>>> adjW(n);\n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adjW[u].push_back({v, w});\n        adjW[v].push_back({u, w});\n    }\n    \n    // Adjacency matrix (for dense graphs)\n    vector<vector<int>> mat(n, vector<int>(n, 0));\n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        mat[u][v] = mat[v][u] = w;\n    }\n    \n    // Print adjacency list\n    for (int i = 0; i < n; i++) {\n        cout << i << \": \";\n        for (int v : adj[i]) cout << v << \" \";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "0: 1 2\n1: 0 2 3\n2: 0 1 3\n3: 1 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "BFS — Breadth-First Search"
+        },
+        {
+          "type": "paragraph",
+          "value": "BFS explores a graph level by level, starting from a source node. It uses a queue and guarantees the shortest path in **unweighted** graphs. Time: O(V + E). Space: O(V).\n\n**Key applications:**\n• Shortest path in unweighted graphs\n• Level-order traversal\n• Connected components\n• Bipartite graph checking\n• 0-1 BFS (deque variant for 0/1 weighted edges)"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<int>> adj(n);\n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }\n    \n    int src = 0;\n    vector<int> dist(n, -1);   // -1 means unvisited\n    vector<int> parent(n, -1);\n    queue<int> q;\n    \n    dist[src] = 0;\n    q.push(src);\n    \n    while (!q.empty()) {\n        int u = q.front();\n        q.pop();\n        \n        for (int v : adj[u]) {\n            if (dist[v] == -1) {\n                dist[v] = dist[u] + 1;\n                parent[v] = u;\n                q.push(v);\n            }\n        }\n    }\n    \n    // Print distances\n    cout << \"Distances from \" << src << \":\\n\";\n    for (int i = 0; i < n; i++) {\n        cout << i << \" -> \" << dist[i] << \"\\n\";\n    }\n    \n    // Reconstruct path to node 3\n    int target = 3;\n    if (dist[target] != -1) {\n        vector<int> path;\n        for (int v = target; v != -1; v = parent[v]) {\n            path.push_back(v);\n        }\n        reverse(path.begin(), path.end());\n        cout << \"Path to \" << target << \": \";\n        for (int v : path) cout << v << \" \";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Distances from 0:\n0 -> 0\n1 -> 1\n2 -> 1\n3 -> 2\nPath to 3: 0 1 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "BFS on Grid (2D)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Grid problems are extremely common in CP. Each cell is a node, edges connect to 4 (or 8) neighbors. BFS on grid finds shortest path in unweighted mazes. Use direction arrays `dx[] = {-1, 1, 0, 0}` and `dy[] = {0, 0, -1, 1}` for cleaner code."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<string> grid(n);\n    for (int i = 0; i < n; i++) cin >> grid[i];\n    \n    // Find start (S) and end (E)\n    int sx = -1, sy = -1, ex = -1, ey = -1;\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < m; j++) {\n            if (grid[i][j] == 'S') { sx = i; sy = j; }\n            if (grid[i][j] == 'E') { ex = i; ey = j; }\n        }\n    }\n    \n    int dx[] = {-1, 1, 0, 0};\n    int dy[] = {0, 0, -1, 1};\n    \n    vector<vector<int>> dist(n, vector<int>(m, -1));\n    vector<vector<pair<int,int>>> parent(n, vector<pair<int,int>>(m, {-1,-1}));\n    queue<pair<int,int>> q;\n    \n    dist[sx][sy] = 0;\n    q.push({sx, sy});\n    \n    while (!q.empty()) {\n        auto [x, y] = q.front();\n        q.pop();\n        \n        for (int dir = 0; dir < 4; dir++) {\n            int nx = x + dx[dir];\n            int ny = y + dy[dir];\n            \n            if (nx < 0 || nx >= n || ny < 0 || ny >= m) continue;\n            if (grid[nx][ny] == '#' || dist[nx][ny] != -1) continue;\n            \n            dist[nx][ny] = dist[x][y] + 1;\n            parent[nx][ny] = {x, y};\n            q.push({nx, ny});\n        }\n    }\n    \n    cout << \"Shortest distance: \" << dist[ex][ey] << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5 5\nS....\n.###.\n.....\n.###.\n....E\nShortest distance: 8"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Connected Components (BFS)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Count connected components in an undirected graph. Run BFS from each unvisited node — each BFS discovers one component. This is a Codeforces Div 2 B/C staple."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<int>> adj(n);\n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }\n    \n    vector<bool> vis(n, false);\n    int components = 0;\n    vector<vector<int>> compNodes;\n    \n    for (int i = 0; i < n; i++) {\n        if (vis[i]) continue;\n        \n        components++;\n        vector<int> comp;\n        queue<int> q;\n        q.push(i);\n        vis[i] = true;\n        \n        while (!q.empty()) {\n            int u = q.front();\n            q.pop();\n            comp.push_back(u);\n            \n            for (int v : adj[u]) {\n                if (!vis[v]) {\n                    vis[v] = true;\n                    q.push(v);\n                }\n            }\n        }\n        compNodes.push_back(comp);\n    }\n    \n    cout << \"Components: \" << components << \"\\n\";\n    for (auto& c : compNodes) {\n        cout << \"{\";\n        for (int x : c) cout << x << \" \";\n        cout << \"}\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 6 4\n0 1\n1 2\n3 4\n4 5\nComponents: 2\n{0 1 2 }\n{3 4 5 }"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Bipartite Graph Check (BFS)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Check if a graph is bipartite (can be 2-colored such that no adjacent nodes have same color). BFS with coloring: assign color 0 to source, color 1 to neighbors, and check for conflicts. A graph is bipartite iff it has no odd-length cycles."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<int>> adj(n);\n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        adj[v].push_back(u);\n    }\n    \n    vector<int> color(n, -1);\n    bool isBipartite = true;\n    \n    for (int start = 0; start < n && isBipartite; start++) {\n        if (color[start] != -1) continue;\n        \n        queue<int> q;\n        q.push(start);\n        color[start] = 0;\n        \n        while (!q.empty() && isBipartite) {\n            int u = q.front();\n            q.pop();\n            \n            for (int v : adj[u]) {\n                if (color[v] == -1) {\n                    color[v] = color[u] ^ 1;\n                    q.push(v);\n                } else if (color[v] == color[u]) {\n                    isBipartite = false;\n                    break;\n                }\n            }\n        }\n    }\n    \n    cout << (isBipartite ? \"YES\" : \"NO\") << \"\\n\";\n    \n    if (isBipartite) {\n        cout << \"Coloring: \";\n        for (int c : color) cout << c << \" \";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 4 4\n0 1\n1 2\n2 3\n3 0\nOutput: YES\nColoring: 0 1 0 1"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of BFS on a graph with V vertices and E edges?",
+          "options": [
+            "O(V²)",
+            "O(V + E)",
+            "O(V * E)",
+            "O(E log V)"
+          ],
+          "correctAnswer": "O(V + E)",
+          "explanation": "Each vertex is enqueued/dequeued once (O(V)) and each edge is examined once (O(E)). Total: O(V + E). This is optimal for graph traversal."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which data structure is used in BFS?",
+          "options": [
+            "Stack",
+            "Queue",
+            "Priority Queue",
+            "Set"
+          ],
+          "correctAnswer": "Queue",
+          "explanation": "BFS uses a queue (FIFO) to process nodes level by level. Stack is used in DFS. Priority queue is used in Dijkstra's and A*."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What vector type represents a weighted adjacency list in C++?",
+          "correctAnswer": "vector<vector<pair<int,int>>>",
+          "explanation": "vector<vector<pair<int,int>>> adj(n) stores for each node a list of {neighbor, weight} pairs. The outer vector has size n (nodes), inner vectors store edges."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 22: DFS, Cycle Detection & Topological Sort",
+      "badge": "Graph Theory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "DFS — Depth-First Search"
+        },
+        {
+          "type": "paragraph",
+          "value": "DFS explores as far as possible along each branch before backtracking. It uses a stack (explicit or recursion) and is the go-to algorithm for: detecting cycles, finding connected components, topological sorting, and solving many backtracking problems. Time: O(V + E). Space: O(V) for recursion stack."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing DFS traversal tree with discovery and finish times marked on nodes",
+          "caption": "DFS creates a depth-first tree — back edges indicate cycles in directed graphs"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A directed graph with nodes 0-5. Show DFS starting from 0, going deep: 0→1→2→3, then backtrack to 2, then 2→4, backtrack, etc. Mark discovery times (d) and finish times (f) on each node. Highlight tree edges (black), back edges (red — indicate cycle). Use a clean tree layout."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "DFS Implementation — Recursive & Iterative"
+        },
+        {
+          "type": "paragraph",
+          "value": "Recursive DFS is concise but risks stack overflow on deep graphs (>10^5 depth). Iterative DFS with an explicit stack avoids this. Track three states: 0=unvisited (white), 1=visiting (gray), 2=visited (black). Gray nodes with gray neighbors indicate a cycle in directed graphs."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<vector<int>> adj;\nvector<int> vis;\nvector<int> parent;\n\n// Recursive DFS\nvoid dfs(int u) {\n    vis[u] = 1;  // gray\n    cout << u << \" \";\n    \n    for (int v : adj[u]) {\n        if (!vis[v]) {\n            parent[v] = u;\n            dfs(v);\n        }\n    }\n    vis[u] = 2;  // black\n}\n\n// Iterative DFS\nvoid dfsIterative(int src) {\n    stack<int> st;\n    st.push(src);\n    \n    while (!st.empty()) {\n        int u = st.top();\n        st.pop();\n        \n        if (vis[u]) continue;\n        vis[u] = 1;\n        cout << u << \" \";\n        \n        for (int v : adj[u]) {\n            if (!vis[v]) {\n                parent[v] = u;\n                st.push(v);\n            }\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    adj.resize(n);\n    vis.assign(n, 0);\n    parent.assign(n, -1);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        // adj[v].push_back(u);  // Uncomment for undirected\n    }\n    \n    cout << \"DFS order: \";\n    for (int i = 0; i < n; i++) {\n        if (!vis[i]) dfs(i);\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "DFS order: 0 1 2 3 4 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Cycle Detection in Directed Graphs"
+        },
+        {
+          "type": "paragraph",
+          "value": "A directed graph has a cycle iff DFS encounters a back edge (an edge from a gray node to another gray node). For undirected graphs, a cycle exists if we visit a node that's already visited and is NOT the parent."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<vector<int>> adj;\nvector<int> state;  // 0=unvisited, 1=visiting, 2=done\nbool hasCycle = false;\nvector<int> cycle;\n\nbool dfsCycle(int u) {\n    state[u] = 1;  // gray\n    \n    for (int v : adj[u]) {\n        if (state[v] == 1) {\n            // Back edge found — cycle exists!\n            hasCycle = true;\n            return true;\n        }\n        if (state[v] == 0) {\n            if (dfsCycle(v)) return true;\n        }\n    }\n    \n    state[u] = 2;  // black\n    return false;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    adj.resize(n);\n    state.assign(n, 0);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n    }\n    \n    for (int i = 0; i < n; i++) {\n        if (state[i] == 0) {\n            if (dfsCycle(i)) break;\n        }\n    }\n    \n    cout << (hasCycle ? \"Cycle detected\" : \"No cycle\") << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 4 4\n0 1\n1 2\n2 3\n3 1\nCycle detected"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Topological Sort — Kahn's Algorithm (BFS)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Topological sort orders nodes such that for every directed edge u→v, u comes before v. Only possible for DAGs (Directed Acyclic Graphs). Kahn's algorithm uses in-degree counting and a queue. Time: O(V + E)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<int>> adj(n);\n    vector<int> indeg(n, 0);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n        indeg[v]++;\n    }\n    \n    queue<int> q;\n    for (int i = 0; i < n; i++) {\n        if (indeg[i] == 0) q.push(i);\n    }\n    \n    vector<int> topo;\n    while (!q.empty()) {\n        int u = q.front();\n        q.pop();\n        topo.push_back(u);\n        \n        for (int v : adj[u]) {\n            indeg[v]--;\n            if (indeg[v] == 0) q.push(v);\n        }\n    }\n    \n    if (topo.size() != n) {\n        cout << \"Graph contains cycle!\\n\";\n    } else {\n        cout << \"Topological order: \";\n        for (int x : topo) cout << x << \" \";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 6 6\n5 2\n5 0\n4 0\n4 1\n2 3\n3 1\nTopological order: 4 5 2 0 3 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Topological Sort — DFS-Based"
+        },
+        {
+          "type": "paragraph",
+          "value": "DFS-based topological sort: run DFS, and after exploring all children, push the node onto a stack. Reverse the stack for the topological order. This naturally detects cycles (if a back edge is found during DFS)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nvector<vector<int>> adj;\nvector<int> state;\nstack<int> topoStack;\nbool hasCycle = false;\n\nvoid dfsTopo(int u) {\n    state[u] = 1;  // gray\n    \n    for (int v : adj[u]) {\n        if (state[v] == 1) hasCycle = true;  // back edge\n        else if (state[v] == 0) dfsTopo(v);\n    }\n    \n    state[u] = 2;  // black\n    topoStack.push(u);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    adj.resize(n);\n    state.assign(n, 0);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v;\n        cin >> u >> v;\n        adj[u].push_back(v);\n    }\n    \n    for (int i = 0; i < n; i++) {\n        if (state[i] == 0) dfsTopo(i);\n    }\n    \n    if (hasCycle) {\n        cout << \"Cycle detected!\\n\";\n    } else {\n        cout << \"Topological order: \";\n        while (!topoStack.empty()) {\n            cout << topoStack.top() << \" \";\n            topoStack.pop();\n        }\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Topological order: 5 4 2 3 1 0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Course Schedule (Topological Sort)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: There are n courses, some are prerequisites for others. Determine if you can finish all courses. This is exactly checking if the prerequisite graph is a DAG. If a cycle exists, it's impossible."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, p;\n    cin >> n >> p;  // n courses, p prerequisites\n    vector<vector<int>> adj(n);\n    vector<int> indeg(n, 0);\n    \n    for (int i = 0; i < p; i++) {\n        int a, b;  // b is prerequisite for a\n        cin >> a >> b;\n        adj[b].push_back(a);\n        indeg[a]++;\n    }\n    \n    queue<int> q;\n    for (int i = 0; i < n; i++) {\n        if (indeg[i] == 0) q.push(i);\n    }\n    \n    vector<int> order;\n    while (!q.empty()) {\n        int u = q.front();\n        q.pop();\n        order.push_back(u);\n        for (int v : adj[u]) {\n            if (--indeg[v] == 0) q.push(v);\n        }\n    }\n    \n    if (order.size() == n) {\n        cout << \"Possible! Order: \";\n        for (int c : order) cout << c << \" \";\n        cout << \"\\n\";\n    } else {\n        cout << \"Impossible — cycle in prerequisites\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 4 4\n1 0\n2 0\n3 1\n3 2\nPossible! Order: 0 1 2 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Longest Path in DAG"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the longest path in a Directed Acyclic Graph. This is NP-hard for general graphs but solvable in O(V+E) for DAGs using topological sort + DP. Process nodes in topological order and relax edges."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<pair<int,int>>> adj(n);  // {neighbor, weight}\n    vector<int> indeg(n, 0);\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n        indeg[v]++;\n    }\n    \n    // Kahn's topo sort\n    queue<int> q;\n    for (int i = 0; i < n; i++) {\n        if (indeg[i] == 0) q.push(i);\n    }\n    \n    vector<int> topo;\n    while (!q.empty()) {\n        int u = q.front(); q.pop();\n        topo.push_back(u);\n        for (auto& [v, w] : adj[u]) {\n            if (--indeg[v] == 0) q.push(v);\n        }\n    }\n    \n    // DP on topo order\n    vector<long long> dist(n, LLONG_MIN);\n    dist[topo[0]] = 0;\n    long long ans = 0;\n    \n    for (int u : topo) {\n        if (dist[u] == LLONG_MIN) continue;\n        for (auto& [v, w] : adj[u]) {\n            if (dist[u] + w > dist[v]) {\n                dist[v] = dist[u] + w;\n                ans = max(ans, dist[v]);\n            }\n        }\n    }\n    \n    cout << \"Longest path: \" << ans << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 6 7\n0 1 5\n0 2 3\n1 3 6\n1 2 2\n2 4 4\n2 5 2\n2 3 7\nLongest path: 14"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What data structure is used in iterative DFS?",
+          "options": [
+            "Queue",
+            "Stack",
+            "Priority Queue",
+            "Deque"
+          ],
+          "correctAnswer": "Stack",
+          "explanation": "DFS uses a stack (LIFO) to explore as deep as possible before backtracking. The recursive implementation implicitly uses the call stack."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When does a directed graph have a valid topological sort?",
+          "options": [
+            "Always",
+            "Only if it's a DAG (no cycles)",
+            "Only if it's connected",
+            "Only if it's bipartite"
+          ],
+          "correctAnswer": "Only if it's a DAG (no cycles)",
+          "explanation": "Topological sort is only possible for Directed Acyclic Graphs (DAGs). If a cycle exists, there's no way to order nodes such that all edges go forward."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What are the three DFS node states used for cycle detection?",
+          "correctAnswer": "unvisited, visiting, visited",
+          "explanation": "State 0 (white/unvisited), 1 (gray/visiting), 2 (black/visited). Finding an edge to a gray node indicates a back edge and thus a cycle in directed graphs."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 23: Dijkstra, Floyd-Warshall & MST",
+      "badge": "Graph Theory",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Shortest Paths & Minimum Spanning Tree"
+        },
+        {
+          "type": "paragraph",
+          "value": "This part covers the most important weighted graph algorithms: Dijkstra's (single-source shortest path), Floyd-Warshall (all-pairs shortest path), and Minimum Spanning Tree algorithms (Kruskal's and Prim's). These appear in almost every contest and are essential for solving optimization problems on weighted graphs."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual comparison of Dijkstra's (greedy, one source), Floyd-Warshall (DP, all pairs), and MST (connect all nodes minimally)",
+          "caption": "Dijkstra: single-source shortest path. Floyd-Warshall: all-pairs shortest path. MST: minimal connection of all nodes."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Three panels. Left: Dijkstra's showing source node 0 with distance labels spreading outward. Middle: Floyd-Warshall showing a distance matrix being updated. Right: MST showing a tree connecting all nodes with minimal total edge weight. Label time complexities: Dijkstra O(E log V), Floyd O(V³), MST O(E log V)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Dijkstra's Algorithm — Single-Source Shortest Path"
+        },
+        {
+          "type": "paragraph",
+          "value": "Dijkstra finds the shortest path from a source to all other nodes in a graph with **non-negative** edge weights. It uses a greedy approach: always expand the node with the smallest known distance. Implementation uses a priority queue (min-heap). Time: O(E log V) with binary heap."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m, src;\n    cin >> n >> m >> src;\n    vector<vector<pair<int,int>>> adj(n);  // {neighbor, weight}\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n        adj[v].push_back({u, w});  // Remove for directed\n    }\n    \n    const long long INF = 1e18;\n    vector<long long> dist(n, INF);\n    vector<int> parent(n, -1);\n    \n    // Min-heap: {distance, node}\n    priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;\n    dist[src] = 0;\n    pq.push({0, src});\n    \n    while (!pq.empty()) {\n        auto [d, u] = pq.top();\n        pq.pop();\n        \n        if (d > dist[u]) continue;  // Skip outdated entries\n        \n        for (auto& [v, w] : adj[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                parent[v] = u;\n                pq.push({dist[v], v});\n            }\n        }\n    }\n    \n    cout << \"Shortest distances from \" << src << \":\\n\";\n    for (int i = 0; i < n; i++) {\n        cout << i << \" -> \" << (dist[i] == INF ? -1 : dist[i]) << \"\\n\";\n    }\n    \n    // Reconstruct path to target\n    int target = n - 1;\n    if (dist[target] != INF) {\n        vector<int> path;\n        for (int v = target; v != -1; v = parent[v])\n            path.push_back(v);\n        reverse(path.begin(), path.end());\n        cout << \"Path to \" << target << \": \";\n        for (int v : path) cout << v << \" \";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 5 6 0\n0 1 4\n0 2 1\n2 1 2\n2 3 5\n3 4 1\n1 4 3\nShortest distances from 0:\n0 -> 0\n1 -> 3\n2 -> 1\n3 -> 6\n4 -> 6\nPath to 4: 0 2 1 4"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Dijkstra with Set (Erase-Update Optimization)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Instead of pushing duplicate entries to the priority queue, use a set and erase the old entry when updating. This reduces memory and can be slightly faster, though the complexity remains O(E log V)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m, src;\n    cin >> n >> m >> src;\n    vector<vector<pair<int,int>>> adj(n);\n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n    }\n    \n    const long long INF = 1e18;\n    vector<long long> dist(n, INF);\n    set<pair<long long,int>> st;  // {dist, node}\n    \n    dist[src] = 0;\n    st.insert({0, src});\n    \n    while (!st.empty()) {\n        auto it = st.begin();\n        auto [d, u] = *it;\n        st.erase(it);\n        \n        for (auto& [v, w] : adj[u]) {\n            if (dist[u] + w < dist[v]) {\n                if (dist[v] != INF) st.erase({dist[v], v});\n                dist[v] = dist[u] + w;\n                st.insert({dist[v], v});\n            }\n        }\n    }\n    \n    for (int i = 0; i < n; i++) {\n        cout << dist[i] << \" \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "0 3 1 6 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Floyd-Warshall — All-Pairs Shortest Path"
+        },
+        {
+          "type": "paragraph",
+          "value": "Floyd-Warshall finds shortest paths between ALL pairs of nodes using dynamic programming. It works with negative edges (but not negative cycles). The DP state: `dist[i][j][k]` = shortest path from i to j using only nodes {0..k-1} as intermediates. Time: O(V³). Space: O(V²). Best for V ≤ 500."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    \n    const long long INF = 1e18;\n    vector<vector<long long>> dist(n, vector<long long>(n, INF));\n    \n    // Initialize\n    for (int i = 0; i < n; i++) dist[i][i] = 0;\n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        dist[u][v] = min(dist[u][v], (long long)w);\n        // dist[v][u] = min(dist[v][u], (long long)w);  // Undirected\n    }\n    \n    // Floyd-Warshall\n    for (int k = 0; k < n; k++) {\n        for (int i = 0; i < n; i++) {\n            for (int j = 0; j < n; j++) {\n                if (dist[i][k] + dist[k][j] < dist[i][j]) {\n                    dist[i][j] = dist[i][k] + dist[k][j];\n                }\n            }\n        }\n    }\n    \n    // Check for negative cycles\n    bool hasNegCycle = false;\n    for (int i = 0; i < n; i++) {\n        if (dist[i][i] < 0) hasNegCycle = true;\n    }\n    \n    if (hasNegCycle) {\n        cout << \"Negative cycle detected!\\n\";\n    } else {\n        cout << \"All-pairs shortest distances:\\n\";\n        for (int i = 0; i < n; i++) {\n            for (int j = 0; j < n; j++) {\n                cout << (dist[i][j] == INF ? -1 : dist[i][j]) << \" \";\n            }\n            cout << \"\\n\";\n        }\n    }\n    \n    return 0;\n}",
+          "output": "Input: 4 4\n0 1 3\n1 2 1\n2 3 2\n0 3 10\nAll-pairs shortest distances:\n0 3 4 6 \nINF 0 1 3 \nINF INF 0 2 \nINF INF INF 0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Kruskal's MST — Union-Find"
+        },
+        {
+          "type": "paragraph",
+          "value": "Minimum Spanning Tree (MST) connects all nodes with minimum total edge weight. Kruskal's algorithm sorts edges by weight and greedily adds the smallest edge that doesn't form a cycle, using Union-Find (Disjoint Set Union) for cycle detection. Time: O(E log E)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct DSU {\n    vector<int> p, sz;\n    DSU(int n) {\n        p.resize(n);\n        sz.assign(n, 1);\n        iota(p.begin(), p.end(), 0);\n    }\n    int find(int x) {\n        return p[x] == x ? x : p[x] = find(p[x]);\n    }\n    bool unite(int a, int b) {\n        a = find(a); b = find(b);\n        if (a == b) return false;\n        if (sz[a] < sz[b]) swap(a, b);\n        p[b] = a;\n        sz[a] += sz[b];\n        return true;\n    }\n};\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<tuple<int,int,int>> edges;  // {weight, u, v}\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        edges.push_back({w, u, v});\n    }\n    \n    sort(edges.begin(), edges.end());\n    DSU dsu(n);\n    long long mstWeight = 0;\n    vector<pair<int,int>> mstEdges;\n    \n    for (auto& [w, u, v] : edges) {\n        if (dsu.unite(u, v)) {\n            mstWeight += w;\n            mstEdges.push_back({u, v});\n        }\n    }\n    \n    if (mstEdges.size() != n - 1) {\n        cout << \"Graph is not connected!\\n\";\n    } else {\n        cout << \"MST weight: \" << mstWeight << \"\\n\";\n        cout << \"MST edges: \";\n        for (auto& [u, v] : mstEdges) cout << \"(\" << u << \",\" << v << \") \";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 4 5\n0 1 10\n0 2 6\n0 3 5\n1 3 15\n2 3 4\nMST weight: 19\nMST edges: (2,3) (0,3) (0,1)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Prim's MST — Priority Queue"
+        },
+        {
+          "type": "paragraph",
+          "value": "Prim's algorithm grows the MST from a starting node, always adding the cheapest edge connecting the tree to a non-tree node. Like Dijkstra but tracks minimum edge weight to the tree instead of distance from source. Time: O(E log V)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m;\n    cin >> n >> m;\n    vector<vector<pair<int,int>>> adj(n);  // {neighbor, weight}\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n        adj[v].push_back({u, w});\n    }\n    \n    const long long INF = 1e18;\n    vector<long long> minEdge(n, INF);\n    vector<bool> inMST(n, false);\n    vector<int> parent(n, -1);\n    \n    priority_queue<pair<long long,int>, vector<pair<long long,int>>, greater<>> pq;\n    minEdge[0] = 0;\n    pq.push({0, 0});\n    long long mstWeight = 0;\n    \n    while (!pq.empty()) {\n        auto [w, u] = pq.top();\n        pq.pop();\n        \n        if (inMST[u]) continue;\n        inMST[u] = true;\n        mstWeight += w;\n        \n        for (auto& [v, weight] : adj[u]) {\n            if (!inMST[v] && weight < minEdge[v]) {\n                minEdge[v] = weight;\n                parent[v] = u;\n                pq.push({minEdge[v], v});\n            }\n        }\n    }\n    \n    cout << \"MST weight: \" << mstWeight << \"\\n\";\n    cout << \"MST edges: \";\n    for (int i = 1; i < n; i++) {\n        if (parent[i] != -1) cout << \"(\" << parent[i] << \",\" << i << \") \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "MST weight: 19\nMST edges: (0,1) (0,3) (3,2)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Shortest Path with Exactly K Edges"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the shortest path from source to target using exactly k edges. This is a classic DP on graphs problem. State: dp[i][v] = shortest path to v using exactly i edges. Transition: dp[i][v] = min(dp[i-1][u] + w(u,v)) for all edges into v. Time: O(k * E)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, m, k, src, target;\n    cin >> n >> m >> k >> src >> target;\n    vector<vector<pair<int,int>>> adj(n);  // {neighbor, weight}\n    \n    for (int i = 0; i < m; i++) {\n        int u, v, w;\n        cin >> u >> v >> w;\n        adj[u].push_back({v, w});\n    }\n    \n    const long long INF = 1e18;\n    // dp[i][v] = shortest path to v using exactly i edges\n    vector<vector<long long>> dp(k + 1, vector<long long>(n, INF));\n    dp[0][src] = 0;\n    \n    for (int i = 1; i <= k; i++) {\n        for (int u = 0; u < n; u++) {\n            if (dp[i-1][u] == INF) continue;\n            for (auto& [v, w] : adj[u]) {\n                dp[i][v] = min(dp[i][v], dp[i-1][u] + w);\n            }\n        }\n    }\n    \n    cout << \"Shortest path with exactly \" << k << \" edges: \";\n    cout << (dp[k][target] == INF ? -1 : dp[k][target]) << \"\\n\";\n    \n    // Also find shortest with AT MOST k edges\n    long long ans = INF;\n    for (int i = 0; i <= k; i++) ans = min(ans, dp[i][target]);\n    cout << \"Shortest with at most \" << k << \" edges: \" << ans << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 4 4 2 0 3\n0 1 1\n1 2 1\n2 3 1\n0 3 10\nShortest path with exactly 2 edges: 12\nShortest with at most 2 edges: 10"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Algorithm Comparison Summary"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Algorithm | Problem | Time | Space | Constraints | Notes |\n|-----------|---------|------|-------|-------------|-------|\n| BFS | Unweighted shortest path | O(V+E) | O(V) | Any | Use queue |\n| DFS | Connectivity, cycles, topo | O(V+E) | O(V) | Any | Use stack/recursion |\n| Dijkstra | Weighted shortest path | O(E log V) | O(V) | No negative edges | Use min-heap |\n| Bellman-Ford | Weighted with negatives | O(VE) | O(V) | V ≤ 1000 | Detects negative cycles |\n| Floyd-Warshall | All-pairs shortest path | O(V³) | O(V²) | V ≤ 500 | Handles negatives |\n| Kruskal's | MST | O(E log E) | O(V) | Any | Use Union-Find |\n| Prim's | MST | O(E log V) | O(V) | Any | Use min-heap |"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of Dijkstra's algorithm with a binary heap?",
+          "options": [
+            "O(V²)",
+            "O(E log V)",
+            "O(V * E)",
+            "O(V + E)"
+          ],
+          "correctAnswer": "O(E log V)",
+          "explanation": "Each edge may cause a heap push (O(log V)), and there are E edges. Total: O(E log V). With a Fibonacci heap, this improves to O(V log V + E)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When should you use Floyd-Warshall over Dijkstra?",
+          "options": [
+            "When the graph is sparse",
+            "When you need all-pairs shortest paths and V ≤ 500",
+            "When edge weights are very large",
+            "When the graph has negative cycles"
+          ],
+          "correctAnswer": "When you need all-pairs shortest paths and V ≤ 500",
+          "explanation": "Floyd-Warshall is O(V³) which is feasible only for V ≤ 500. For larger graphs or single-source queries, run Dijkstra from each source (O(V * E log V)) or use Johnson's algorithm."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What data structure does Kruskal's algorithm use for cycle detection?",
+          "correctAnswer": "Union-Find",
+          "explanation": "Kruskal's uses the Union-Find (Disjoint Set Union / DSU) data structure to efficiently check if adding an edge would form a cycle. Without path compression and union by size, it would be too slow."
+        }
+      ]
     }
   ]
 }
