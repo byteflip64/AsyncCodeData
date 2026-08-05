@@ -2583,6 +2583,883 @@
                     "explanation": "Closures use pipe syntax: |x, y| x + y. The parameter list is between pipes, followed by the expression or block body."
                 }
             ]
+        },
+    {
+            "partTitle": "Part 26: Smart Pointers — Box<T>",
+            "badge": "Smart Pointers",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Heap Allocation with Box"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Smart pointers are data structures that act like pointers but have additional metadata and capabilities. Box<T> is the simplest smart pointer — it allocates data on the heap and stores a pointer to it on the stack. It has no performance overhead beyond heap allocation."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Using Box<T>"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    // Store an i32 on the heap\n    let b = Box::new(5);\n    println!(\"b = {}\", b);\n    \n    // Box is automatically freed when it goes out of scope\n    // No manual deallocation needed!\n}",
+                    "output": "b = 5"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Recursive Types with Box"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// Without Box, this would have infinite size!\nenum List {\n    Cons(i32, Box<List>),\n    Nil,\n}\n\nuse List::{Cons, Nil};\n\nfn main() {\n    let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));\n    \n    // Box breaks the recursion by adding an indirection\n    // List only needs space for i32 + a pointer\n    println!(\"List created successfully\");\n}",
+                    "output": "List created successfully"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Recursive types need Box because Rust needs to know the size of every type at compile time. Box provides the indirection needed to make the type have a known size."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Deref and Drop Traits"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let x = 5;\n    let y = Box::new(x);\n    \n    // Deref coercion: Box<T> can be used like &T\n    assert_eq!(5, x);\n    assert_eq!(5, *y);  // Dereference the Box\n    \n    // Box implements Drop, so memory is freed automatically\n    println!(\"Both assertions passed!\");\n}",
+                    "output": "Both assertions passed!"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the primary purpose of Box<T>?",
+                    "options": [
+                        "Reference counting",
+                        "Heap allocation with a known-size pointer",
+                        "Shared ownership",
+                        "Interior mutability"
+                    ],
+                    "correctAnswer": "Heap allocation with a known-size pointer",
+                    "explanation": "Box<T> allocates on the heap and stores a pointer on the stack. It's used when you need heap allocation or recursive types."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Why do recursive types need Box?",
+                    "options": [
+                        "For better performance",
+                        "To provide indirection so the type has a known size",
+                        "To enable mutation",
+                        "For thread safety"
+                    ],
+                    "correctAnswer": "To provide indirection so the type has a known size",
+                    "explanation": "Rust requires known sizes at compile time. Box adds a layer of indirection, making recursive types have a fixed size."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What trait allows Box<T> to be dereferenced like a regular reference?",
+                    "correctAnswer": "Deref",
+                    "explanation": "The Deref trait enables the * operator on smart pointers. Deref coercion also allows using Box<T> where &T is expected."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 27: Smart Pointers — Rc and RefCell",
+            "badge": "Smart Pointers",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Shared Ownership and Interior Mutability"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rc<T> (reference counting) enables multiple ownership of the same data. RefCell<T> enables mutable borrows checked at runtime instead of compile time. Together, they provide flexibility when the borrow checker's rules are too restrictive."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Rc<T> for Shared Ownership"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::rc::Rc;\n\nfn main() {\n    let data = Rc::new(String::from(\"shared data\"));\n    \n    println!(\"Reference count after creation: {}\", Rc::strong_count(&data));\n    \n    {\n        let data2 = Rc::clone(&data);\n        println!(\"Reference count after clone: {}\", Rc::strong_count(&data));\n        println!(\"data2: {}\", data2);\n    }\n    \n    println!(\"Reference count after drop: {}\", Rc::strong_count(&data));\n    println!(\"data: {}\", data);\n}",
+                    "output": "Reference count after creation: 1\nReference count after clone: 2\ndata2: shared data\nReference count after drop: 1\ndata: shared data"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rc::clone only increments the reference count — it's cheap. The data is dropped when the last Rc goes out of scope. Rc is NOT thread-safe; use Arc for multi-threaded code."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "RefCell<T> for Interior Mutability"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::cell::RefCell;\n\nfn main() {\n    let data = RefCell::new(5);\n    \n    // Borrow mutably at runtime\n    *data.borrow_mut() += 1;\n    \n    println!(\"data: {}\", data.borrow());\n    \n    // Multiple immutable borrows are OK\n    let b1 = data.borrow();\n    let b2 = data.borrow();\n    println!(\"b1: {}, b2: {}\", b1, b2);\n    \n    // Runtime panic (not compile error!) if rules are violated:\n    // let mut_b = data.borrow_mut();  // Panics! Already borrowed\n}",
+                    "output": "data: 6\nb1: 6, b2: 6"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "RefCell enforces borrowing rules at runtime instead of compile time. borrow() returns an immutable reference; borrow_mut() returns a mutable one. Violating the rules causes a panic, not a compile error."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Combining Rc and RefCell"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::rc::Rc;\nuse std::cell::RefCell;\n\nfn main() {\n    let value = Rc::new(RefCell::new(5));\n    \n    let a = Rc::clone(&value);\n    let b = Rc::clone(&value);\n    \n    *a.borrow_mut() += 10;\n    *b.borrow_mut() += 5;\n    \n    println!(\"Final value: {}\", value.borrow());\n}",
+                    "output": "Final value: 20"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "When does RefCell<T> panic?",
+                    "options": [
+                        "At compile time",
+                        "At runtime when borrowing rules are violated",
+                        "Never",
+                        "Only in debug mode"
+                    ],
+                    "correctAnswer": "At runtime when borrowing rules are violated",
+                    "explanation": "RefCell checks borrowing rules at runtime. A panic occurs if you try to borrow mutably while other borrows exist."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Is Rc<T> thread-safe?",
+                    "options": [
+                        "Yes",
+                        "No, use Arc<T> for threads",
+                        "Only in release mode",
+                        "Only with RefCell"
+                    ],
+                    "correctAnswer": "No, use Arc<T> for threads",
+                    "explanation": "Rc is single-threaded only. Use Arc<T> (atomic reference counting) for shared ownership across threads."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What method creates a new reference to an Rc without copying data?",
+                    "correctAnswer": "clone",
+                    "explanation": "Rc::clone increments the reference count. It's cheap because it doesn't clone the underlying data, just the pointer."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 28: Concurrency — Threads",
+            "badge": "Concurrency",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Fearless Concurrency"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rust's ownership and type systems are powerful tools for managing concurrency. The compiler prevents data races at compile time, making concurrent code safe without runtime overhead. Rust uses OS threads via std::thread."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Spawning Threads"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::thread;\nuse std::time::Duration;\n\nfn main() {\n    let handle = thread::spawn(|| {\n        for i in 1..10 {\n            println!(\"hi number {} from the spawned thread!\", i);\n            thread::sleep(Duration::from_millis(1));\n        }\n    });\n    \n    for i in 1..5 {\n        println!(\"hi number {} from the main thread!\", i);\n        thread::sleep(Duration::from_millis(1));\n    }\n    \n    // Wait for spawned thread to finish\n    handle.join().unwrap();\n}",
+                    "output": "hi number 1 from the main thread!\nhi number 1 from the spawned thread!\nhi number 2 from the main thread!\nhi number 2 from the spawned thread!\n..."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Moving Data into Threads"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::thread;\n\nfn main() {\n    let v = vec![1, 2, 3];\n    \n    let handle = thread::spawn(move || {\n        println!(\"Here's a vector: {:?}\", v);\n    });\n    \n    // v is no longer valid here (moved into thread)\n    // println!(\"{:?}\", v); // ERROR!\n    \n    handle.join().unwrap();\n}",
+                    "output": "Here's a vector: [1, 2, 3]"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "The move keyword forces the closure to take ownership of captured variables. This is necessary because the spawned thread might outlive the current scope. Without move, the compiler would complain about lifetimes."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Message Passing with Channels"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::sync::mpsc;\nuse std::thread;\n\nfn main() {\n    let (tx, rx) = mpsc::channel();\n    \n    thread::spawn(move || {\n        let val = String::from(\"hi\");\n        tx.send(val).unwrap();\n        // val is no longer valid (moved into channel)\n    });\n    \n    let received = rx.recv().unwrap();\n    println!(\"Got: {}\", received);\n}",
+                    "output": "Got: hi"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "mpsc stands for multiple producer, single consumer. Channels transfer ownership of messages, ensuring safe concurrent communication. send moves data; recv blocks until a message arrives."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does the move keyword do in a thread closure?",
+                    "options": [
+                        "Moves the thread to another core",
+                        "Forces the closure to take ownership of captured variables",
+                        "Optimizes memory layout",
+                        "Enables shared mutability"
+                    ],
+                    "correctAnswer": "Forces the closure to take ownership of captured variables",
+                    "explanation": "move forces ownership transfer into the closure, which is necessary when the thread might outlive the current scope."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does mpsc stand for?",
+                    "options": [
+                        "Multiple Producer Single Consumer",
+                        "Multi-Process Single Channel",
+                        "Message Passing Secure Channel",
+                        "Multi-Platform System Call"
+                    ],
+                    "correctAnswer": "Multiple Producer Single Consumer",
+                    "explanation": "mpsc channels allow multiple senders (producers) but only one receiver (consumer) for safe message passing."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What method waits for a spawned thread to finish?",
+                    "correctAnswer": "join",
+                    "explanation": "handle.join() blocks until the spawned thread completes. It returns a Result that can be unwrapped."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 29: Concurrency — Shared State",
+            "badge": "Concurrency",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Shared-State Concurrency"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "While message passing is preferred, sometimes shared memory is necessary. Rust provides Mutex and RwLock for safe shared mutable state across threads, combined with Arc for shared ownership."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Mutex for Mutual Exclusion"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::sync::Mutex;\n\nfn main() {\n    let m = Mutex::new(5);\n    \n    {\n        let mut num = m.lock().unwrap();\n        *num = 6;\n    }  // Lock is automatically released here\n    \n    println!(\"m = {:?}\", m);\n}",
+                    "output": "m = Mutex { data: 6, .. }"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Mutex ensures only one thread can access data at a time. lock() returns a MutexGuard that dereferences to the inner data. The lock is released when the guard goes out of scope."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Arc<Mutex<T>> for Thread Sharing"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::sync::{Arc, Mutex};\nuse std::thread;\n\nfn main() {\n    let counter = Arc::new(Mutex::new(0));\n    let mut handles = vec![];\n    \n    for _ in 0..10 {\n        let counter = Arc::clone(&counter);\n        let handle = thread::spawn(move || {\n            let mut num = counter.lock().unwrap();\n            *num += 1;\n        });\n        handles.push(handle);\n    }\n    \n    for handle in handles {\n        handle.join().unwrap();\n    }\n    \n    println!(\"Result: {}\", *counter.lock().unwrap());\n}",
+                    "output": "Result: 10"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Arc (atomic reference counting) enables shared ownership across threads. Combined with Mutex, it provides safe shared mutable state. Each thread gets a clone of the Arc, all pointing to the same Mutex."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Send and Sync Traits"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Send means a type can be transferred between threads. Sync means a type can be referenced from multiple threads simultaneously. Most types implement both. Rc and RefCell do NOT implement Send or Sync, which is why Arc and Mutex are needed for threads."
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// Types that implement Send + Sync:\n// - i32, String, Vec<T>\n// - Arc<T> (if T is Send + Sync)\n// - Mutex<T> (if T is Send)\n\n// Types that do NOT implement Send or Sync:\n// - Rc<T> (not thread-safe)\n// - RefCell<T> (not thread-safe)\n\nfn main() {\n    println!(\"Send and Sync are auto-traits checked by the compiler\");\n}",
+                    "output": "Send and Sync are auto-traits checked by the compiler"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does Arc stand for?",
+                    "options": [
+                        "Array Reference Count",
+                        "Atomic Reference Counting",
+                        "Automatic Resource Control",
+                        "Async Runtime Container"
+                    ],
+                    "correctAnswer": "Atomic Reference Counting",
+                    "explanation": "Arc uses atomic operations for reference counting, making it safe to share across threads. Rc uses non-atomic operations and is not thread-safe."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Why can't you use Rc<T> across threads?",
+                    "options": [
+                        "It's too slow",
+                        "It doesn't implement Send or Sync",
+                        "It requires a Mutex",
+                        "It's deprecated"
+                    ],
+                    "correctAnswer": "It doesn't implement Send or Sync",
+                    "explanation": "Rc is not thread-safe because its reference counting is not atomic. The compiler prevents using Rc across threads because it doesn't implement Send or Sync."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What smart pointer combination provides shared mutable state across threads?",
+                    "correctAnswer": "Arc<Mutex<T>>",
+                    "explanation": "Arc provides thread-safe shared ownership, and Mutex provides mutual exclusion for safe mutable access. Combined, they enable shared mutable state across threads."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 30: Testing in Rust",
+            "badge": "Testing",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Writing and Running Tests"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rust has built-in testing support. Tests are functions annotated with #[test] that verify non-test code behaves as expected. Run tests with cargo test. Rust distinguishes between unit tests (test modules in src files) and integration tests (in tests/ directory)."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Writing Tests"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "pub fn add(a: i32, b: i32) -> i32 {\n    a + b\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn it_works() {\n        let result = add(2, 2);\n        assert_eq!(result, 4);\n    }\n    \n    #[test]\n    fn another() {\n        assert_ne!(add(2, 2), 5);\n    }\n    \n    #[test]\n    fn larger_can_hold_smaller() {\n        assert!(add(5, 3) > 5);\n    }\n}\n\nfn main() {}",
+                    "output": "running 3 tests\ntest tests::another ... ok\ntest tests::it_works ... ok\ntest tests::larger_can_hold_smaller ... ok\n\ntest result: ok. 3 passed"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Custom Failure Messages"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "pub fn greeting(name: &str) -> String {\n    format!(\"Hello {}!\", name)\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    fn greeting_contains_name() {\n        let result = greeting(\"Carol\");\n        assert!(\n            result.contains(\"Carol\"),\n            \"Greeting did not contain name, value was `{}`\",\n            result\n        );\n    }\n}\n\nfn main() {}",
+                    "output": "test tests::greeting_contains_name ... ok"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Checking for Panics"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "pub fn divide(a: f64, b: f64) -> f64 {\n    if b == 0.0 {\n        panic!(\"Cannot divide by zero\");\n    }\n    a / b\n}\n\n#[cfg(test)]\nmod tests {\n    use super::*;\n    \n    #[test]\n    #[should_panic(expected = \"divide by zero\")]\n    fn divide_by_zero() {\n        divide(10.0, 0.0);\n    }\n}\n\nfn main() {}",
+                    "output": "test tests::divide_by_zero ... ok"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Integration Tests"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// tests/integration_test.rs\n// use your_crate_name::*;\n\n// #[test]\n// fn it_adds_two() {\n//     assert_eq!(4, add(2, 2));\n// }\n\nfn main() {\n    println!(\"Integration tests go in the tests/ directory\");\n}",
+                    "output": "Integration tests go in the tests/ directory"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Integration tests are external to your crate and use it like any other code. They go in the tests/ directory at the project root. Each file in tests/ is compiled as a separate crate."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What attribute marks a function as a test?",
+                    "options": [
+                        "#[test]",
+                        "#[check]",
+                        "#[verify]",
+                        "#[unittest]"
+                    ],
+                    "correctAnswer": "#[test]",
+                    "explanation": "The #[test] attribute tells the test runner to execute this function as a test. Functions without it are ignored during testing."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What attribute checks that a test panics?",
+                    "options": [
+                        "#[panic]",
+                        "#[should_panic]",
+                        "#[expect_error]",
+                        "#[catch_panic]"
+                    ],
+                    "correctAnswer": "#[should_panic]",
+                    "explanation": "#[should_panic] marks a test that should fail by panicking. If the test doesn't panic, the test runner reports it as a failure."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What command runs all tests in a Rust project?",
+                    "correctAnswer": "cargo test",
+                    "explanation": "cargo test compiles and runs all tests in the project, including unit tests, integration tests, and doc tests."
+                }
+            ]
+        },
+    {
+            "partTitle": "Part 31: I/O and File Operations",
+            "badge": "I/O",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Reading and Writing Files"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "The std::fs module provides functions for filesystem operations. std::io handles input and output. Rust's error handling with Result makes I/O operations explicit and safe."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Reading a File"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fs;\nuse std::io::{self, Read};\n\nfn read_username_from_file() -> Result<String, io::Error> {\n    fs::read_to_string(\"hello.txt\")\n}\n\nfn read_username_manual() -> Result<String, io::Error> {\n    let mut file = std::fs::File::open(\"hello.txt\")?;\n    let mut username = String::new();\n    file.read_to_string(&mut username)?;\n    Ok(username)\n}\n\nfn main() {\n    match read_username_from_file() {\n        Ok(content) => println!(\"File content: {}\", content),\n        Err(e) => println!(\"Error: {}\", e),\n    }\n}",
+                    "output": "Error: No such file or directory (os error 2)"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Writing to a File"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fs::File;\nuse std::io::Write;\n\nfn main() -> std::io::Result<()> {\n    let mut file = File::create(\"output.txt\")?;\n    file.write_all(b\"Hello, Rust!\")?;\n    \n    // Using fs::write shortcut\n    std::fs::write(\"output2.txt\", b\"Hello again!\")?;\n    \n    println!(\"Files written successfully\");\n    Ok(())\n}",
+                    "output": "Files written successfully"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The ? Operator in main"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fs::File;\nuse std::io::{self, Read};\n\nfn main() -> Result<(), Box<dyn std::error::Error>> {\n    let mut file = File::open(\"hello.txt\")?;\n    let mut contents = String::new();\n    file.read_to_string(&mut contents)?;\n    println!(\"{}\", contents);\n    Ok(())\n}",
+                    "output": "Error: No such file or directory (os error 2)"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "main can return Result, letting the ? operator work at the top level. Box<dyn std::error::Error> is a trait object that can hold any error type."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does fs::read_to_string return?",
+                    "options": [
+                        "String",
+                        "Result<String, io::Error>",
+                        "Option<String>",
+                        "Vec<u8>"
+                    ],
+                    "correctAnswer": "Result<String, io::Error>",
+                    "explanation": "fs::read_to_string returns a Result because file operations can fail. It reads the entire file into a String."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Can main() return a Result in Rust?",
+                    "options": [
+                        "No, main must return ()",
+                        "Yes, using Result<(), E>",
+                        "Only in nightly Rust",
+                        "Only with special attributes"
+                    ],
+                    "correctAnswer": "Yes, using Result<(), E>",
+                    "explanation": "main can return Result<(), E> since Rust 1.26. This lets you use ? at the top level for cleaner error propagation."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What shortcut function writes bytes to a file in one call?",
+                    "correctAnswer": "fs::write",
+                    "explanation": "fs::write(path, contents) is a convenience function that creates or truncates a file and writes data to it in one call."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 32: Command Line Arguments",
+            "badge": "CLI",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Building CLI Applications"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rust excels at building command-line tools. std::env provides access to command-line arguments. For serious CLI apps, the clap crate is the industry standard for argument parsing."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Reading Arguments with std::env"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::env;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    \n    println!(\"Program name: {}\", args[0]);\n    \n    if args.len() > 1 {\n        println!(\"Arguments: {:?}\", &args[1..]);\n    } else {\n        println!(\"No arguments provided\");\n    }\n}\n\n// Run: cargo run -- arg1 arg2 arg3",
+                    "output": "Program name: target/debug/myapp\nArguments: [\"arg1\", \"arg2\", \"arg3\"]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "A Simple grep Clone"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::env;\nuse std::fs;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    \n    if args.len() < 3 {\n        eprintln!(\"Usage: {} <query> <filename>\", args[0]);\n        std::process::exit(1);\n    }\n    \n    let query = &args[1];\n    let filename = &args[2];\n    \n    match fs::read_to_string(filename) {\n        Ok(contents) => {\n            for line in contents.lines() {\n                if line.contains(query) {\n                    println!(\"{}\", line);\n                }\n            }\n        }\n        Err(e) => eprintln!(\"Error reading file: {}\", e),\n    }\n}",
+                    "output": "Usage: target/debug/myapp <query> <filename>"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Environment Variables"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::env;\n\nfn main() {\n    // Read an environment variable\n    match env::var(\"HOME\") {\n        Ok(val) => println!(\"HOME: {}\", val),\n        Err(e) => println!(\"Couldn't read HOME: {}\", e),\n    }\n    \n    // Set an environment variable (for child processes)\n    env::set_var(\"MY_VAR\", \"hello\");\n    println!(\"MY_VAR: {}\", env::var(\"MY_VAR\").unwrap());\n    \n    // Iterate over all env vars\n    for (key, value) in env::vars() {\n        if key.starts_with(\"RUST\") {\n            println!(\"{}: {}\", key, value);\n        }\n    }\n}",
+                    "output": "HOME: /home/user\nMY_VAR: hello\nRUST_BACKTRACE: 1"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What method returns command-line arguments as an iterator?",
+                    "options": [
+                        "env::args()",
+                        "env::vars()",
+                        "std::args()",
+                        "cli::parse()"
+                    ],
+                    "correctAnswer": "env::args()",
+                    "explanation": "std::env::args() returns an iterator over the command-line arguments, starting with the program name."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What function reads an environment variable?",
+                    "options": [
+                        "env::get()",
+                        "env::var()",
+                        "env::read()",
+                        "env::fetch()"
+                    ],
+                    "correctAnswer": "env::var()",
+                    "explanation": "std::env::var() reads an environment variable and returns Result<String, VarError>."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What stream should you use for error messages in CLI apps?",
+                    "correctAnswer": "eprintln",
+                    "explanation": "eprintln! writes to stderr instead of stdout. This separates error messages from normal output, which is important for piping."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 33: Macros",
+            "badge": "Advanced",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Metaprogramming with Macros"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Macros are a way of writing code that writes other code (metaprogramming). Declarative macros (macro_rules!) match patterns and generate code. Procedural macros operate on Rust code as input and produce Rust code as output."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Declarative Macros with macro_rules!"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "macro_rules! say_hello {\n    () => {\n        println!(\"Hello!\");\n    };\n}\n\nmacro_rules! create_vec {\n    ($($x:expr),*) => {\n        {\n            let mut temp_vec = Vec::new();\n            $(\n                temp_vec.push($x);\n            )*\n            temp_vec\n        }\n    };\n}\n\nfn main() {\n    say_hello!();\n    \n    let v = create_vec![1, 2, 3];\n    println!(\"{:?}\", v);\n}",
+                    "output": "Hello!\n[1, 2, 3]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Built-in Macros"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    // println! formats and prints to stdout\n    println!(\"Hello, {}!\", \"world\");\n    \n    // format! creates a String\n    let s = format!(\"{} + {} = {}\", 1, 2, 3);\n    println!(\"{}\", s);\n    \n    // vec! creates a vector\n    let v = vec![1, 2, 3];\n    println!(\"{:?}\", v);\n    \n    // assert! macros for testing\n    assert_eq!(2 + 2, 4);\n    assert!(true);\n    \n    // include_str! includes file contents at compile time\n    // let contents = include_str!(\"file.txt\");\n    \n    // todo! and unimplemented! for stubs\n    // todo!(\"Implement this later\");\n}",
+                    "output": "Hello, world!\n1 + 2 = 3\n[1, 2, 3]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Procedural Macros"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// Procedural macros are defined in separate crates\n// They come in three flavors:\n// - Custom derive (#[derive(MyTrait)])\n// - Attribute-like (#[my_attribute])\n// - Function-like (my_macro!())\n\n// Example from serde:\n// use serde::{Serialize, Deserialize};\n//\n// #[derive(Serialize, Deserialize, Debug)]\n// struct Point {\n//     x: i32,\n//     y: i32,\n// }\n\nfn main() {\n    println!(\"Procedural macros require a separate crate\");\n}",
+                    "output": "Procedural macros require a separate crate"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the difference between macros and functions?",
+                    "options": [
+                        "Macros are faster",
+                        "Macros operate on code at compile time; functions at runtime",
+                        "Macros can only print",
+                        "There is no difference"
+                    ],
+                    "correctAnswer": "Macros operate on code at compile time; functions at runtime",
+                    "explanation": "Macros are expanded at compile time and can generate code. Functions are called at runtime. Macros can take a variable number of arguments."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which keyword defines a declarative macro?",
+                    "options": [
+                        "macro",
+                        "macro_rules!",
+                        "define_macro!",
+                        "proc_macro"
+                    ],
+                    "correctAnswer": "macro_rules!",
+                    "explanation": "macro_rules! defines declarative macros that match patterns and generate code. Procedural macros use #[proc_macro]."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What macro creates a formatted String?",
+                    "correctAnswer": "format!",
+                    "explanation": "format! works like println! but returns a String instead of printing to stdout."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 34: Unsafe Rust",
+            "badge": "Advanced",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "When You Need to Break the Rules"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Unsafe Rust gives you five superpowers: dereference raw pointers, call unsafe functions, access/modify mutable static variables, implement unsafe traits, and access union fields. Unsafe doesn't turn off the borrow checker — it adds capabilities with the responsibility of maintaining invariants manually."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Raw Pointers"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let mut num = 5;\n    \n    // Raw pointers can be created in safe Rust\n    let r1 = &num as *const i32;\n    let r2 = &mut num as *mut i32;\n    \n    // Dereferencing requires unsafe\n    unsafe {\n        println!(\"r1 is: {}\", *r1);\n        *r2 = 10;\n        println!(\"r2 is now: {}\", *r2);\n    }\n    \n    println!(\"num is now: {}\", num);\n}",
+                    "output": "r1 is: 5\nr2 is now: 10\nnum is now: 10"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Calling Unsafe Functions"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "unsafe fn dangerous() {\n    println!(\"This is unsafe!\");\n}\n\nfn main() {\n    unsafe {\n        dangerous();\n    }\n    \n    // Calling C functions (FFI)\n    // extern \"C\" {\n    //     fn abs(input: i32) -> i32;\n    // }\n    // unsafe {\n    //     println!(\"Absolute value of -3: {}\", abs(-3));\n    // }\n}",
+                    "output": "This is unsafe!"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Safe Abstractions Over Unsafe Code"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::slice;\n\nfn split_at_mut(slice: &mut [i32], mid: usize) -> (&mut [i32], &mut [i32]) {\n    let len = slice.len();\n    let ptr = slice.as_mut_ptr();\n    \n    assert!(mid <= len);\n    \n    unsafe {\n        (\n            slice::from_raw_parts_mut(ptr, mid),\n            slice::from_raw_parts_mut(ptr.add(mid), len - mid),\n        )\n    }\n}\n\nfn main() {\n    let mut v = [1, 2, 3, 4, 5];\n    let (left, right) = split_at_mut(&mut v, 2);\n    \n    println!(\"left: {:?}\", left);\n    println!(\"right: {:?}\", right);\n}\n\n// The safe abstraction hides the unsafe implementation",
+                    "output": "left: [1, 2]\nright: [3, 4, 5]"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "The key to safe unsafe code: keep unsafe blocks small and wrap them in safe abstractions. The caller of split_at_mut doesn't need to know unsafe is used internally."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Does unsafe Rust turn off the borrow checker?",
+                    "options": [
+                        "Yes completely",
+                        "No, it adds capabilities but borrow checker still works",
+                        "Only for raw pointers",
+                        "Only inside unsafe blocks"
+                    ],
+                    "correctAnswer": "No, it adds capabilities but borrow checker still works",
+                    "explanation": "Unsafe adds five superpowers but doesn't disable the borrow checker. Safe Rust rules still apply unless you use those superpowers."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the best practice for unsafe code?",
+                    "options": [
+                        "Use it everywhere for performance",
+                        "Keep unsafe blocks small and wrap in safe abstractions",
+                        "Avoid it completely",
+                        "Only use it in main()"
+                    ],
+                    "correctAnswer": "Keep unsafe blocks small and wrap in safe abstractions",
+                    "explanation": "The Rust standard library follows this pattern. Unsafe is an implementation detail hidden behind safe APIs."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What keyword marks a block where unsafe operations are allowed?",
+                    "correctAnswer": "unsafe",
+                    "explanation": "The unsafe keyword marks a block or function where raw pointers, unsafe functions, and other unsafe operations are permitted."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 35: Advanced Traits and Trait Objects",
+            "badge": "Advanced",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Advanced Trait Patterns"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Traits are one of Rust's most powerful features. Advanced patterns include associated types, trait objects, supertraits, and the newtype pattern. These enable flexible, composable designs."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Associated Types"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "pub trait Iterator {\n    type Item;\n    \n    fn next(&mut self) -> Option<Self::Item>;\n}\n\nstruct Counter {\n    count: u32,\n}\n\nimpl Iterator for Counter {\n    type Item = u32;\n    \n    fn next(&mut self) -> Option<Self::Item> {\n        if self.count < 5 {\n            self.count += 1;\n            Some(self.count)\n        } else {\n            None\n        }\n    }\n}\n\nfn main() {\n    let mut counter = Counter { count: 0 };\n    println!(\"{:?}\", counter.next());\n}",
+                    "output": "Some(1)"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Associated types (type Item) are placeholders that implementing types define. Unlike generics, each type can only implement the trait once with one associated type."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Trait Objects"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "pub trait Draw {\n    fn draw(&self);\n}\n\nstruct Button {\n    width: u32,\n    height: u32,\n    label: String,\n}\n\nimpl Draw for Button {\n    fn draw(&self) {\n        println!(\"Drawing a button: {}\", self.label);\n    }\n}\n\nstruct Screen {\n    pub components: Vec<Box<dyn Draw>>,\n}\n\nimpl Screen {\n    pub fn run(&self) {\n        for component in self.components.iter() {\n            component.draw();\n        }\n    }\n}\n\nfn main() {\n    let screen = Screen {\n        components: vec![\n            Box::new(Button {\n                width: 50,\n                height: 10,\n                label: String::from(\"OK\"),\n            }),\n        ],\n    };\n    \n    screen.run();\n}",
+                    "output": "Drawing a button: OK"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Trait objects (dyn Trait) enable polymorphism. They use dynamic dispatch — the method to call is determined at runtime. This has a small performance cost but allows heterogeneous collections."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Supertraits"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fmt::Display;\n\ntrait OutlinePrint: Display {\n    fn outline_print(&self) {\n        let output = self.to_string();\n        let len = output.len();\n        println!(\"{}\", \"*\".repeat(len + 4));\n        println!(\"*{}*\", \" \".repeat(len + 2));\n        println!(\"* {} *\", output);\n        println!(\"*{}*\", \" \".repeat(len + 2));\n        println!(\"{}\", \"*\".repeat(len + 4));\n    }\n}\n\nstruct Point {\n    x: i32,\n    y: i32,\n}\n\nimpl Display for Point {\n    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {\n        write!(f, \"({}, {})\", self.x, self.y)\n    }\n}\n\nimpl OutlinePrint for Point {}\n\nfn main() {\n    let p = Point { x: 1, y: 3 };\n    p.outline_print();\n}",
+                    "output": "*********\n*       *\n* (1, 3) *\n*       *\n*********"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "A supertrait (OutlinePrint: Display) requires implementing Display before OutlinePrint. This lets OutlinePrint use Display methods in its default implementation."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the difference between generics and trait objects?",
+                    "options": [
+                        "Generics are slower",
+                        "Generics use monomorphization; trait objects use dynamic dispatch",
+                        "Trait objects are only for traits",
+                        "There is no difference"
+                    ],
+                    "correctAnswer": "Generics use monomorphization; trait objects use dynamic dispatch",
+                    "explanation": "Generics are resolved at compile time (zero cost). Trait objects use vtables for runtime dispatch, trading performance for flexibility."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does a supertrait require?",
+                    "options": [
+                        "The trait to be unsafe",
+                        "Another trait to be implemented first",
+                        "A specific return type",
+                        "A generic parameter"
+                    ],
+                    "correctAnswer": "Another trait to be implemented first",
+                    "explanation": "Supertraits (Trait: SuperTrait) require the supertrait to be implemented. This enables default methods that use the supertrait's functionality."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What syntax creates a trait object?",
+                    "correctAnswer": "dyn Trait",
+                    "explanation": "dyn Trait creates a trait object that uses dynamic dispatch. Example: Box<dyn Draw> or &dyn Draw."
+                }
+            ]
         }
   ]
 }
