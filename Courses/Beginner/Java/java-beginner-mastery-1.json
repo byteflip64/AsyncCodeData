@@ -2310,6 +2310,968 @@
       ]
     },
     {
+      "partTitle": "Part 26: Java Modules (JPMS)",
+      "badge": "Modules",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Project Jigsaw and the Module System"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java 9 introduced the Java Platform Module System (JPMS) to address the monolithic nature of the JDK. Modules enforce strong encapsulation, explicit dependencies, and smaller runtime images. Understanding JPMS is essential for modern Java development, especially when creating custom JREs with jlink."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating a Module"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// File: src/com.example.app/module-info.java\nmodule com.example.app {\n    // Requires: declare dependencies\n    requires java.base;        // Implicit, always available\n    requires java.sql;         // Standard JDK module\n    requires com.example.lib;  // Your own module\n    \n    // Exports: packages visible to other modules\n    exports com.example.app.api;\n    \n    // Opens: packages accessible via reflection (for frameworks)\n    opens com.example.app.internal to org.junit;\n    \n    // Provides: service implementations\n    provides com.example.spi.Logger\n        with com.example.app.FileLogger;\n    \n    // Uses: consume a service\n    uses com.example.spi.Logger;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Module Descriptor Explained"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Directive | Purpose | Example |\n|-----------|---------|---------|\n| requires | Depend on another module | requires java.sql; |\n| requires transitive | Dependence propagated to consumers | requires transitive java.xml; |\n| exports | Make package public to other modules | exports com.api; |\n| exports ... to | Export to specific modules only | exports com.internal to com.test; |\n| opens | Open package for deep reflection | opens com.model; |\n| provides ... with | Register service implementation | provides Logger with FileLogger; |\n| uses | Declare service consumption | uses Logger; |\n\nStrong encapsulation means non-exported packages are inaccessible even via reflection (unless opened)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Compiling and Running Modules"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Directory structure:\n# project/\n#   com.example.app/\n#     module-info.java\n#     com/example/app/Main.java\n#   com.example.lib/\n#     module-info.java\n#     com/example/lib/Util.java\n\n# Compile modules\njavac -d out --module-source-path . $(find . -name '*.java')\n\n# Run a module\njava --module-path out -m com.example.app/com.example.app.Main\n\n# Describe a module\njava --module-path out --describe-module com.example.app\n\n# List all observable modules\njava --module-path out --list-modules\n\n# Create custom JRE with jlink\njlink --module-path out:$JAVA_HOME/jmods \\\n      --add-modules com.example.app \\\n      --output my-custom-jre",
+          "output": "com.example.app@1.0\n  requires java.base mandated\n  requires java.sql\n  requires com.example.lib\n  exports com.example.app.api\n  opens com.example.app.internal to org.junit\n  provides com.example.spi.Logger with com.example.app.FileLogger"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Unnamed Module and Automatic Modules"
+        },
+        {
+          "type": "paragraph",
+          "value": "• Unnamed Module: Classpath code lives here. It can read all modules but no named module can read it. This is the migration bridge.\n• Automatic Module: A JAR on the module path without module-info becomes an automatic module. Its name is derived from the JAR filename, and it exports all packages and reads all other modules.\n\nMigration strategy: 1) Run on classpath (unnamed), 2) Move to module path as automatic module, 3) Add module-info.java."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What file declares a module's dependencies and exports?",
+          "options": [
+            "module-info.java",
+            "module.properties",
+            "MANIFEST.MF",
+            "pom.xml"
+          ],
+          "correctAnswer": "module-info.java",
+          "explanation": "module-info.java is the module descriptor. It declares requires, exports, opens, provides, and uses directives. It must be in the module's root source directory."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid module directives in module-info.java:",
+          "options": [
+            "requires",
+            "imports",
+            "exports",
+            "opens",
+            "extends",
+            "provides",
+            "uses",
+            "implements"
+          ],
+          "correctAnswers": [
+            "requires",
+            "exports",
+            "opens",
+            "provides",
+            "uses"
+          ],
+          "explanation": "Valid directives: requires, exports, opens, provides, uses, requires transitive, exports ... to. imports/extends/implements are class-level keywords, not module directives."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What tool creates a minimal custom JRE containing only needed modules?",
+          "options": [
+            "javac",
+            "jlink",
+            "jpackage",
+            "jmod"
+          ],
+          "correctAnswer": "jlink",
+          "explanation": "jlink assembles modules and their dependencies into a custom runtime image. This can reduce JRE size from ~200MB to under 50MB for small applications."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword makes a package accessible for deep reflection by frameworks like Hibernate?",
+          "correctAnswer": "opens",
+          "explanation": "opens makes a package accessible via reflection. Unlike exports, opened packages are not accessible at compile time — only at runtime via reflection."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 27: Networking in Java",
+      "badge": "Network",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Building Network Applications"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java provides comprehensive networking APIs in java.net. From basic URL connections to low-level sockets, you can build clients, servers, and protocols. Modern Java also offers the java.net.http package (Java 11+) for HTTP/2 client requests."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "HTTP Client (Java 11+)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.net.URI;\nimport java.net.http.*;\nimport java.time.Duration;\n\npublic class HttpClientDemo {\n    public static void main(String[] args) throws Exception {\n        HttpClient client = HttpClient.newBuilder()\n            .connectTimeout(Duration.ofSeconds(10))\n            .version(HttpClient.Version.HTTP_2)\n            .build();\n        \n        // GET request\n        HttpRequest request = HttpRequest.newBuilder()\n            .uri(URI.create(\"https://api.github.com/users/octocat\"))\n            .header(\"Accept\", \"application/json\")\n            .GET()\n            .build();\n        \n        HttpResponse<String> response = client.send(request,\n            HttpResponse.BodyHandlers.ofString());\n        \n        System.out.println(\"Status: \" + response.statusCode());\n        System.out.println(\"Headers: \" + response.headers().map());\n        System.out.println(\"Body: \" + response.body().substring(0, 200) + \"...\");\n        \n        // Async request\n        client.sendAsync(request, HttpResponse.BodyHandlers.ofString())\n            .thenApply(HttpResponse::body)\n            .thenAccept(body -> System.out.println(\"\\nAsync received: \" + body.length() + \" chars\"))\n            .join();\n        \n        // POST with JSON body\n        HttpRequest postRequest = HttpRequest.newBuilder()\n            .uri(URI.create(\"https://httpbin.org/post\"))\n            .header(\"Content-Type\", \"application/json\")\n            .POST(HttpRequest.BodyPublishers.ofString(\"{\\\"name\\\": \\\"Alice\\\"}\"))\n            .build();\n        \n        HttpResponse<String> postResponse = client.send(postRequest,\n            HttpResponse.BodyHandlers.ofString());\n        System.out.println(\"\\nPOST status: \" + postResponse.statusCode());\n    }\n}",
+          "output": "Status: 200\nHeaders: {content-type=[application/json], ...}\nBody: {\"login\":\"octocat\",\"id\":583231,...\n\nAsync received: 1316 chars\n\nPOST status: 200"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Socket Programming"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.io.*;\nimport java.net.*;\n\n// Server\npublic class EchoServer {\n    public static void main(String[] args) throws IOException {\n        try (ServerSocket server = new ServerSocket(8080)) {\n            System.out.println(\"Server listening on port 8080\");\n            \n            while (true) {\n                Socket client = server.accept();\n                System.out.println(\"Client connected: \" + client.getInetAddress());\n                \n                BufferedReader in = new BufferedReader(\n                    new InputStreamReader(client.getInputStream()));\n                PrintWriter out = new PrintWriter(client.getOutputStream(), true);\n                \n                String line;\n                while ((line = in.readLine()) != null) {\n                    if (line.equals(\"bye\")) break;\n                    out.println(\"Echo: \" + line);\n                }\n                client.close();\n            }\n        }\n    }\n}\n\n// Client\npublic class EchoClient {\n    public static void main(String[] args) throws IOException {\n        try (Socket socket = new Socket(\"localhost\", 8080);\n             BufferedReader in = new BufferedReader(\n                 new InputStreamReader(socket.getInputStream()));\n             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);\n             BufferedReader userIn = new BufferedReader(\n                 new InputStreamReader(System.in))) {\n            \n            System.out.println(\"Connected. Type messages (bye to quit):\");\n            String userInput;\n            while ((userInput = userIn.readLine()) != null) {\n                out.println(userInput);\n                System.out.println(\"Server: \" + in.readLine());\n                if (userInput.equals(\"bye\")) break;\n            }\n        }\n    }\n}",
+          "output": "Server listening on port 8080\nClient connected: /127.0.0.1\n\n--- Client ---\nConnected. Type messages (bye to quit):\nhello\nServer: Echo: hello\nbye\nServer: Echo: bye"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Working with URLs"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.net.*;\nimport java.io.*;\n\npublic class UrlDemo {\n    public static void main(String[] args) throws Exception {\n        URL url = new URL(\"https://example.com:8080/path?query=java#section\");\n        \n        System.out.println(\"Protocol: \" + url.getProtocol());\n        System.out.println(\"Host: \" + url.getHost());\n        System.out.println(\"Port: \" + url.getPort());\n        System.out.println(\"Path: \" + url.getPath());\n        System.out.println(\"Query: \" + url.getQuery());\n        System.out.println(\"File: \" + url.getFile());\n        System.out.println(\"Ref: \" + url.getRef());\n        \n        // Read content from URL\n        URL apiUrl = new URL(\"https://api.github.com\");\n        try (BufferedReader reader = new BufferedReader(\n                new InputStreamReader(apiUrl.openStream()))) {\n            System.out.println(\"\\nFirst line: \" + reader.readLine());\n        }\n    }\n}",
+          "output": "Protocol: https\nHost: example.com\nPort: 8080\nPath: /path\nQuery: query=java\nFile: /path?query=java\nRef: section\n\nFirst line: {\"current_user_url\":\"https://api.github.com/user\"..."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which class is the modern replacement for URLConnection for HTTP requests?",
+          "options": [
+            "HttpURLConnection",
+            "HttpClient",
+            "Socket",
+            "ServerSocket"
+          ],
+          "correctAnswer": "HttpClient",
+          "explanation": "HttpClient (Java 11+) supports HTTP/2, async requests, and reactive streams. It's the modern replacement for the older HttpURLConnection class."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid HttpRequest.Builder methods:",
+          "options": [
+            "uri()",
+            "header()",
+            "GET()",
+            "POST()",
+            "connect()",
+            "timeout()",
+            "build()"
+          ],
+          "correctAnswers": [
+            "uri()",
+            "header()",
+            "GET()",
+            "POST()",
+            "build()"
+          ],
+          "explanation": "HttpRequest.Builder methods: uri(), header(), headers(), GET(), POST(), PUT(), DELETE(), method(), timeout(), build(). connect() and timeout() are not valid — timeout is set on HttpClient.Builder, not HttpRequest."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What method blocks until the HTTP response is received?",
+          "options": [
+            "sendAsync()",
+            "send()",
+            "request()",
+            "fetch()"
+          ],
+          "correctAnswer": "send()",
+          "explanation": "send() is synchronous — it blocks until the response arrives. sendAsync() returns a CompletableFuture for non-blocking operation."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What class listens for incoming TCP connections on a specific port?",
+          "correctAnswer": "ServerSocket",
+          "explanation": "ServerSocket binds to a port and listens for incoming connections via accept(). Each accepted connection returns a Socket for communication."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 28: Reflection and Annotations Deep Dive",
+      "badge": "Reflection",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Inspecting and Modifying Code at Runtime"
+        },
+        {
+          "type": "paragraph",
+          "value": "Reflection allows Java code to inspect and manipulate classes, methods, fields, and constructors at runtime. It's the foundation of frameworks like Spring, Hibernate, and JUnit. Used wisely, it's incredibly powerful; used carelessly, it breaks encapsulation and hurts performance."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Inspecting Classes"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.lang.reflect.*;\nimport java.util.Arrays;\n\npublic class ReflectionBasics {\n    public static void main(String[] args) throws Exception {\n        // Three ways to get Class object\n        Class<?> clazz1 = String.class;\n        Class<?> clazz2 = \"hello\".getClass();\n        Class<?> clazz3 = Class.forName(\"java.lang.String\");\n        \n        System.out.println(\"Class: \" + clazz1.getName());\n        System.out.println(\"Simple: \" + clazz1.getSimpleName());\n        System.out.println(\"Package: \" + clazz1.getPackageName());\n        System.out.println(\"Is primitive? \" + clazz1.isPrimitive());\n        \n        // Inspect methods\n        System.out.println(\"\\nMethods:\");\n        Method[] methods = clazz1.getDeclaredMethods();\n        Arrays.stream(methods)\n            .limit(5)\n            .forEach(m -> System.out.println(\"  \" + m.getName() + \" - \" + Arrays.toString(m.getParameterTypes())));\n        \n        // Inspect fields\n        Class<?> personClass = Class.forName(\"Person\");\n        Field[] fields = personClass.getDeclaredFields();\n        System.out.println(\"\\nPerson fields:\");\n        for (Field f : fields) {\n            System.out.println(\"  \" + f.getType().getSimpleName() + \" \" + f.getName());\n        }\n    }\n}\n\nclass Person {\n    private String name;\n    private int age;\n    public Person() {}\n    public Person(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n    public void greet() {\n        System.out.println(\"Hello, I'm \" + name);\n    }\n}",
+          "output": "Class: java.lang.String\nSimple: String\nPackage: java.lang\nIs primitive? false\n\nMethods:\n  hashCode - []\n  compareTo - [class java.lang.String]\n  indexOf - [int]\n  indexOf - [int, int]\n  indexOf - [class java.lang.String]\n\nPerson fields:\n  String name\n  int age"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating Objects and Invoking Methods"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.lang.reflect.*;\n\npublic class ReflectionInvocation {\n    public static void main(String[] args) throws Exception {\n        Class<?> clazz = Class.forName(\"Person\");\n        \n        // Create instance using no-arg constructor\n        Person p1 = (Person) clazz.getDeclaredConstructor().newInstance();\n        \n        // Create instance with arguments\n        Constructor<?> ctor = clazz.getDeclaredConstructor(String.class, int.class);\n        Person p2 = (Person) ctor.newInstance(\"Alice\", 30);\n        \n        // Access private field\n        Field nameField = clazz.getDeclaredField(\"name\");\n        nameField.setAccessible(true);  // Bypass private access\n        nameField.set(p1, \"Bob\");\n        \n        // Invoke private method\n        Method greetMethod = clazz.getDeclaredMethod(\"greet\");\n        greetMethod.setAccessible(true);\n        greetMethod.invoke(p1);  // Hello, I'm Bob\n        greetMethod.invoke(p2);  // Hello, I'm Alice\n        \n        // Get field value\n        Field ageField = clazz.getDeclaredField(\"age\");\n        ageField.setAccessible(true);\n        System.out.println(\"Age: \" + ageField.get(p2));\n    }\n}",
+          "output": "Hello, I'm Bob\nHello, I'm Alice\nAge: 30"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Custom Annotations with Runtime Processing"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.lang.annotation.*;\nimport java.lang.reflect.*;\nimport java.util.*;\n\n// Define annotation\n@Retention(RetentionPolicy.RUNTIME)\n@Target({ElementType.TYPE, ElementType.METHOD})\npublic @interface Route {\n    String value();\n    String method() default \"GET\";\n}\n\n// Apply annotation\n@Route(\"/users\")\nclass UserController {\n    @Route(\"/users\", method = \"GET\")\n    public List<String> getAll() {\n        return List.of(\"Alice\", \"Bob\");\n    }\n    \n    @Route(\"/users\", method = \"POST\")\n    public String create(String name) {\n        return \"Created: \" + name;\n    }\n}\n\n// Process annotations (mini framework)\npublic class Router {\n    public static void main(String[] args) {\n        scanRoutes(UserController.class);\n    }\n    \n    static void scanRoutes(Class<?> controller) {\n        // Class-level annotation\n        Route baseRoute = controller.getAnnotation(Route.class);\n        String basePath = baseRoute != null ? baseRoute.value() : \"\";\n        \n        System.out.println(\"Controller: \" + basePath);\n        \n        // Method-level annotations\n        for (Method m : controller.getDeclaredMethods()) {\n            Route route = m.getAnnotation(Route.class);\n            if (route != null) {\n                System.out.println(\"  \" + route.method() + \" \" + basePath + route.value() +\n                    \" -> \" + m.getName() + \"()\");\n            }\n        }\n    }\n}",
+          "output": "Controller: /users\n  GET /users/users -> getAll()\n  POST /users/users -> create()"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Reflection Performance Considerations"
+        },
+        {
+          "type": "paragraph",
+          "value": "Reflection is slower than direct code because it bypasses compile-time optimizations. Mitigations:\n• Set accessible once, reuse the Field/Method object\n• Use MethodHandle (Java 7+) for better performance\n• Use VarHandle (Java 9+) for variable access\n• Cache reflection results\n• In modules, opened packages are required for deep reflection\n\nModern frameworks use a mix: reflection for discovery, generated bytecode (via ASM or ByteBuddy) for hot paths."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What method bypasses access checks to access private fields/methods?",
+          "options": [
+            "bypass()",
+            "setAccessible(true)",
+            "unlock()",
+            "forceAccess()"
+          ],
+          "correctAnswer": "setAccessible(true)",
+          "explanation": "setAccessible(true) on Field, Method, or Constructor suppresses Java access control checks. In Java 9+ modules, the package must also be opened to the reflecting module."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all ways to obtain a Class object in Java:",
+          "options": [
+            "MyClass.class",
+            "obj.getClass()",
+            "Class.forName()",
+            "new Class()",
+            "ClassLoader.loadClass()",
+            "instanceof"
+          ],
+          "correctAnswers": [
+            "MyClass.class",
+            "obj.getClass()",
+            "Class.forName()",
+            "ClassLoader.loadClass()"
+          ],
+          "explanation": "Valid ways: MyClass.class (literal), obj.getClass() (from instance), Class.forName(\"fqn\") (by name), classLoader.loadClass(\"fqn\"). new Class() is invalid (Class has no public constructor). instanceof is an operator, not a way to get Class."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which retention policy makes an annotation available at runtime via reflection?",
+          "options": [
+            "SOURCE",
+            "CLASS",
+            "RUNTIME",
+            "COMPILE"
+          ],
+          "correctAnswer": "RUNTIME",
+          "explanation": "RetentionPolicy.RUNTIME keeps the annotation in the bytecode and makes it accessible via reflection. SOURCE is discarded by compiler. CLASS is in bytecode but not available at runtime."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What annotation metadata specifies where an annotation can be applied (class, method, field)?",
+          "correctAnswer": "@Target",
+          "explanation": "@Target(ElementType.METHOD) restricts the annotation to methods. Other values: TYPE, FIELD, CONSTRUCTOR, PARAMETER, LOCAL_VARIABLE, ANNOTATION_TYPE, PACKAGE, TYPE_PARAMETER, TYPE_USE, MODULE, RECORD_COMPONENT."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 29: Build Tools — Maven and Gradle",
+      "badge": "Build",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Managing Java Projects"
+        },
+        {
+          "type": "paragraph",
+          "value": "Build tools automate compilation, dependency management, testing, and packaging. Maven uses XML-based declarative configuration while Gradle uses a Groovy/Kotlin DSL with powerful scripting capabilities. Both integrate with repositories like Maven Central to download dependencies automatically."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Maven Basics"
+        },
+        {
+          "type": "code",
+          "language": "xml",
+          "value": "<!-- pom.xml -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project xmlns=\"http://maven.apache.org/POM/4.0.0\">\n    <modelVersion>4.0.0</modelVersion>\n    \n    <groupId>com.example</groupId>\n    <artifactId>my-app</artifactId>\n    <version>1.0.0</version>\n    <packaging>jar</packaging>\n    \n    <properties>\n        <maven.compiler.source>21</maven.compiler.source>\n        <maven.compiler.target>21</maven.compiler.target>\n        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>\n    </properties>\n    \n    <dependencies>\n        <dependency>\n            <groupId>org.junit.jupiter</groupId>\n            <artifactId>junit-jupiter</artifactId>\n            <version>5.10.0</version>\n            <scope>test</scope>\n        </dependency>\n        <dependency>\n            <groupId>com.google.guava</groupId>\n            <artifactId>guava</artifactId>\n            <version>32.1.3-jre</version>\n        </dependency>\n    </dependencies>\n    \n    <build>\n        <plugins>\n            <plugin>\n                <groupId>org.apache.maven.plugins</groupId>\n                <artifactId>maven-compiler-plugin</artifactId>\n                <version>3.11.0</version>\n            </plugin>\n            <plugin>\n                <groupId>org.apache.maven.plugins</groupId>\n                <artifactId>maven-shade-plugin</artifactId>\n                <version>3.5.0</version>\n                <executions>\n                    <execution>\n                        <goals><goal>shade</goal></goals>\n                        <configuration>\n                            <transformers>\n                                <transformer implementation=\"org.apache.maven.plugins.shade.resource.ManifestResourceTransformer\">\n                                    <mainClass>com.example.Main</mainClass>\n                                </transformer>\n                            </transformers>\n                        </configuration>\n                    </execution>\n                </executions>\n            </plugin>\n        </plugins>\n    </build>\n</project>",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Maven Commands"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Create new project from archetype\nmvn archetype:generate -DgroupId=com.example -DartifactId=my-app -DarchetypeArtifactId=maven-archetype-quickstart\n\n# Compile source code\nmvn compile\n\n# Run tests\nmvn test\n\n# Package into JAR\nmvn package\n\n# Install to local repository\nmvn install\n\n# Skip tests during build\nmvn package -DskipTests\n\n# Run specific test\nmvn test -Dtest=CalculatorTest\n\n# Clean build artifacts\nmvn clean\n\n# Full clean build\nmvn clean install\n\n# Show dependency tree\nmvn dependency:tree",
+          "output": "[INFO] com.example:my-app:jar:1.0.0\n[INFO] +- org.junit.jupiter:junit-jupiter:jar:5.10.0:test\n[INFO] |  +- org.junit.jupiter:junit-jupiter-api:jar:5.10.0:test\n[INFO] |  +- org.junit.jupiter:junit-jupiter-params:jar:5.10.0:test\n[INFO] |  \\- org.junit.jupiter:junit-jupiter-engine:jar:5.10.0:test\n[INFO] \\- com.google.guava:guava:jar:32.1.3-jre:compile"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Gradle Basics"
+        },
+        {
+          "type": "code",
+          "language": "groovy",
+          "value": "// build.gradle (Groovy DSL)\nplugins {\n    id 'java'\n    id 'application'\n}\n\ngroup = 'com.example'\nversion = '1.0.0'\n\njava {\n    sourceCompatibility = JavaVersion.VERSION_21\n    targetCompatibility = JavaVersion.VERSION_21\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation 'com.google.guava:guava:32.1.3-jre'\n    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'\n    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'\n}\n\napplication {\n    mainClass = 'com.example.Main'\n}\n\ntest {\n    useJUnitPlatform()\n}\n\n// Custom task\ntask hello {\n    doLast {\n        println 'Hello from Gradle!'\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Gradle Commands and Kotlin DSL"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Initialize project\ngradle init --type java-application --dsl kotlin\n\n# Build project\n./gradlew build\n\n# Run tests\n./gradlew test\n\n# Run application\n./gradlew run\n\n# Show dependencies\n./gradlew dependencies\n\n# Clean build\n./gradlew clean\n\n# Full rebuild\n./gradlew clean build",
+          "output": ""
+        },
+        {
+          "type": "code",
+          "language": "kotlin",
+          "value": "// build.gradle.kts (Kotlin DSL - preferred for new projects)\nplugins {\n    java\n    application\n}\n\ngroup = \"com.example\"\nversion = \"1.0.0\"\n\njava {\n    sourceCompatibility = JavaVersion.VERSION_21\n    targetCompatibility = JavaVersion.VERSION_21\n}\n\nrepositories {\n    mavenCentral()\n}\n\ndependencies {\n    implementation(\"com.google.guava:guava:32.1.3-jre\")\n    testImplementation(\"org.junit.jupiter:junit-jupiter:5.10.0\")\n}\n\napplication {\n    mainClass.set(\"com.example.Main\")\n}\n\ntasks.test {\n    useJUnitPlatform()\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Maven vs Gradle"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Aspect | Maven | Gradle |\n|--------|-------|--------|\n| Configuration | XML (declarative) | Groovy/Kotlin DSL (scriptable) |\n| Learning curve | Easier for beginners | Steeper but more powerful |\n| Performance | Slower (rebuilds often) | Faster (incremental builds, build cache) |\n| Flexibility | Convention over configuration | Highly customizable |\n| IDE support | Excellent | Excellent |\n| Android | Not used | Official build tool |\n| Spring Boot | Both supported | Both supported |\n\nRecommendation: Use Maven for simple/standard projects. Use Gradle for complex builds, Android, or when you need custom logic."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What file is the core configuration for a Maven project?",
+          "options": [
+            "build.gradle",
+            "pom.xml",
+            "settings.json",
+            "manifest.mf"
+          ],
+          "correctAnswer": "pom.xml",
+          "explanation": "pom.xml (Project Object Model) defines a Maven project's coordinates (groupId, artifactId, version), dependencies, plugins, and build configuration."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid Maven dependency scopes:",
+          "options": [
+            "compile",
+            "test",
+            "provided",
+            "runtime",
+            "development",
+            "system",
+            "import"
+          ],
+          "correctAnswers": [
+            "compile",
+            "test",
+            "provided",
+            "runtime",
+            "system",
+            "import"
+          ],
+          "explanation": "Valid scopes: compile (default), test (only for testing), provided (expected at runtime, e.g., servlet-api), runtime (not needed for compilation, e.g., JDBC driver), system (local jar), import (for BOM dependency management)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which Gradle feature makes it faster than Maven for large projects?",
+          "options": [
+            "XML configuration",
+            "Incremental builds and build cache",
+            "More plugins",
+            "Better IDE integration"
+          ],
+          "correctAnswer": "Incremental builds and build cache",
+          "explanation": "Gradle's incremental build support and build cache avoid recompiling unchanged code. Its daemon also keeps the JVM warm between builds."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Maven command installs the built artifact to your local repository?",
+          "correctAnswer": "mvn install",
+          "explanation": "mvn install compiles, tests, packages, and copies the artifact to ~/.m2/repository for use by other local projects. mvn deploy uploads to a remote repository."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 30: Final Capstone — REST API with Spring Boot",
+      "badge": "Capstone",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Building Production-Ready Applications"
+        },
+        {
+          "type": "paragraph",
+          "value": "Spring Boot is the most popular Java framework for building microservices and web applications. It auto-configures Spring, embeds a server (Tomcat), and provides a rich ecosystem. This capstone brings together everything: OOP, REST principles, database access, testing, and deployment."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Project Setup"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Using Spring Initializr (https://start.spring.io)\n# Dependencies: Spring Web, Spring Data JPA, H2 Database, Lombok, Validation\n\n# Or with Spring Boot CLI\nspring init --dependencies=web,data-jpa,h2,lombok my-api\n\n# Project structure:\n# src/main/java/com/example/demo/\n#   DemoApplication.java\n#   controller/\n#   service/\n#   repository/\n#   model/\n# src/main/resources/\n#   application.properties\n# src/test/java/",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Entity and Repository"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "package com.example.demo.model;\n\nimport jakarta.persistence.*;\nimport jakarta.validation.constraints.*;\nimport lombok.*;\nimport java.time.LocalDateTime;\n\n@Entity\n@Table(name = \"products\")\n@Data @NoArgsConstructor @AllArgsConstructor @Builder\npublic class Product {\n    @Id\n    @GeneratedValue(strategy = GenerationType.IDENTITY)\n    private Long id;\n    \n    @NotBlank(message = \"Name is required\")\n    @Size(min = 2, max = 100)\n    private String name;\n    \n    @Size(max = 500)\n    private String description;\n    \n    @NotNull\n    @Min(0)\n    private Double price;\n    \n    @Min(0)\n    private Integer stock;\n    \n    @Enumerated(EnumType.STRING)\n    private Category category;\n    \n    private LocalDateTime createdAt;\n    \n    @PrePersist\n    protected void onCreate() {\n        createdAt = LocalDateTime.now();\n    }\n    \n    public enum Category { ELECTRONICS, CLOTHING, FOOD, BOOKS }\n}\n\n// Repository\npackage com.example.demo.repository;\n\nimport com.example.demo.model.Product;\nimport org.springframework.data.jpa.repository.JpaRepository;\nimport org.springframework.data.jpa.repository.Query;\nimport java.util.List;\n\npublic interface ProductRepository extends JpaRepository<Product, Long> {\n    List<Product> findByCategory(Product.Category category);\n    List<Product> findByNameContainingIgnoreCase(String name);\n    \n    @Query(\"SELECT p FROM Product p WHERE p.price BETWEEN :min AND :max\")\n    List<Product> findByPriceRange(Double min, Double max);\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Service Layer"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "package com.example.demo.service;\n\nimport com.example.demo.model.Product;\nimport com.example.demo.repository.ProductRepository;\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.stereotype.Service;\nimport org.springframework.transaction.annotation.Transactional;\nimport java.util.List;\n\n@Service\n@RequiredArgsConstructor\n@Transactional\npublic class ProductService {\n    private final ProductRepository repository;\n    \n    public Product create(Product product) {\n        return repository.save(product);\n    }\n    \n    @Transactional(readOnly = true)\n    public List<Product> findAll() {\n        return repository.findAll();\n    }\n    \n    @Transactional(readOnly = true)\n    public Product findById(Long id) {\n        return repository.findById(id)\n            .orElseThrow(() -> new RuntimeException(\"Product not found: \" + id));\n    }\n    \n    public Product update(Long id, Product updated) {\n        Product existing = findById(id);\n        existing.setName(updated.getName());\n        existing.setDescription(updated.getDescription());\n        existing.setPrice(updated.getPrice());\n        existing.setStock(updated.getStock());\n        existing.setCategory(updated.getCategory());\n        return repository.save(existing);\n    }\n    \n    public void delete(Long id) {\n        repository.deleteById(id);\n    }\n    \n    @Transactional(readOnly = true)\n    public List<Product> searchByCategory(Product.Category category) {\n        return repository.findByCategory(category);\n    }\n}\n\n// Custom exception\npublic class ProductNotFoundException extends RuntimeException {\n    public ProductNotFoundException(Long id) {\n        super(\"Product not found with id: \" + id);\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "REST Controller"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "package com.example.demo.controller;\n\nimport com.example.demo.model.Product;\nimport com.example.demo.service.ProductService;\nimport jakarta.validation.Valid;\nimport lombok.RequiredArgsConstructor;\nimport org.springframework.http.*;\nimport org.springframework.web.bind.annotation.*;\nimport java.util.List;\n\n@RestController\n@RequestMapping(\"/api/products\")\n@RequiredArgsConstructor\npublic class ProductController {\n    private final ProductService service;\n    \n    @GetMapping\n    public ResponseEntity<List<Product>> getAll() {\n        return ResponseEntity.ok(service.findAll());\n    }\n    \n    @GetMapping(\"/id\")\n    public ResponseEntity<Product> getById(@PathVariable Long id) {\n        return ResponseEntity.ok(service.findById(id));\n    }\n    \n    @PostMapping\n    public ResponseEntity<Product> create(@Valid @RequestBody Product product) {\n        Product created = service.create(product);\n        return ResponseEntity.status(HttpStatus.CREATED).body(created);\n    }\n    \n    @PutMapping(\"/id\")\n    public ResponseEntity<Product> update(@PathVariable Long id,\n                                          @Valid @RequestBody Product product) {\n        return ResponseEntity.ok(service.update(id, product));\n    }\n    \n    @DeleteMapping(\"/id\")\n    public ResponseEntity<Void> delete(@PathVariable Long id) {\n        service.delete(id);\n        return ResponseEntity.noContent().build();\n    }\n    \n    @GetMapping(\"/category/{category}\")\n    public ResponseEntity<List<Product>> getByCategory(\n            @PathVariable Product.Category category) {\n        return ResponseEntity.ok(service.searchByCategory(category));\n    }\n}\n\n// Global exception handler\n@RestControllerAdvice\npublic class GlobalExceptionHandler {\n    @ExceptionHandler(RuntimeException.class)\n    public ResponseEntity<String> handleRuntime(RuntimeException ex) {\n        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());\n    }\n    \n    @ExceptionHandler(MethodArgumentNotValidException.class)\n    public ResponseEntity<Map<String, String>> handleValidation(\n            MethodArgumentNotValidException ex) {\n        Map<String, String> errors = new HashMap<>();\n        ex.getBindingResult().getFieldErrors().forEach(error ->\n            errors.put(error.getField(), error.getDefaultMessage())\n        );\n        return ResponseEntity.badRequest().body(errors);\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Configuration and Testing"
+        },
+        {
+          "type": "code",
+          "language": "properties",
+          "value": "# application.properties\nspring.application.name=demo-api\nserver.port=8080\n\n# H2 Database (dev only)\nspring.datasource.url=jdbc:h2:mem:testdb\nspring.datasource.driverClassName=org.h2.Driver\nspring.datasource.username=sa\nspring.datasource.password=\nspring.jpa.database-platform=org.hibernate.dialect.H2Dialect\nspring.jpa.hibernate.ddl-auto=create-drop\nspring.h2.console.enabled=true\n\n# Logging\nlogging.level.org.springframework.web=DEBUG",
+          "output": ""
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Integration Test\npackage com.example.demo;\n\nimport org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;\nimport org.springframework.boot.test.context.SpringBootTest;\nimport org.springframework.http.MediaType;\nimport org.springframework.test.web.servlet.MockMvc;\nimport static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;\nimport static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;\n\n@SpringBootTest\n@AutoConfigureMockMvc\npublic class ProductControllerTest {\n    @Autowired\n    private MockMvc mockMvc;\n    \n    @Test\n    void shouldCreateProduct() throws Exception {\n        String json = \"\"\"\n            {\n                \"name\": \"Laptop\",\n                \"description\": \"Gaming laptop\",\n                \"price\": 999.99,\n                \"stock\": 10,\n                \"category\": \"ELECTRONICS\"\n            }\n            \"\"\";\n        \n        mockMvc.perform(post(\"/api/products\")\n                .contentType(MediaType.APPLICATION_JSON)\n                .content(json))\n            .andExpect(status().isCreated())\n            .andExpect(jsonPath(\"$.name\").value(\"Laptop\"))\n            .andExpect(jsonPath(\"$.price\").value(999.99));\n    }\n    \n    @Test\n    void shouldReturnValidationError() throws Exception {\n        String json = \"{\\\"name\\\": \\\"\\\", \\\"price\\\": -10}\";\n        \n        mockMvc.perform(post(\"/api/products\")\n                .contentType(MediaType.APPLICATION_JSON)\n                .content(json))\n            .andExpect(status().isBadRequest());\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Concepts Applied"
+        },
+        {
+          "type": "paragraph",
+          "value": "This capstone demonstrates: Spring Boot auto-configuration and dependency injection, Layered architecture (Controller -> Service -> Repository), JPA/Hibernate for database access, Bean validation with @Valid, RESTful API design with proper HTTP status codes, Global exception handling with @RestControllerAdvice, Integration testing with MockMvc, Lombok for reducing boilerplate, H2 in-memory database for development."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Deployment Options"
+        },
+        {
+          "type": "paragraph",
+          "value": "• Executable JAR: ./mvnw package && java -jar target/demo-1.0.0.jar\n• Docker: Build image with Dockerfile or Spring Boot build-image plugin\n• Cloud: Deploy to AWS Elastic Beanstalk, Google Cloud Run, or Heroku\n• Native: Use GraalVM native-image for sub-second startup and low memory\n\nNext steps: Add Spring Security for JWT authentication, Use PostgreSQL/MySQL for production, Add Spring Cache with Redis, Implement pagination and sorting, Add OpenAPI/Swagger documentation, Set up CI/CD with GitHub Actions."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What annotation marks a class as a Spring REST controller?",
+          "options": [
+            "@Controller",
+            "@RestController",
+            "@Service",
+            "@Component"
+          ],
+          "correctAnswer": "@RestController",
+          "explanation": "@RestController is a convenience annotation combining @Controller and @ResponseBody. It indicates the class handles HTTP requests and returns data (not views)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all Spring Boot starter dependencies used in this capstone:",
+          "options": [
+            "spring-boot-starter-web",
+            "spring-boot-starter-data-jpa",
+            "spring-boot-starter-security",
+            "h2",
+            "lombok",
+            "spring-boot-starter-test"
+          ],
+          "correctAnswers": [
+            "spring-boot-starter-web",
+            "spring-boot-starter-data-jpa",
+            "h2",
+            "lombok",
+            "spring-boot-starter-test"
+          ],
+          "explanation": "The capstone uses: web (REST), data-jpa (database), h2 (in-memory DB), lombok (boilerplate reduction), and starter-test (testing). Security was NOT included in this basic example."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What interface provides CRUD operations without writing SQL?",
+          "options": [
+            "CrudRepository",
+            "JpaRepository",
+            "Repository",
+            "All of the above"
+          ],
+          "correctAnswer": "All of the above",
+          "explanation": "Spring Data provides Repository (marker), CrudRepository (basic CRUD), PagingAndSortingRepository, and JpaRepository (JPA-specific methods). All provide CRUD without manual SQL."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What annotation handles exceptions globally across all controllers?",
+          "correctAnswer": "@RestControllerAdvice",
+          "explanation": "@RestControllerAdvice (or @ControllerAdvice) defines global exception handlers with @ExceptionHandler methods. It applies to all controllers in the application context."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 31: Java Security Best Practices",
+      "badge": "Security",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Writing Secure Java Applications"
+        },
+        {
+          "type": "paragraph",
+          "value": "Security is not an afterthought — it must be baked into every layer of your application. Java provides robust security mechanisms including the Security Manager, cryptography APIs, secure coding practices, and input validation. This part covers OWASP Top 10 vulnerabilities specific to Java and how to prevent them."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Input Validation and Sanitization"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.regex.*;\n\npublic class InputValidation {\n    // OWASP: Never trust user input\n    private static final Pattern SAFE_USERNAME = Pattern.compile(\"^[a-zA-Z0-9_]{3,20}$\");\n    private static final Pattern SAFE_EMAIL = Pattern.compile(\"^[A-Za-z0-9+_.-]+@(.+)$\");\n    \n    public static boolean isValidUsername(String username) {\n        return username != null && SAFE_USERNAME.matcher(username).matches();\n    }\n    \n    public static boolean isValidEmail(String email) {\n        return email != null && SAFE_EMAIL.matcher(email).matches();\n    }\n    \n    // Prevent path traversal\n    public static boolean isSafePath(String userPath) {\n        if (userPath == null || userPath.isEmpty()) return false;\n        // Reject paths containing .. or null bytes\n        return !userPath.contains(\"..\") && !userPath.contains(\"\\0\");\n    }\n    \n    // Prevent command injection\n    public static boolean isSafeCommand(String input) {\n        String[] dangerous = {\";\", \"&\", \"|\", \"$\", \"`\", \">\", \"<\", \"\\\"\", \"\\'\"};\n        for (String d : dangerous) {\n            if (input.contains(d)) return false;\n        }\n        return true;\n    }\n    \n    public static void main(String[] args) {\n        System.out.println(\"Valid user: \" + isValidUsername(\"alice_99\"));\n        System.out.println(\"Invalid user: \" + isValidUsername(\"alice<script>\"));\n        System.out.println(\"Safe path: \" + isSafePath(\"data/file.txt\"));\n        System.out.println(\"Unsafe path: \" + isSafePath(\"../../etc/passwd\"));\n    }\n}",
+          "output": "Valid user: true\nInvalid user: false\nSafe path: true\nUnsafe path: false"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Cryptography in Java"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import javax.crypto.*;\nimport javax.crypto.spec.*;\nimport java.security.*;\nimport java.util.Base64;\n\npublic class CryptoDemo {\n    // NEVER hardcode keys in production — use KeyStore or environment variables\n    private static final String ALGORITHM = \"AES\";\n    private static final String TRANSFORMATION = \"AES/GCM/NoPadding\";\n    \n    // Hash password with salt (use BCrypt/Argon2 in production)\n    public static String hashPassword(String password, byte[] salt) throws Exception {\n        MessageDigest md = MessageDigest.getInstance(\"SHA-256\");\n        md.update(salt);\n        byte[] hash = md.digest(password.getBytes());\n        return Base64.getEncoder().encodeToString(hash);\n    }\n    \n    // Encrypt with AES-GCM (authenticated encryption)\n    public static String encrypt(String plaintext, SecretKey key) throws Exception {\n        Cipher cipher = Cipher.getInstance(TRANSFORMATION);\n        byte[] iv = new byte[12];  // 96-bit IV for GCM\n        new SecureRandom().nextBytes(iv);\n        GCMParameterSpec spec = new GCMParameterSpec(128, iv);\n        cipher.init(Cipher.ENCRYPT_MODE, key, spec);\n        byte[] encrypted = cipher.doFinal(plaintext.getBytes());\n        // Prepend IV to ciphertext for decryption\n        byte[] combined = new byte[iv.length + encrypted.length];\n        System.arraycopy(iv, 0, combined, 0, iv.length);\n        System.arraycopy(encrypted, 0, combined, iv.length, encrypted.length);\n        return Base64.getEncoder().encodeToString(combined);\n    }\n    \n    public static String decrypt(String ciphertext, SecretKey key) throws Exception {\n        byte[] combined = Base64.getDecoder().decode(ciphertext);\n        byte[] iv = new byte[12];\n        byte[] encrypted = new byte[combined.length - 12];\n        System.arraycopy(combined, 0, iv, 0, 12);\n        System.arraycopy(combined, 12, encrypted, 0, encrypted.length);\n        \n        Cipher cipher = Cipher.getInstance(TRANSFORMATION);\n        GCMParameterSpec spec = new GCMParameterSpec(128, iv);\n        cipher.init(Cipher.DECRYPT_MODE, key, spec);\n        return new String(cipher.doFinal(encrypted));\n    }\n    \n    public static void main(String[] args) throws Exception {\n        KeyGenerator keyGen = KeyGenerator.getInstance(ALGORITHM);\n        keyGen.init(256);\n        SecretKey key = keyGen.generateKey();\n        \n        String message = \"Secret data\";\n        String encrypted = encrypt(message, key);\n        String decrypted = decrypt(encrypted, key);\n        \n        System.out.println(\"Original: \" + message);\n        System.out.println(\"Encrypted: \" + encrypted);\n        System.out.println(\"Decrypted: \" + decrypted);\n        \n        // Password hashing\n        byte[] salt = new byte[16];\n        new SecureRandom().nextBytes(salt);\n        String hash = hashPassword(\"mypassword\", salt);\n        System.out.println(\"Password hash: \" + hash);\n    }\n}",
+          "output": "Original: Secret data\nEncrypted: U2FsdGVkX1+7J8v2...\nDecrypted: Secret data\nPassword hash: 7xK8mP9qR2..."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "OWASP Top 10 for Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Vulnerability | Prevention in Java |\n|---------------|-------------------|\n| Injection (SQL, Command) | Use PreparedStatement, never concatenate user input |\n| Broken Authentication | Use Spring Security, BCrypt, session management |\n| Sensitive Data Exposure | Use AES-GCM, TLS 1.3, never log secrets |\n| XML External Entities (XXE) | Disable DTDs in XML parsers |\n| Broken Access Control | Use @PreAuthorize, validate ownership |\n| Security Misconfiguration | Disable default accounts, remove stack traces from errors |\n| Cross-Site Scripting (XSS) | Escape output with OWASP Java Encoder |\n| Insecure Deserialization | Use JSON instead of Java serialization, validate classes |\n| Using Components with Known Vulnerabilities | Run dependency-check, keep libraries updated |\n| Insufficient Logging | Log security events, use centralized logging |"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Secure Deserialization"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.io.*;\nimport java.util.*;\n\npublic class SecureDeserialization {\n    // Whitelist of allowed classes for deserialization\n    private static final Set<String> ALLOWED_CLASSES = Set.of(\n        \"com.example.User\",\n        \"com.example.Order\"\n    );\n    \n    public static Object safeDeserialize(byte[] data) throws Exception {\n        try (ObjectInputStream ois = new ObjectInputStream(\n                new ByteArrayInputStream(data)) {\n            @Override\n            protected Class<?> resolveClass(ObjectStreamClass desc) {\n                String className = desc.getName();\n                if (!ALLOWED_CLASSES.contains(className)) {\n                    throw new SecurityException(\"Class not allowed: \" + className);\n                }\n                try {\n                    return Class.forName(className);\n                } catch (ClassNotFoundException e) {\n                    throw new IOException(\"Class not found: \" + className, e);\n                }\n            }\n        }) {\n            return ois.readObject();\n        }\n    }\n    \n    // Better: Use JSON instead of Java serialization\n    // Jackson: ObjectMapper mapper = new ObjectMapper();\n    // User user = mapper.readValue(json, User.class);\n}",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which Java class prevents SQL injection when used correctly?",
+          "options": [
+            "Statement",
+            "PreparedStatement",
+            "ResultSet",
+            "Connection"
+          ],
+          "correctAnswer": "PreparedStatement",
+          "explanation": "PreparedStatement uses parameterized queries, separating SQL code from data. Never concatenate user input into SQL strings with Statement."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all secure alternatives to Java native serialization:",
+          "options": [
+            "JSON with Jackson/Gson",
+            "XML with JAXB",
+            "Protocol Buffers",
+            "Kryo",
+            "YAML with SnakeYAML",
+            "Java ObjectInputStream"
+          ],
+          "correctAnswers": [
+            "JSON with Jackson/Gson",
+            "Protocol Buffers",
+            "Kryo"
+          ],
+          "explanation": "JSON (Jackson/Gson), Protocol Buffers, and Kryo are safer alternatives. XML with JAXB and YAML can also have injection vulnerabilities. ObjectInputStream is the vulnerable native serialization being replaced."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What encryption mode provides both confidentiality AND authentication?",
+          "options": [
+            "AES-ECB",
+            "AES-CBC",
+            "AES-GCM",
+            "AES-CTR"
+          ],
+          "correctAnswer": "AES-GCM",
+          "explanation": "AES-GCM (Galois/Counter Mode) provides authenticated encryption — it detects tampering. ECB and CBC do not authenticate. Never use ECB (patterns leak)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Java class generates cryptographically secure random numbers?",
+          "correctAnswer": "SecureRandom",
+          "explanation": "SecureRandom produces cryptographically strong random values for keys, salts, and tokens. Never use java.util.Random for security purposes — it's predictable."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 32: Performance Optimization and Profiling",
+      "badge": "Performance",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Making Java Applications Fast"
+        },
+        {
+          "type": "paragraph",
+          "value": "Performance optimization is about measuring first, then improving. Java provides excellent profiling tools (JVisualVM, async-profiler, JFR) and JVM flags for tuning. Understanding JIT compilation, escape analysis, and common bottlenecks helps you write efficient code without premature optimization."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "JIT Compilation and Hotspots"
+        },
+        {
+          "type": "paragraph",
+          "value": "The JVM starts by interpreting bytecode. As methods execute frequently, the JIT (Just-In-Time) compiler compiles hot bytecode to native machine code. The C1 compiler (client) optimizes quickly, while C2 (server) applies aggressive optimizations after more profiling data is collected.\n\nTiers: 0=Interpreter, 1-3=C1 with increasing profiling, 4=C2 optimized. Methods that fail deoptimization fall back to lower tiers."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common Performance Pitfalls"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class PerformancePitfalls {\n    public static void main(String[] args) {\n        // PITFALL 1: String concatenation in loops\n        long start = System.currentTimeMillis();\n        String bad = \"\";\n        for (int i = 0; i < 100000; i++) {\n            bad += i;  // Creates new String each iteration!\n        }\n        System.out.println(\"String concat: \" + (System.currentTimeMillis() - start) + \"ms\");\n        \n        start = System.currentTimeMillis();\n        StringBuilder good = new StringBuilder();\n        for (int i = 0; i < 100000; i++) {\n            good.append(i);\n        }\n        System.out.println(\"StringBuilder: \" + (System.currentTimeMillis() - start) + \"ms\");\n        \n        // PITFALL 2: Autoboxing in tight loops\n        start = System.currentTimeMillis();\n        Long sumBad = 0L;\n        for (long i = 0; i < 10_000_000; i++) {\n            sumBad += i;  // Autoboxing every iteration!\n        }\n        System.out.println(\"Autoboxed sum: \" + (System.currentTimeMillis() - start) + \"ms\");\n        \n        start = System.currentTimeMillis();\n        long sumGood = 0L;\n        for (long i = 0; i < 10_000_000; i++) {\n            sumGood += i;\n        }\n        System.out.println(\"Primitive sum: \" + (System.currentTimeMillis() - start) + \"ms\");\n        \n        // PITFALL 3: Inefficient collection initialization\n        List<String> list = new ArrayList<>(10000);  // Pre-size if known\n        \n        // PITFALL 4: Substring memory leak (fixed in Java 7u6+)\n        // Old: new String(hugeCharArray, start, end) shared the array\n        // Now: substring creates a new char[] copy\n        \n        // GOOD: Stream pipeline fusion\n        List<Integer> result = IntStream.range(0, 1_000_000)\n            .filter(n -> n % 2 == 0)\n            .map(n -> n * 2)\n            .boxed()\n            .collect(ArrayList::new, ArrayList::add, ArrayList::addAll);\n        System.out.println(\"Stream result size: \" + result.size());\n    }\n}",
+          "output": "String concat: 2450ms\nStringBuilder: 5ms\nAutoboxed sum: 320ms\nPrimitive sum: 3ms\nStream result size: 500000"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Profiling with Built-in Tools"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# JVM flags for profiling and GC logging\njava -XX:+PrintGCDetails -XX:+PrintGCTimeStamps MyApp\n\n# Enable Flight Recorder (JFR) — production-safe profiling\njava -XX:StartFlightRecording=duration=60s,filename=myapp.jfr MyApp\n\n# Heap dump on OOM\njava -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/dump.hprof MyApp\n\n# Print assembly code (requires hsdis plugin)\njava -XX:+UnlockDiagnosticVMOptions -XX:+PrintAssembly MyApp\n\n# JVisualVM (included in JDK, GUI tool)\njvisualvm  # or jconsole for basic monitoring\n\n# async-profiler (external, low overhead)\n./profiler.sh -d 30 -f flamegraph.html <pid>",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "JVM Tuning Flags"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# G1GC (default Java 9+, good for most workloads)\njava -XX:+UseG1GC -XX:MaxGCPauseMillis=200 MyApp\n\n# ZGC (Java 15+, ultra-low latency, scales to terabytes)\njava -XX:+UseZGC -Xmx32g MyApp\n\n# Shenandoah (Java 12+, low pause times)\njava -XX:+UseShenandoahGC MyApp\n\n# Heap sizing\njava -Xms4g -Xmx4g MyApp  # Set same to avoid resizing pauses\n\n# Metaspace (replaced PermGen in Java 8)\njava -XX:MaxMetaspaceSize=256m MyApp\n\n# String deduplication (G1GC only, Java 8u20+)\njava -XX:+UseStringDeduplication MyApp\n\n# Large pages for better TLB performance\njava -XX:+UseLargePages MyApp",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Microbenchmarking with JMH"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import org.openjdk.jmh.annotations.*;\nimport org.openjdk.jmh.runner.*;\nimport org.openjdk.jmh.runner.options.*;\nimport java.util.concurrent.TimeUnit;\n\n// JMH (Java Microbenchmark Harness) — the correct way to benchmark\n@BenchmarkMode(Mode.AverageTime)\n@OutputTimeUnit(TimeUnit.NANOSECONDS)\n@State(Scope.Thread)\n@Warmup(iterations = 3)\n@Measurement(iterations = 5)\npublic class StringBenchmark {\n    private String text = \"Hello, World!\";\n    \n    @Benchmark\n    public String stringConcat() {\n        return \"Prefix: \" + text + \" :Suffix\";\n    }\n    \n    @Benchmark\n    public String stringBuilder() {\n        return new StringBuilder().append(\"Prefix: \")\n            .append(text).append(\" :Suffix\").toString();\n    }\n    \n    @Benchmark\n    public String stringFormat() {\n        return String.format(\"Prefix: %s :Suffix\", text);\n    }\n    \n    public static void main(String[] args) throws Exception {\n        Options opt = new OptionsBuilder()\n            .include(StringBenchmark.class.getSimpleName())\n            .forks(1)\n            .build();\n        new Runner(opt).run();\n    }\n}",
+          "output": "Benchmark                    Mode  Cnt   Score   Error  Units\nStringBenchmark.stringConcat avgt    5  45.231 ± 2.1   ns/op\nStringBenchmark.stringBuilder avgt   5  28.456 ± 1.3   ns/op\nStringBenchmark.stringFormat  avgt   5  185.42 ± 8.2   ns/op"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why is StringBuilder faster than String concatenation in loops?",
+          "options": [
+            "It uses less memory",
+            "It avoids creating intermediate String objects",
+            "It uses native code",
+            "It is thread-safe"
+          ],
+          "correctAnswer": "It avoids creating intermediate String objects",
+          "explanation": "String is immutable — each + creates a new String. StringBuilder is mutable and resizes its internal buffer, avoiding object creation overhead. StringBuffer is the thread-safe alternative."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all modern low-pause garbage collectors in Java:",
+          "options": [
+            "Serial GC",
+            "Parallel GC",
+            "G1 GC",
+            "ZGC",
+            "Shenandoah",
+            "CMS"
+          ],
+          "correctAnswers": [
+            "ZGC",
+            "Shenandoah"
+          ],
+          "explanation": "ZGC (Java 15+) and Shenandoah (Java 12+) are designed for sub-millisecond pause times. G1 GC has moderate pauses. Serial/Parallel are throughput-oriented. CMS was removed in Java 14."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What tool is the standard for writing correct Java microbenchmarks?",
+          "options": [
+            "JMeter",
+            "JMH",
+            "JProfiler",
+            "VisualVM"
+          ],
+          "correctAnswer": "JMH",
+          "explanation": "JMH (Java Microbenchmark Harness) handles JVM warmup, dead code elimination, and other pitfalls that make hand-rolled benchmarks unreliable. It's maintained by the OpenJDK team."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What JVM flag enables a heap dump when OutOfMemoryError occurs?",
+          "correctAnswer": "-XX:+HeapDumpOnOutOfMemoryError",
+          "explanation": "-XX:+HeapDumpOnOutOfMemoryError automatically dumps the heap to a file when an OOM occurs. Analyze with Eclipse MAT or VisualVM to find memory leaks."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 33: Deployment and DevOps for Java",
+      "badge": "DevOps",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Shipping Java to Production"
+        },
+        {
+          "type": "paragraph",
+          "value": "Writing code is only half the battle — deploying, monitoring, and operating Java applications in production requires understanding containers, CI/CD, observability, and cloud-native patterns. This part covers Docker, Kubernetes basics, monitoring with Micrometer, and building native images with GraalVM."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Dockerizing Java Applications"
+        },
+        {
+          "type": "code",
+          "language": "dockerfile",
+          "value": "# Multi-stage build for smaller, secure images\n# Stage 1: Build\nFROM eclipse-temurin:21-jdk-alpine AS builder\nWORKDIR /app\nCOPY . .\nRUN ./mvnw clean package -DskipTests\n\n# Stage 2: Runtime\nFROM eclipse-temurin:21-jre-alpine\nWORKDIR /app\n\n# Create non-root user for security\nRUN addgroup -S javauser && adduser -S javauser -G javauser\nUSER javauser\n\n# Copy only the built JAR\nCOPY --from=builder /app/target/*.jar app.jar\n\n# JVM tuning for containers\nENV JAVA_OPTS=\"-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC\"\n\nEXPOSE 8080\nENTRYPOINT [\"sh\", \"-c\", \"java $JAVA_OPTS -jar app.jar\"]",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Spring Boot Docker Support"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Spring Boot 2.3+ has built-in layered JAR support\n# pom.xml plugin configuration:\n# <configuration>\n#   <layers>\n#     <enabled>true</enabled>\n#   </layers>\n# </configuration>\n\n# Build layered JAR\n./mvnw spring-boot:build-image\n\n# Or with Cloud Native Buildpacks\npack build myapp --builder paketobuildpacks/builder:base\n\n# Run container\ndocker run -p 8080:8080 -e SPRING_PROFILES_ACTIVE=prod myapp:latest\n\n# Docker Compose for local development\n# docker-compose.yml:\nversion: '3.8'\nservices:\n  app:\n    build: .\n    ports:\n      - \"8080:8080\"\n    environment:\n      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/mydb\n    depends_on:\n      - db\n  db:\n    image: postgres:15-alpine\n    environment:\n      POSTGRES_DB: mydb\n      POSTGRES_PASSWORD: secret",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Observability with Micrometer and Actuator"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Add dependencies: spring-boot-starter-actuator, micrometer-registry-prometheus\n\n// application.properties\nmanagement.endpoints.web.exposure.include=health,info,metrics,prometheus\nmanagement.endpoint.health.show-details=always\nmanagement.metrics.export.prometheus.enabled=true\n\n// Custom metrics\nimport io.micrometer.core.instrument.*;\nimport org.springframework.stereotype.Component;\n\n@Component\npublic class OrderMetrics {\n    private final Counter orderCounter;\n    private final Timer orderTimer;\n    private final Gauge stockGauge;\n    \n    public OrderMetrics(MeterRegistry registry) {\n        this.orderCounter = Counter.builder(\"orders.created\")\n            .description(\"Total orders created\")\n            .register(registry);\n        \n        this.orderTimer = Timer.builder(\"orders.processing.time\")\n            .description(\"Order processing time\")\n            .register(registry);\n        \n        this.stockGauge = Gauge.builder(\"inventory.stock\", this, OrderMetrics::getStockLevel)\n            .description(\"Current stock level\")\n            .register(registry);\n    }\n    \n    public void recordOrder() {\n        orderCounter.increment();\n    }\n    \n    public void recordProcessingTime(Runnable orderProcessing) {\n        orderTimer.record(orderProcessing);\n    }\n    \n    private double getStockLevel() {\n        return 150.0;  // Fetch from actual inventory\n    }\n}\n\n// Health indicator\n@Component\npublic class DatabaseHealthIndicator implements HealthIndicator {\n    @Override\n    public Health health() {\n        // Check database connectivity\n        if (isDatabaseUp()) {\n            return Health.up().withDetail(\"connections\", 10).build();\n        }\n        return Health.down().withDetail(\"error\", \"Connection timeout\").build();\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "GraalVM Native Images"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Native image compilation (requires GraalVM)\n# Benefits: instant startup, low memory, no JIT warmup\n\n# With Spring Boot 3+\n./mvnw native:compile\n\n# Or using native-image directly\nnative-image -cp myapp.jar -H:Name=myapp-native -H:+ReportExceptionStackTraces\n\n# Build arguments for reflection (Spring handles this automatically)\n# -H:ReflectionConfigurationFiles=reflect-config.json\n\n# Container-optimized build\n./mvnw spring-boot:build-image -Pnative\n\n# Compare startup times:\n# JVM: ~3-5 seconds\n# Native: ~0.05 seconds\n\n# Trade-offs:\n# - Longer build times\n# - No JIT optimizations at runtime\n# - Some features unsupported (dynamic bytecode, some reflection)\n# - Platform-specific binary",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CI/CD Pipeline with GitHub Actions"
+        },
+        {
+          "type": "code",
+          "language": "yaml",
+          "value": "# .github/workflows/java-ci.yml\nname: Java CI\n\non: [push, pull_request]\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      \n      - name: Set up JDK 21\n        uses: actions/setup-java@v4\n        with:\n          java-version: '21'\n          distribution: 'temurin'\n          cache: maven\n      \n      - name: Build and test\n        run: ./mvnw clean verify\n      \n      - name: Generate test report\n        uses: dorny/test-reporter@v1\n        if: always()\n        with:\n          name: Maven Tests\n          path: target/surefire-reports/*.xml\n          reporter: java-junit\n      \n      - name: Build Docker image\n        if: github.ref == 'refs/heads/main'\n        run: |\n          docker build -t myapp:${{ github.sha }} .\n          docker tag myapp:${{ github.sha }} myapp:latest\n      \n      - name: Run security scan\n        uses: anchore/scan-action@v3\n        with:\n          image: \"myapp:latest\"\n          fail-build: false",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Production Checklist"
+        },
+        {
+          "type": "paragraph",
+          "value": "Before deploying Java to production:\n• Use a minimal JRE base image (eclipse-temurin:21-jre-alpine)\n• Run as non-root user inside container\n• Set appropriate heap limits (-XX:MaxRAMPercentage)\n• Enable health checks and readiness probes\n• Configure structured logging (JSON format)\n• Set up distributed tracing (OpenTelemetry, Zipkin)\n• Monitor JVM metrics (heap, GC, threads)\n• Use connection pooling for databases\n• Enable HTTPS/TLS termination\n• Have rollback strategy and feature flags\n• Run dependency vulnerability scans regularly"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the main benefit of GraalVM native images?",
+          "options": [
+            "Better JIT optimizations",
+            "Instant startup and lower memory usage",
+            "Cross-platform binaries",
+            "Dynamic class loading"
+          ],
+          "correctAnswer": "Instant startup and lower memory usage",
+          "explanation": "Native images compile ahead-of-time to machine code, eliminating JVM startup and JIT warmup. They start in milliseconds and use less RAM, ideal for serverless and containers."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all best practices for Dockerizing Java applications:",
+          "options": [
+            "Use multi-stage builds",
+            "Run as root user",
+            "Use JRE not JDK for runtime",
+            "Set JAVA_OPTS for container awareness",
+            "Include source code in final image",
+            "Use distroless or alpine base images"
+          ],
+          "correctAnswers": [
+            "Use multi-stage builds",
+            "Use JRE not JDK for runtime",
+            "Set JAVA_OPTS for container awareness",
+            "Use distroless or alpine base images"
+          ],
+          "explanation": "Best practices: multi-stage builds (smaller images), JRE runtime (smaller than JDK), -XX:+UseContainerSupport (respects Docker limits), non-root user, minimal base images. Never run as root or include source code."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What Spring Boot endpoint exposes metrics in Prometheus format?",
+          "options": [
+            "/actuator/health",
+            "/actuator/metrics",
+            "/actuator/prometheus",
+            "/actuator/info"
+          ],
+          "correctAnswer": "/actuator/prometheus",
+          "explanation": "/actuator/prometheus returns metrics in Prometheus scrape format. /actuator/metrics shows individual metrics in JSON. You need micrometer-registry-prometheus dependency."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What JVM flag tells the JVM to respect Docker container memory limits?",
+          "correctAnswer": "-XX:+UseContainerSupport",
+          "explanation": "-XX:+UseContainerSupport (default in Java 10+) makes the JVM read cgroup limits from the container. Without it, the JVM sees the host's full RAM and may get OOM-killed."
+        }
+      ]
+    },
+    {
       "partTitle": "Part 34: JavaFX and Desktop GUI Development",
       "badge": "GUI",
       "blocks": [
