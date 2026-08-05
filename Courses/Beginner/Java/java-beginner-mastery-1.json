@@ -1,0 +1,446 @@
+{
+  "id": "java-beginner-mastery",
+  "course": {
+    "title": "Java Beginner Mastery",
+    "description": "A comprehensive beginner course for the Java programming language. Covers variables, data types, OOP, collections, exception handling, file I/O, generics, lambdas, streams, and a capstone project. Designed for complete beginners with detailed explanations that gradually become more concise.",
+    "category": "Java",
+    "level": "Beginner",
+    "tags": [
+      "Java",
+      "Programming",
+      "OOP",
+      "JVM"
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: Introduction to Java",
+      "badge": "Getting Started",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "What is Java?"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java is a high-level, class-based, object-oriented programming language designed to have as few implementation dependencies as possible. It was created by James Gosling at Sun Microsystems in 1995 and is now owned by Oracle. Java's motto is 'Write Once, Run Anywhere' (WORA) — compiled Java code runs on any platform that has a Java Virtual Machine (JVM)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Where is Java Used?"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java powers a massive portion of the software world:\n• Enterprise Applications: Banking systems, insurance platforms, ERP systems (Spring, Jakarta EE)\n• Android Development: Native Android apps are built with Java (and Kotlin)\n• Web Backend: Spring Boot is the most popular Java framework for REST APIs\n• Big Data: Apache Hadoop, Apache Spark, Kafka are Java-based\n• Cloud Services: Netflix, Amazon, LinkedIn use Java for microservices\n• Desktop Applications: IntelliJ IDEA, Eclipse, Minecraft\n• Embedded Systems: Smart cards, IoT devices, set-top boxes"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "How Java Differs from Other Languages"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java vs Python: Java is statically typed and compiled, Python is dynamically typed and interpreted. Java is faster for large applications; Python is faster to write small scripts.\n\nJava vs C++: Java has automatic memory management (garbage collection), C++ requires manual memory management. Java runs on a VM; C++ compiles to native machine code.\n\nJava vs JavaScript: Completely different languages despite similar names. Java is compiled and strongly typed; JavaScript is interpreted and dynamically typed.\n\nJava vs Rust: Java has a garbage collector and simpler memory model; Rust uses ownership for memory safety without GC. Java has a larger ecosystem; Rust has better performance for systems programming."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Why Top Companies Choose Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "Companies like Google, Amazon, Netflix, Uber, Spotify, and banks worldwide use Java because:\n• Mature Ecosystem: 30+ years of libraries, frameworks, and tooling\n• Strong Typing: Catches errors at compile time, reducing runtime bugs\n• JVM Performance: JIT compilation makes Java surprisingly fast\n• Massive Talent Pool: Easy to hire Java developers globally\n• Enterprise-Grade: Built-in security, concurrency, and monitoring\n• Backward Compatibility: Code written in Java 1.0 still runs today\n• Spring Ecosystem: Spring Boot makes building microservices incredibly productive"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Installing Java"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Download JDK from https://adoptium.net/ (Eclipse Temurin - free and open)\n# Or use SDKMAN to manage versions:\n\n# Install SDKMAN\ncurl -s \"https://get.sdkman.io\" | bash\n\n# Install Java 21 (LTS)\nsdk install java 21.0.2-tem\n\n# Verify installation\njava -version\njavac -version",
+          "output": "openjdk version \"21.0.2\" 2024-01-16\nOpenJDK Runtime Environment Temurin-21.0.2+13\nOpenJDK 64-Bit Server VM Temurin-21.0.2+13"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Your First Java Program"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// HelloWorld.java\npublic class HelloWorld {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}",
+          "output": "Hello, World!"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every Java program needs at least one class. The class name must match the filename (HelloWorld.java → public class HelloWorld). The main method is the entry point — it's where execution begins. public static void main(String[] args) is the exact signature the JVM looks for."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Compiling and Running"
+        },
+        {
+          "type": "code",
+          "language": "bash",
+          "value": "# Compile (creates HelloWorld.class bytecode file)\njavac HelloWorld.java\n\n# Run (JVM executes the bytecode)\njava HelloWorld\n\n# Using jshell for quick experiments\njshell\njshell> System.out.println(\"Hello from JShell!\");",
+          "output": "Hello, World!\nHello from JShell!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does WORA stand for in Java?",
+          "options": [
+            "Write Once, Run Anywhere",
+            "Web Oriented Runtime Architecture",
+            "Write Optimize, Run Async",
+            "Windows Only, Requires Admin"
+          ],
+          "correctAnswer": "Write Once, Run Anywhere",
+          "explanation": "WORA means compiled Java bytecode runs on any platform with a JVM, without recompilation."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the entry point method signature in Java?",
+          "options": [
+            "public void main()",
+            "public static void main(String[] args)",
+            "static void start()",
+            "public static int main()"
+          ],
+          "correctAnswer": "public static void main(String[] args)",
+          "explanation": "The JVM looks for exactly this signature: public static void main(String[] args). Any deviation and the program won't run."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What command compiles a .java file into bytecode?",
+          "correctAnswer": "javac",
+          "explanation": "javac (Java Compiler) compiles .java source files into .class bytecode files that the JVM can execute."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: Variables and Data Types",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Storing Data in Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java is a statically typed language — every variable must have a declared type, and that type cannot change. This catches errors early at compile time. Java has two categories of data types: primitives (stored directly) and reference types (stored as references to objects)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Primitive Data Types"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class PrimitiveTypes {\n    public static void main(String[] args) {\n        // Integer types\n        byte tiny = 127;           // 8-bit: -128 to 127\n        short small = 32767;       // 16-bit: -32,768 to 32,767\n        int regular = 2147483647;  // 32-bit (default for integers)\n        long big = 9000000000L;    // 64-bit, suffix L required\n        \n        // Floating-point types\n        float precise = 3.14f;     // 32-bit, suffix f required\n        double accurate = 3.14159; // 64-bit (default for decimals)\n        \n        // Other primitives\n        char letter = 'A';         // 16-bit Unicode character\n        boolean flag = true;       // true or false only\n        \n        System.out.println(\"int: \" + regular);\n        System.out.println(\"double: \" + accurate);\n        System.out.println(\"char: \" + letter);\n        System.out.println(\"boolean: \" + flag);\n    }\n}",
+          "output": "int: 2147483647\ndouble: 3.14159\nchar: A\nboolean: true"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Variable Declaration and Initialization"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class Variables {\n    public static void main(String[] args) {\n        // Declaration then initialization\n        int age;\n        age = 25;\n        \n        // Declaration and initialization together\n        double salary = 50000.50;\n        \n        // Multiple variables of same type\n        int x = 1, y = 2, z = 3;\n        \n        // Final = constant (cannot be reassigned)\n        final double PI = 3.14159;\n        // PI = 3.14; // ERROR! Cannot assign to final variable\n        \n        // Underscores in numeric literals (for readability)\n        long creditCard = 1234_5678_9012_3456L;\n        int million = 1_000_000;\n        \n        System.out.println(\"Age: \" + age);\n        System.out.println(\"PI: \" + PI);\n        System.out.println(\"Million: \" + million);\n    }\n}",
+          "output": "Age: 25\nPI: 3.14159\nMillion: 1000000"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Type Casting"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class TypeCasting {\n    public static void main(String[] args) {\n        // Implicit casting (widening): small → large\n        int i = 100;\n        long l = i;      // OK, no data loss\n        double d = l;    // OK\n        \n        // Explicit casting (narrowing): large → small\n        double pi = 3.99;\n        int truncated = (int) pi;  // Loses decimal part: 3\n        \n        long big = 1000L;\n        int small = (int) big;     // OK if value fits\n        \n        // Casting between char and int\n        char letter = 'A';\n        int ascii = letter;        // 65\n        char back = (char) 66;     // 'B'\n        \n        System.out.println(\"Truncated: \" + truncated);\n        System.out.println(\"ASCII of A: \" + ascii);\n        System.out.println(\"Char 66: \" + back);\n    }\n}",
+          "output": "Truncated: 3\nASCII of A: 65\nChar 66: B"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which integer type is the default in Java?",
+          "options": [
+            "short",
+            "long",
+            "int",
+            "byte"
+          ],
+          "correctAnswer": "int",
+          "explanation": "When you write a whole number literal like 42, Java treats it as int by default. Use L suffix for long."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What keyword makes a variable constant (cannot be reassigned)?",
+          "options": [
+            "const",
+            "static",
+            "final",
+            "immutable"
+          ],
+          "correctAnswer": "final",
+          "explanation": "final makes a variable immutable after initialization. For primitives, the value can't change. For objects, the reference can't change (but object state can)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What suffix is required for a float literal like 3.14?",
+          "correctAnswer": "f",
+          "explanation": "Floating literals like 3.14 are double by default. Append f or F to make them float: 3.14f."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: Operators and Expressions",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Performing Operations in Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "Operators are symbols that perform operations on variables and values. Java has arithmetic, relational, logical, bitwise, and assignment operators. Understanding operator precedence is essential for writing correct expressions."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Arithmetic Operators"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class Arithmetic {\n    public static void main(String[] args) {\n        int a = 17, b = 5;\n        \n        System.out.println(\"a + b = \" + (a + b));   // 22\n        System.out.println(\"a - b = \" + (a - b));   // 12\n        System.out.println(\"a * b = \" + (a * b));   // 85\n        System.out.println(\"a / b = \" + (a / b));   // 3 (integer division!)\n        System.out.println(\"a % b = \" + (a % b));   // 2 (remainder)\n        \n        // Integer division truncates\n        System.out.println(\"17 / 5.0 = \" + (17 / 5.0)); // 3.4\n        \n        // Increment and decrement\n        int x = 5;\n        System.out.println(\"x++ = \" + (x++)); // 5 (post-increment)\n        System.out.println(\"x = \" + x);       // 6\n        \n        int y = 5;\n        System.out.println(\"++y = \" + (++y)); // 6 (pre-increment)\n    }\n}",
+          "output": "a + b = 22\na - b = 12\na * b = 85\na / b = 3\na % b = 2\n17 / 5.0 = 3.4\nx++ = 5\nx = 6\n++y = 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Relational and Logical Operators"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class RelationalLogical {\n    public static void main(String[] args) {\n        int a = 10, b = 20;\n        \n        // Relational operators\n        System.out.println(\"a == b: \" + (a == b)); // false\n        System.out.println(\"a != b: \" + (a != b)); // true\n        System.out.println(\"a > b: \" + (a > b));   // false\n        System.out.println(\"a < b: \" + (a < b));   // true\n        \n        // Logical operators\n        boolean x = true, y = false;\n        System.out.println(\"x && y: \" + (x && y)); // false (AND)\n        System.out.println(\"x || y: \" + (x || y)); // true (OR)\n        System.out.println(\"!x: \" + (!x));         // false (NOT)\n        \n        // Short-circuit evaluation\n        int num = 5;\n        if (num != 0 && 10 / num > 1) {\n            System.out.println(\"Safe division\");\n        }\n    }\n}",
+          "output": "a == b: false\na != b: true\na > b: false\na < b: true\nx && y: false\nx || y: true\n!x: false\nSafe division"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Assignment and Compound Operators"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class Assignment {\n    public static void main(String[] args) {\n        int a = 10;\n        \n        // Compound assignment operators\n        a += 5;   // a = a + 5 → 15\n        a -= 3;   // a = a - 3 → 12\n        a *= 2;   // a = a * 2 → 24\n        a /= 4;   // a = a / 4 → 6\n        a %= 4;   // a = a % 4 → 2\n        \n        System.out.println(\"Final a: \" + a);\n        \n        // Ternary operator\n        int score = 75;\n        String grade = (score >= 60) ? \"Pass\" : \"Fail\";\n        System.out.println(\"Grade: \" + grade);\n        \n        // Chained ternary\n        String level = (score >= 90) ? \"A\" : (score >= 80) ? \"B\" : \"C\";\n        System.out.println(\"Level: \" + level);\n    }\n}",
+          "output": "Final a: 2\nGrade: Pass\nLevel: C"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the result of 17 / 5 in Java?",
+          "options": [
+            "3.4",
+            "3",
+            "3.0",
+            "4"
+          ],
+          "correctAnswer": "3",
+          "explanation": "When both operands are integers, / performs integer division and truncates the decimal. 17 / 5 = 3, not 3.4."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is short-circuit evaluation?",
+          "options": [
+            "Faster CPU execution",
+            "Skipping the second operand if the result is already determined",
+            "Running both operands in parallel",
+            "A compiler optimization"
+          ],
+          "correctAnswer": "Skipping the second operand if the result is already determined",
+          "explanation": "In (false && anything), the second operand isn't evaluated because the result is already false. This prevents errors like division by zero."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What operator assigns a value based on a condition?",
+          "correctAnswer": "?",
+          "explanation": "The ternary operator ? : is a shorthand for if-else: condition ? value_if_true : value_if_false."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: Control Flow — if, switch, loops",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Making Decisions and Repeating Actions"
+        },
+        {
+          "type": "paragraph",
+          "value": "Control flow statements determine the order in which code executes. Java provides if-else for conditional branching, switch for multi-way branching, and for, while, and do-while for loops."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "if-else Statements"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class IfElse {\n    public static void main(String[] args) {\n        int score = 85;\n        \n        if (score >= 90) {\n            System.out.println(\"Grade: A\");\n        } else if (score >= 80) {\n            System.out.println(\"Grade: B\");\n        } else if (score >= 70) {\n            System.out.println(\"Grade: C\");\n        } else if (score >= 60) {\n            System.out.println(\"Grade: D\");\n        } else {\n            System.out.println(\"Grade: F\");\n        }\n        \n        // Single-line if (no braces for single statement)\n        if (score > 0)\n            System.out.println(\"Valid score\");\n    }\n}",
+          "output": "Grade: B\nValid score"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "switch Statements"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class SwitchDemo {\n    public static void main(String[] args) {\n        int day = 3;\n        String dayName;\n        \n        // Traditional switch\n        switch (day) {\n            case 1:\n                dayName = \"Monday\";\n                break;\n            case 2:\n                dayName = \"Tuesday\";\n                break;\n            case 3:\n                dayName = \"Wednesday\";\n                break;\n            case 4:\n                dayName = \"Thursday\";\n                break;\n            case 5:\n                dayName = \"Friday\";\n                break;\n            default:\n                dayName = \"Weekend\";\n        }\n        System.out.println(\"Day: \" + dayName);\n        \n        // Enhanced switch (Java 14+)\n        String result = switch (day) {\n            case 1, 2, 3, 4, 5 -> \"Weekday\";\n            case 6, 7 -> \"Weekend\";\n            default -> \"Invalid\";\n        };\n        System.out.println(\"Type: \" + result);\n    }\n}",
+          "output": "Day: Wednesday\nType: Weekday"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Loops"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class Loops {\n    public static void main(String[] args) {\n        // for loop\n        System.out.println(\"for loop:\");\n        for (int i = 0; i < 5; i++) {\n            System.out.print(i + \" \");\n        }\n        System.out.println();\n        \n        // while loop\n        System.out.println(\"while loop:\");\n        int j = 0;\n        while (j < 5) {\n            System.out.print(j + \" \");\n            j++;\n        }\n        System.out.println();\n        \n        // do-while loop (executes at least once)\n        System.out.println(\"do-while loop:\");\n        int k = 0;\n        do {\n            System.out.print(k + \" \");\n            k++;\n        } while (k < 5);\n        System.out.println();\n        \n        // Enhanced for loop (for-each)\n        System.out.println(\"for-each loop:\");\n        int[] numbers = {10, 20, 30, 40, 50};\n        for (int num : numbers) {\n            System.out.print(num + \" \");\n        }\n        System.out.println();\n        \n        // break and continue\n        System.out.println(\"break at 3:\");\n        for (int i = 0; i < 10; i++) {\n            if (i == 3) break;\n            System.out.print(i + \" \");\n        }\n    }\n}",
+          "output": "for loop:\n0 1 2 3 4 \nwhile loop:\n0 1 2 3 4 \ndo-while loop:\n0 1 2 3 4 \nfor-each loop:\n10 20 30 40 50 \nbreak at 3:\n0 1 2"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if you forget break in a switch case?",
+          "options": [
+            "Compile error",
+            "Fall-through to the next case",
+            "The program crashes",
+            "Nothing happens"
+          ],
+          "correctAnswer": "Fall-through to the next case",
+          "explanation": "Without break, execution 'falls through' to the next case. This is sometimes intentional but often a bug. Use the arrow syntax (Java 14+) to avoid this."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which loop always executes its body at least once?",
+          "options": [
+            "for",
+            "while",
+            "do-while",
+            "for-each"
+          ],
+          "correctAnswer": "do-while",
+          "explanation": "do-while checks the condition AFTER executing the body, so it always runs at least once. while and for check before."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword skips the current iteration and continues to the next?",
+          "correctAnswer": "continue",
+          "explanation": "continue skips the rest of the current loop iteration and proceeds to the next one. break exits the loop entirely."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: Arrays and Strings",
+      "badge": "Basics",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Working with Collections of Data"
+        },
+        {
+          "type": "paragraph",
+          "value": "Arrays store fixed-size sequences of elements of the same type. Strings in Java are objects (not primitives) and are immutable. The String class provides many useful methods for text manipulation."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Arrays"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.Arrays;\n\npublic class ArrayDemo {\n    public static void main(String[] args) {\n        // Declaration and initialization\n        int[] numbers = {10, 20, 30, 40, 50};\n        \n        // Declaration then allocation\n        int[] scores = new int[5];\n        scores[0] = 85;\n        scores[1] = 90;\n        \n        // Array length\n        System.out.println(\"Length: \" + numbers.length);\n        \n        // Accessing elements\n        System.out.println(\"First: \" + numbers[0]);\n        System.out.println(\"Last: \" + numbers[numbers.length - 1]);\n        \n        // Iterating\n        for (int i = 0; i < numbers.length; i++) {\n            System.out.print(numbers[i] + \" \");\n        }\n        System.out.println();\n        \n        // for-each loop\n        for (int num : numbers) {\n            System.out.print(num + \" \");\n        }\n        System.out.println();\n        \n        // Arrays utility class\n        Arrays.sort(scores);\n        System.out.println(\"Sorted: \" + Arrays.toString(scores));\n        \n        // Multi-dimensional arrays\n        int[][] matrix = {\n            {1, 2, 3},\n            {4, 5, 6},\n            {7, 8, 9}\n        };\n        System.out.println(\"matrix[1][2] = \" + matrix[1][2]);\n    }\n}",
+          "output": "Length: 5\nFirst: 10\nLast: 50\n10 20 30 40 50 \n10 20 30 40 50 \nSorted: [0, 0, 0, 85, 90]\nmatrix[1][2] = 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Strings"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class StringDemo {\n    public static void main(String[] args) {\n        // String literals (stored in string pool)\n        String s1 = \"Hello\";\n        String s2 = \"Hello\";\n        System.out.println(\"s1 == s2: \" + (s1 == s2)); // true (same pool object)\n        \n        // String objects (stored in heap)\n        String s3 = new String(\"Hello\");\n        System.out.println(\"s1 == s3: \" + (s1 == s3)); // false (different objects)\n        System.out.println(\"s1.equals(s3): \" + s1.equals(s3)); // true (same content)\n        \n        // Common String methods\n        String text = \"  Hello, Java World!  \";\n        System.out.println(\"Length: \" + text.length());\n        System.out.println(\"Upper: \" + text.toUpperCase());\n        System.out.println(\"Lower: \" + text.toLowerCase());\n        System.out.println(\"Trim: [\" + text.trim() + \"]\");\n        System.out.println(\"Contains 'Java': \" + text.contains(\"Java\"));\n        System.out.println(\"Replace: \" + text.replace(\"Java\", \"Rust\"));\n        System.out.println(\"Substring: \" + text.substring(9, 13));\n        System.out.println(\"Starts with '  H': \" + text.startsWith(\"  H\"));\n        \n        // String concatenation\n        String first = \"Hello\";\n        String second = \"World\";\n        String combined = first + \" \" + second;\n        System.out.println(\"Combined: \" + combined);\n        \n        // StringBuilder for mutable strings\n        StringBuilder sb = new StringBuilder();\n        sb.append(\"Hello\");\n        sb.append(\" \");\n        sb.append(\"World\");\n        System.out.println(\"StringBuilder: \" + sb.toString());\n    }\n}",
+          "output": "s1 == s2: true\ns1 == s3: false\ns1.equals(s3): true\nLength: 23\nUpper:   HELLO, JAVA WORLD!  \nLower:   hello, java world!  \nTrim: [Hello, Java World!]\nContains 'Java': true\nReplace:   Hello, Rust World!  \nSubstring: Java\nStarts with '  H': true\nCombined: Hello World\nStringBuilder: Hello World"
+        },
+        {
+          "type": "paragraph",
+          "value": "Strings are immutable in Java — every 'modification' creates a new String object. For frequent modifications, use StringBuilder (not thread-safe) or StringBuffer (thread-safe). Use == for reference comparison; use .equals() for content comparison."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How do you compare two Strings for equal content?",
+          "options": [
+            "==",
+            ".equals()",
+            ".compare()",
+            ".same()"
+          ],
+          "correctAnswer": ".equals()",
+          "explanation": "== compares references (memory addresses). .equals() compares the actual character content. Always use .equals() for String comparison."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which class should you use for mutable strings in a single thread?",
+          "options": [
+            "String",
+            "StringBuffer",
+            "StringBuilder",
+            "CharSequence"
+          ],
+          "correctAnswer": "StringBuilder",
+          "explanation": "StringBuilder is faster than StringBuffer because it's not synchronized (not thread-safe). Use StringBuffer only when multiple threads modify the same string."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What property gives the number of elements in an array?",
+          "correctAnswer": "length",
+          "explanation": "Arrays have a length property (not a method): arr.length. Strings have a length() method: str.length()."
+        }
+      ]
+    }
+  ]
+}
