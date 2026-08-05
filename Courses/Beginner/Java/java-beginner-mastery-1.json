@@ -3619,6 +3619,441 @@
           "explanation": "DataFrame (or Dataset<Row> in Java) is Spark's distributed table abstraction with named columns and schemas. It supports SQL-like operations and runs on clusters."
         }
       ]
+    },
+    {
+      "partTitle": "Part 37: Java Native Interface (JNI) and Foreign Function API",
+      "badge": "Native",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Bridging Java and Native Code"
+        },
+        {
+          "type": "paragraph",
+          "value": "Sometimes Java needs to call code written in C/C++ or other languages — for hardware access, legacy libraries, or performance-critical operations. JNI (Java Native Interface) has been the traditional approach, but Java 21's Foreign Function & Memory API (Project Panama) provides a modern, safer alternative without writing C header files."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "JNI Basics"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// HelloJNI.java\npublic class HelloJNI {\n    // Declare native method\n    public native String sayHello(String name);\n    \n    // Load native library\n    static {\n        System.loadLibrary(\"hello\");  // Loads libhello.so or hello.dll\n    }\n    \n    public static void main(String[] args) {\n        HelloJNI jni = new HelloJNI();\n        String result = jni.sayHello(\"Java\");\n        System.out.println(result);\n    }\n}\n\n// Compile and generate C header\n// javac -h . HelloJNI.java\n// Produces: HelloJNI.h with: JNIEXPORT jstring JNICALL Java_HelloJNI_sayHello(JNIEnv *, jobject, jstring);",
+          "output": ""
+        },
+        {
+          "type": "code",
+          "language": "c",
+          "value": "// hello.c — C implementation\n#include <jni.h>\n#include \"HelloJNI.h\"\n#include <string.h>\n\nJNIEXPORT jstring JNICALL\nJava_HelloJNI_sayHello(JNIEnv *env, jobject obj, jstring name) {\n    const char *cName = (*env)->GetStringUTFChars(env, name, NULL);\n    char result[256];\n    snprintf(result, sizeof(result), \"Hello from C, %s!\", cName);\n    (*env)->ReleaseStringUTFChars(env, name, cName);\n    return (*env)->NewStringUTF(env, result);\n}\n\n// Compile:\n// gcc -shared -fPIC -I$JAVA_HOME/include -I$JAVA_HOME/include/linux hello.c -o libhello.so\n// Run: java -Djava.library.path=. HelloJNI",
+          "output": "Hello from C, Java!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Foreign Function & Memory API (Java 21, Project Panama)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.lang.foreign.*;\nimport java.lang.invoke.MethodHandle;\n\npublic class PanamaDemo {\n    public static void main(String[] args) throws Throwable {\n        // Lookup C library functions\n        SymbolLookup lookup = SymbolLookup.loaderLookup();\n        \n        // Get strlen from standard C library\n        MethodHandle strlen = Linker.nativeLinker()\n            .downcallHandle(\n                lookup.find(\"strlen\").orElseThrow(),\n                FunctionDescriptor.of(ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)\n            );\n        \n        // Allocate off-heap memory and call C function\n        try (Arena arena = Arena.ofConfined()) {\n            MemorySegment cString = arena.allocateUtf8String(\"Hello, Panama!\");\n            long length = (long) strlen.invoke(cString);\n            System.out.println(\"Length: \" + length);\n        }\n        \n        // Call getpid() — no arguments\n        MethodHandle getpid = Linker.nativeLinker()\n            .downcallHandle(\n                lookup.find(\"getpid\").orElseThrow(),\n                FunctionDescriptor.of(ValueLayout.JAVA_INT)\n            );\n        int pid = (int) getpid.invoke();\n        System.out.println(\"Process ID: \" + pid);\n    }\n}",
+          "output": "Length: 14\nProcess ID: 12345"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "JNI vs Panama Comparison"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Aspect | JNI | Panama (FFM API) |\n|--------|-----|-------------------|\n| Boilerplate | High (C headers, .so/.dll) | Minimal (pure Java) |\n| Type safety | Manual (easy to crash JVM) | Type-safe descriptors |\n| Memory management | Manual (malloc/free) | Arena-based, auto-cleanup |\n| Performance | Good | Comparable or better |\n| Learning curve | Steep | Moderate |\n| Portability | Write C for each platform | Java handles platform differences |\n\nRecommendation: Use Panama for new projects (Java 21+). Use JNI only when maintaining legacy code."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What Java 21 API replaces JNI for calling native functions without writing C code?",
+          "options": [
+            "JNA",
+            "JNR-FFI",
+            "Foreign Function & Memory API",
+            "JavaCPP"
+          ],
+          "correctAnswer": "Foreign Function & Memory API",
+          "explanation": "The Foreign Function & Memory API (Project Panama, finalized in Java 21) lets you call C libraries directly from Java using MethodHandle and MemorySegment, with no C coding required."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all advantages of Panama over JNI:",
+          "options": [
+            "No C header files needed",
+            "Type-safe memory access",
+            "Automatic memory management with Arena",
+            "Faster performance always",
+            "Pure Java implementation"
+          ],
+          "correctAnswers": [
+            "No C header files needed",
+            "Type-safe memory access",
+            "Automatic memory management with Arena",
+            "Pure Java implementation"
+          ],
+          "explanation": "Panama eliminates C headers, provides type safety, uses Arena for automatic memory cleanup, and is pure Java. Performance is comparable to JNI, not universally faster."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What class manages the lifecycle of off-heap memory in Panama?",
+          "options": [
+            "MemorySegment",
+            "Arena",
+            "ByteBuffer",
+            "Unsafe"
+          ],
+          "correctAnswer": "Arena",
+          "explanation": "Arena controls memory allocation and deallocation scope. try (Arena arena = Arena.ofConfined()) { ... } automatically frees all allocated memory when the block exits."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword loads a native shared library in JNI?",
+          "correctAnswer": "System.loadLibrary",
+          "explanation": "System.loadLibrary(\"hello\") loads libhello.so (Linux), hello.dll (Windows), or libhello.dylib (macOS) from java.library.path. System.load() takes an absolute path instead."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 38: Java Compiler Plugins and Annotation Processors",
+      "badge": "Compiler",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Extending the Java Compiler"
+        },
+        {
+          "type": "paragraph",
+          "value": "Annotation processors run at compile time to generate code, validate annotations, or produce resources. They're the magic behind Lombok, Dagger, Room, and many other frameworks. Understanding how they work lets you build your own code generation tools and reduces boilerplate in large projects."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Building a Custom Annotation Processor"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Step 1: Define the annotation\nimport java.lang.annotation.*;\n\n@Retention(RetentionPolicy.SOURCE)  // Only needed at compile time\n@Target(ElementType.TYPE)\npublic @interface Builder {\n    String className() default \"\";\n}\n\n// Step 2: Create the processor\nimport javax.annotation.processing.*;\nimport javax.lang.model.element.*;\nimport javax.tools.*;\nimport java.io.*;\nimport java.util.*;\n\n@SupportedAnnotationTypes(\"Builder\")\n@SupportedSourceVersion(javax.lang.model.SourceVersion.RELEASE_21)\npublic class BuilderProcessor extends AbstractProcessor {\n    @Override\n    public boolean process(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv) {\n        for (Element element : roundEnv.getElementsAnnotatedWith(Builder.class)) {\n            if (element.getKind() != ElementKind.CLASS) continue;\n            \n            TypeElement classElement = (TypeElement) element;\n            String className = classElement.getSimpleName().toString();\n            String packageName = processingEnv.getElementUtils()\n                .getPackageOf(classElement).toString();\n            \n            // Generate builder class source code\n            String builderClassName = className + \"Builder\";\n            String builderCode = generateBuilderCode(classElement, packageName, builderClassName);\n            \n            // Write generated file\n            try {\n                JavaFileObject file = processingEnv.getFiler()\n                    .createSourceFile(packageName + \".\" + builderClassName);\n                try (Writer writer = file.openWriter()) {\n                    writer.write(builderCode);\n                }\n            } catch (IOException e) {\n                processingEnv.getMessager().printMessage(\n                    javax.tools.Diagnostic.Kind.ERROR, e.getMessage(), element);\n            }\n        }\n        return true;\n    }\n    \n    private String generateBuilderCode(TypeElement clazz, String pkg, String name) {\n        StringBuilder sb = new StringBuilder();\n        sb.append(\"package \").append(pkg).append(\";\\n\\n\");\n        sb.append(\"public class \").append(name).append(\" {\\n\");\n        sb.append(\"    private \").append(clazz.getSimpleName()).append(\" instance = new \")\n          .append(clazz.getSimpleName()).append(\"();\\n\\n\");\n        \n        for (Element field : clazz.getEnclosedElements()) {\n            if (field.getKind() == ElementKind.FIELD) {\n                String fieldName = field.getSimpleName().toString();\n                String fieldType = field.asType().toString();\n                sb.append(\"    public \").append(name).append(\" \")\n                  .append(fieldName).append(\"(\").append(fieldType).append(\" value) {\\n\");\n                sb.append(\"        instance.\").append(fieldName).append(\" = value;\\n\");\n                sb.append(\"        return this;\\n\");\n                sb.append(\"    }\\n\\n\");\n            }\n        }\n        sb.append(\"    public \").append(clazz.getSimpleName()).append(\" build() {\\n\");\n        sb.append(\"        return instance;\\n\");\n        sb.append(\"    }\\n\");\n        sb.append(\"}\\n\");\n        return sb.toString();\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Using the Generated Builder"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Source file (annotated)\n@Builder\npublic class User {\n    String name;\n    int age;\n    String email;\n}\n\n// Generated at compile time: UserBuilder.java\n// package com.example;\n// public class UserBuilder {\n//     private User instance = new User();\n//     public UserBuilder name(String value) { instance.name = value; return this; }\n//     public UserBuilder age(int value) { instance.age = value; return this; }\n//     public UserBuilder email(String value) { instance.email = value; return this; }\n//     public User build() { return instance; }\n// }\n\n// Usage\npublic class BuilderUsage {\n    public static void main(String[] args) {\n        User user = new UserBuilder()\n            .name(\"Alice\")\n            .age(30)\n            .email(\"alice@example.com\")\n            .build();\n        \n        System.out.println(user.name + \" - \" + user.age);\n    }\n}",
+          "output": "Alice - 30"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Service Provider Configuration"
+        },
+        {
+          "type": "code",
+          "language": "text",
+          "value": "# To register the processor, create this file:\n# META-INF/services/javax.annotation.processing.Processor\n# Content:\ncom.example.BuilderProcessor\n\n# Or with Maven:\n# <build>\n#   <plugins>\n#     <plugin>\n#       <groupId>org.apache.maven.plugins</groupId>\n#       <artifactId>maven-compiler-plugin</artifactId>\n#       <configuration>\n#         <annotationProcessors>\n#           <annotationProcessor>com.example.BuilderProcessor</annotationProcessor>\n#         </annotationProcessors>\n#       </configuration>\n#     </plugin>\n#   </plugins>\n# </build>",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Popular Annotation Processors"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Framework | What it generates |\n|-----------|------------------|\n| Lombok | Getters, setters, equals, hashCode, toString, builders |\n| Dagger | Dependency injection factories and components |\n| Room (Android) | SQLite DAO implementations |\n| MapStruct | Type-safe bean mapping code |\n| AutoValue | Immutable value classes |\n| Immutables | Immutable objects with builders |\n| jOOQ | Type-safe SQL from database schema |\n\nAll of these run at compile time, so there's zero runtime overhead from reflection."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "At what phase do annotation processors execute?",
+          "options": [
+            "Runtime",
+            "Compile time",
+            "Class loading",
+            "Linking"
+          ],
+          "correctAnswer": "Compile time",
+          "explanation": "Annotation processors run during compilation (javac). They generate source files, validate code, or produce resources before the final .class files are created."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all popular Java libraries that use annotation processing:",
+          "options": [
+            "Lombok",
+            "Hibernate",
+            "Dagger",
+            "Spring Boot",
+            "MapStruct",
+            "Room (Android)",
+            "JUnit 5"
+          ],
+          "correctAnswers": [
+            "Lombok",
+            "Dagger",
+            "MapStruct",
+            "Room (Android)"
+          ],
+          "explanation": "Lombok, Dagger, MapStruct, and Room use annotation processing to generate code at compile time. Hibernate and Spring Boot use runtime reflection. JUnit 5 uses reflection and some compile-time validation but not code generation."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What file registers an annotation processor for discovery by javac?",
+          "options": [
+            "META-INF/services/javax.annotation.processing.Processor",
+            "META-INF/processors.list",
+            "processor-config.xml",
+            "annotation-processors.properties"
+          ],
+          "correctAnswer": "META-INF/services/javax.annotation.processing.Processor",
+          "explanation": "The ServiceLoader mechanism uses META-INF/services/<interface-name> files. For annotation processors, the file lists fully-qualified processor class names, one per line."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What annotation marks a class as an annotation processor?",
+          "correctAnswer": "@SupportedAnnotationTypes",
+          "explanation": "@SupportedAnnotationTypes specifies which annotations the processor handles. The processor class must extend AbstractProcessor. @SupportedSourceVersion declares the maximum Java version supported."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 39: Advanced Java Features and Hidden Gems",
+      "badge": "Advanced",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Lesser-Known but Powerful Java Features"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java has many powerful features that don't get enough attention: invokedynamic for dynamic languages, MethodHandles for fast reflective access, VarHandles for lock-free concurrency, the Unsafe class (being replaced), and the ServiceLoader for modular plugins. Mastering these makes you a true Java expert."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "MethodHandle and VarHandle"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.lang.invoke.*;\n\npublic class MethodHandleDemo {\n    public static void main(String[] args) throws Throwable {\n        MethodHandles.Lookup lookup = MethodHandles.lookup();\n        \n        // MethodHandle: faster alternative to reflection\n        MethodType mt = MethodType.methodType(String.class, String.class);\n        MethodHandle concat = lookup.findVirtual(\n            String.class, \"concat\", mt\n        );\n        \n        String result = (String) concat.invoke(\"Hello, \", \"World!\");\n        System.out.println(result);\n        \n        // VarHandle: lock-free access to fields (replaces Unsafe)\n        class Counter {\n            volatile int value;\n        }\n        \n        Counter counter = new Counter();\n        VarHandle valueHandle = MethodHandles.lookup()\n            .findVarHandle(Counter.class, \"value\", int.class);\n        \n        // Atomic operations without synchronized\n        valueHandle.set(counter, 10);\n        int oldValue = (int) valueHandle.getAndAdd(counter, 5);\n        System.out.println(\"Old: \" + oldValue + \", New: \" + counter.value);\n        \n        // Compare-and-set (CAS) — foundation of lock-free algorithms\n        boolean success = valueHandle.compareAndSet(counter, 15, 100);\n        System.out.println(\"CAS success: \" + success + \", value: \" + counter.value);\n    }\n}",
+          "output": "Hello, World!\nOld: 10, New: 15\nCAS success: true, value: 100"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "ServiceLoader: Plugin Architecture"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Service interface\npublic interface PaymentProcessor {\n    String process(double amount);\n}\n\n// Implementation 1\npublic class StripeProcessor implements PaymentProcessor {\n    public String process(double amount) {\n        return \"Processed $\" + amount + \" via Stripe\";\n    }\n}\n\n// Implementation 2\npublic class PayPalProcessor implements PaymentProcessor {\n    public String process(double amount) {\n        return \"Processed $\" + amount + \" via PayPal\";\n    }\n}\n\n// Register in META-INF/services/com.example.PaymentProcessor:\n// com.example.StripeProcessor\n// com.example.PayPalProcessor\n\n// Usage\nimport java.util.ServiceLoader;\n\npublic class ServiceLoaderDemo {\n    public static void main(String[] args) {\n        ServiceLoader<PaymentProcessor> loaders = ServiceLoader.load(PaymentProcessor.class);\n        \n        for (PaymentProcessor processor : loaders) {\n            System.out.println(processor.process(99.99));\n        }\n        \n        // Find specific implementation\n        PaymentProcessor stripe = ServiceLoader.load(PaymentProcessor.class)\n            .stream()\n            .filter(p -> p.type().getName().contains(\"Stripe\"))\n            .findFirst()\n            .map(ServiceLoader.Provider::get)\n            .orElseThrow();\n        \n        System.out.println(stripe.process(49.99));\n    }\n}",
+          "output": "Processed $99.99 via Stripe\nProcessed $99.99 via PayPal\nProcessed $49.99 via Stripe"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "invokedynamic and Lambda Internals"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.lang.invoke.*;\nimport java.util.function.*;\n\npublic class InvokeDynamicDemo {\n    public static void main(String[] args) throws Throwable {\n        // Lambdas compile to invokedynamic, not anonymous classes\n        // This allows JVM optimizations and avoids class bloat\n        \n        Supplier<String> supplier = () -> \"Hello\";\n        Function<Integer, Integer> doubler = x -> x * 2;\n        \n        // The compiler generates a bootstrap method that uses LambdaMetafactory\n        // to create the lambda implementation at runtime\n        \n        MethodHandles.Lookup lookup = MethodHandles.lookup();\n        MethodType methodType = MethodType.methodType(Integer.class, Integer.class);\n        \n        CallSite site = LambdaMetafactory.metafactory(\n            lookup,\n            \"apply\",\n            MethodType.methodType(Function.class),\n            methodType.erase(),\n            lookup.findStatic(InvokeDynamicDemo.class, \"doubleIt\",\n                MethodType.methodType(int.class, int.class)),\n            methodType\n        );\n        \n        @SuppressWarnings(\"unchecked\")\n        Function<Integer, Integer> factory = (Function<Integer, Integer>) site.getTarget().invoke();\n        System.out.println(\"Dynamic lambda: \" + factory.apply(21));\n    }\n    \n    static int doubleIt(int x) { return x * 2; }\n}",
+          "output": "Dynamic lambda: 42"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Java Hidden Gems"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Feature | Description | Example |\n|---------|-------------|---------|\n| java.util.Optional | Avoid null checks | optional.map(...).orElse(default) |\n| java.time (JSR-310) | Modern date/time API | LocalDateTime, ZonedDateTime, Duration |\n| java.nio.file.WatchService | File system monitoring | Watch for file changes |\n| java.lang.ProcessBuilder | Launch external processes | new ProcessBuilder(\"git\", \"status\") |\n| java.util.concurrent.Phaser | Advanced synchronization | Reusable barrier for multiple parties |\n| java.util.concurrent.Exchanger | Thread data exchange | Two threads swap objects |\n| java.lang.StackWalker | Efficient stack inspection | StackWalker.getInstance().walk(...) |\n| java.lang.ClassValue | Per-class cached values | Faster than ConcurrentHashMap for class keys |\n| java.util.Spliterator | Parallel iteration source | Custom stream sources |\n| java.util.concurrent.StructuredTaskScope | Structured concurrency (Java 21) | Fork-join with automatic cleanup |"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the modern replacement for sun.misc.Unsafe for lock-free field access?",
+          "options": [
+            "AtomicIntegerFieldUpdater",
+            "VarHandle",
+            "MethodHandle",
+            "ReentrantLock"
+          ],
+          "correctAnswer": "VarHandle",
+          "explanation": "VarHandle (Java 9+) provides safe, efficient access to variables with various memory ordering modes. It replaces the dangerous and unsupported sun.misc.Unsafe class."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all features that compile lambdas efficiently without creating anonymous inner classes:",
+          "options": [
+            "invokedynamic",
+            "LambdaMetafactory",
+            "Reflection",
+            "Proxy classes",
+            "MethodHandle"
+          ],
+          "correctAnswers": [
+            "invokedynamic",
+            "LambdaMetafactory"
+          ],
+          "explanation": "Java 8+ compiles lambdas using invokedynamic bytecode + LambdaMetafactory. This creates the lambda object at runtime via a bootstrap method, avoiding class file bloat and enabling JVM optimizations."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What mechanism discovers implementation classes at runtime using META-INF/services files?",
+          "options": [
+            "ClassLoader",
+            "ServiceLoader",
+            "SPI",
+            "Dependency Injection"
+          ],
+          "correctAnswer": "ServiceLoader",
+          "explanation": "ServiceLoader is the standard JDK mechanism for plugin discovery. It reads META-INF/services/<interface-name> files and instantiates the listed implementations. It's the foundation of JDBC driver loading and Java modules."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Java 21 class enables structured concurrency with automatic subtask cancellation?",
+          "correctAnswer": "StructuredTaskScope",
+          "explanation": "StructuredTaskScope (Java 21) brings structured concurrency to Java. Child tasks are bound to a scope — if one fails or the scope closes, all subtasks are automatically cancelled. This prevents thread leaks and makes concurrent code reasoning easier."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 40: Final Review and Certification Prep",
+      "badge": "Graduation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "You Have Mastered Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "Congratulations! You have completed a comprehensive 40-part journey through Java. From basic syntax to JVM internals, from desktop GUIs to cloud deployment, from single-threaded programs to reactive streams — you now have the knowledge to build professional Java applications at any scale."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Complete Course Roadmap"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Phase | Parts | Topics |\n|-------|-------|--------|\n| Fundamentals | 1–5 | Syntax, variables, operators, control flow, arrays, strings |\n| OOP Core | 6–10 | Methods, classes, objects, encapsulation, inheritance, polymorphism, abstraction |\n| Intermediate | 11–15 | Exceptions, collections (List/Set/Map), generics, enums, annotations |\n| Modern Java | 16–20 | File I/O, lambdas, streams, concurrency, CLI capstone |\n| Professional | 21–25 | JDBC, JVM, testing, design patterns, modern features (records, virtual threads) |\n| Advanced | 26–30 | Modules, networking, reflection, build tools, Spring Boot REST API |\n| Production | 31–33 | Security, performance, DevOps, Docker, GraalVM, CI/CD |\n| Specialized | 34–36 | JavaFX, Android, Big Data (Kafka, Spark) |\n| Expert | 37–39 | JNI/Panama, annotation processing, advanced features (MethodHandle, ServiceLoader) |\n| Graduation | 40 | Review, certification prep, next steps |"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Oracle Certification Paths"
+        },
+        {
+          "type": "paragraph",
+          "value": "• Oracle Certified Associate (OCA) — Java SE 8/11 Programmer I\n  Focus: Syntax, OOP basics, exceptions, collections\n\n• Oracle Certified Professional (OCP) — Java SE 11/17 Programmer II\n  Focus: Advanced OOP, generics, concurrency, I/O, modules, annotations\n\n• Oracle Certified Professional — Java EE 7/8\n  Focus: Servlets, JSP, EJB, JPA, Web Services, Security\n\n• Spring Professional Certification\n  Focus: Core Spring, Boot, Data, Security, Cloud\n\nTip: Take the Java 17 OCP as it covers the most modern features and has the longest relevance."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Key Concepts Quick Reference"
+        },
+        {
+          "type": "paragraph",
+          "value": "Memory & JVM:\n• Heap: Objects live here. Managed by GC.\n• Stack: Local variables, references, method frames.\n• Metaspace: Class metadata (replaced PermGen in Java 8).\n• JIT: HotSpot compiles bytecode to native code.\n• GC: G1 (default), ZGC (low latency), Shenandoah (low pause).\n\nConcurrency:\n• synchronized: Monitor-based mutual exclusion.\n• volatile: Visibility guarantee, not atomicity.\n• java.util.concurrent: ExecutorService, ConcurrentHashMap, Atomic classes.\n• Virtual threads (Java 21): Millions of lightweight threads.\n\nCollections:\n• List: ArrayList (O(1) access), LinkedList (O(1) add/remove ends).\n• Set: HashSet (O(1)), TreeSet (sorted, O(log n)).\n• Map: HashMap (O(1)), TreeMap (sorted), LinkedHashMap (insertion order).\n\nStreams:\n• Intermediate: filter, map, flatMap, sorted, distinct, limit.\n• Terminal: collect, forEach, reduce, count, findFirst, anyMatch.\n• Lazy evaluation: Terminal operation triggers execution.\n\nSpring Boot:\n• @SpringBootApplication = @Configuration + @EnableAutoConfiguration + @ComponentScan.\n• @RestController = @Controller + @ResponseBody.\n• JpaRepository provides CRUD without SQL.\n• @Transactional ensures atomic operations."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "What to Learn Next"
+        },
+        {
+          "type": "paragraph",
+          "value": "• Cloud-Native Java: Spring Cloud, Kubernetes, Quarkus, Micronaut\n• Reactive Systems: WebFlux, R2DBC, Project Reactor advanced patterns\n• Data Engineering: Kafka Streams, Spark Structured Streaming, Flink SQL\n• System Design: Design scalable Java architectures, caching (Redis), messaging patterns\n• Contributing: Open source (Apache projects, Spring), write libraries, mentor others\n• Specialization: Android (Kotlin), Enterprise (Jakarta EE), Finance (low-latency), Gaming (LibGDX)\n\nRemember: The best way to master Java is to build real projects. Start small, ship often, and never stop learning."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which certification covers the most modern Java features including modules and records?",
+          "options": [
+            "OCA Java SE 8",
+            "OCP Java SE 11",
+            "OCP Java SE 17",
+            "Java EE 7"
+          ],
+          "correctAnswer": "OCP Java SE 17",
+          "explanation": "Java SE 17 OCP covers records, sealed classes, pattern matching, text blocks, and the module system. It's the most current and future-proof Oracle Java certification."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all topics covered in this 40-part Java Mastery course:",
+          "options": [
+            "Core Java syntax and OOP",
+            "Collections and Generics",
+            "Spring Boot and REST APIs",
+            "Android development",
+            "Big Data (Spark, Kafka)",
+            "JavaFX GUI",
+            "JVM internals and GC",
+            "DevOps and Docker deployment",
+            "JNI and Panama",
+            "Machine Learning with Java"
+          ],
+          "correctAnswers": [
+            "Core Java syntax and OOP",
+            "Collections and Generics",
+            "Spring Boot and REST APIs",
+            "Android development",
+            "Big Data (Spark, Kafka)",
+            "JavaFX GUI",
+            "JVM internals and GC",
+            "DevOps and Docker deployment",
+            "JNI and Panama"
+          ],
+          "explanation": "This course covers all listed topics except Machine Learning with Java (DL4J, Weka, etc. would require a separate specialization). The 40 parts span from beginner syntax to expert-level native interop and production deployment."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the recommended next step after completing this course?",
+          "options": [
+            "Memorize all Java APIs",
+            "Build real projects and contribute to open source",
+            "Stop learning and stick to what you know",
+            "Switch to another programming language immediately"
+          ],
+          "correctAnswer": "Build real projects and contribute to open source",
+          "explanation": "Practical application cements knowledge. Build projects, solve real problems, read open-source code (Spring, Kafka, Guava), and contribute. Certifications validate knowledge but projects demonstrate skill."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the total number of parts in this Java Beginner Mastery course?",
+          "correctAnswer": "40",
+          "explanation": "This course contains 40 comprehensive parts covering every major aspect of Java development from beginner fundamentals to advanced production topics, with 160+ quizzes to test your knowledge."
+        }
+      ]
     }
   ]
 }
