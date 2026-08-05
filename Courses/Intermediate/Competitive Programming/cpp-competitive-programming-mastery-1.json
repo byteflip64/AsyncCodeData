@@ -2048,7 +2048,7 @@
           "quizType": "mcq",
           "question": "In Floyd's cycle detection, when do fast and slow pointers meet?",
           "options": [
-n            "At the start of the cycle",
+            "At the start of the cycle",
             "Somewhere in the cycle",
             "At the tail of the list",
             "They never meet if there's a cycle"
