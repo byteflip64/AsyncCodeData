@@ -3460,6 +3460,433 @@
                     "explanation": "dyn Trait creates a trait object that uses dynamic dispatch. Example: Box<dyn Draw> or &dyn Draw."
                 }
             ]
+        },
+    {
+            "partTitle": "Part 36: Lifetimes in Practice",
+            "badge": "Lifetimes",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Real-World Lifetime Patterns"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Now that you understand the basics, let's look at common lifetime patterns in real Rust code: lifetime bounds, lifetime subtyping, and the static lifetime."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Lifetime Bounds"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fmt::Display;\n\nfn longest_with_an_announcement<'a, T>(\n    x: &'a str,\n    y: &'a str,\n    ann: T,\n) -> &'a str\nwhere\n    T: Display,\n{\n    println!(\"Announcement! {}\", ann);\n    if x.len() > y.len() {\n        x\n    } else {\n        y\n    }\n}\n\nfn main() {\n    let result = longest_with_an_announcement(\n        \"hello\",\n        \"world!\",\n        \"Today is someone's birthday!\",\n    );\n    println!(\"Longest: {}\", result);\n}\n",
+                    "output": "Announcement! Today is someone's birthday!\nLongest: world!"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The 'static Lifetime"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    // String literals have 'static lifetime\n    let s: &'static str = \"I have a static lifetime\";\n    \n    // 'static means the reference lives for the entire program\n    // All string literals are baked into the binary\n    \n    println!(\"{}\", s);\n    \n    // Box::leak creates 'static references\n    let leaked: &'static str = Box::leak(String::from(\"leaked\").into_boxed_str());\n    println!(\"{}\", leaked);\n}\n",
+                    "output": "I have a static lifetime\nleaked"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Lifetime Subtyping"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let string1 = String::from(\"long string is long\");\n    {\n        let string2 = String::from(\"xyz\");\n        let result = longest(string1.as_str(), string2.as_str());\n        println!(\"The longest string is {}\", result);\n    }\n}\n\nfn longest<'a>(x: &'a str, y: &'a str) -> &'a str {\n    if x.len() > y.len() { x } else { y }\n}\n",
+                    "output": "The longest string is long string is long"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does the 'static lifetime mean?",
+                    "options": [
+                        "The variable is immutable",
+                        "The reference lives for the entire program duration",
+                        "It's allocated on the stack",
+                        "It's thread-local"
+                    ],
+                    "correctAnswer": "The reference lives for the entire program duration",
+                    "explanation": "'static means the reference is valid for the entire program execution. String literals and leaked heap data have this lifetime."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Can you combine lifetime parameters with generic type parameters?",
+                    "options": [
+                        "No, they are separate systems",
+                        "Yes, using <'a, T>",
+                        "Only in nightly Rust",
+                        "Only for structs"
+                    ],
+                    "correctAnswer": "Yes, using <'a, T>",
+                    "explanation": "You can declare both lifetime and type parameters together: fn foo<'a, T>(x: &'a T) where T: Display."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What function creates a 'static reference by leaking heap memory?",
+                    "correctAnswer": "Box::leak",
+                    "explanation": "Box::leak consumes a Box and returns a &'static mut T. The memory is never freed, living for the program's duration."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 37: Functional Programming Patterns",
+            "badge": "Functional",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Idiomatic Functional Rust"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rust supports functional programming patterns deeply. Iterator chains, higher-order functions, and immutability-by-default make functional style natural and efficient."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Iterator Chains"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let numbers = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];\n    \n    let result: Vec<i32> = numbers\n        .iter()\n        .filter(|&&x| x % 2 == 0)   // Keep evens\n        .map(|x| x * x)              // Square them\n        .take(3)                     // Take first 3\n        .collect();\n    \n    println!(\"{:?}\", result);\n    \n    // Fold (reduce)\n    let sum = numbers.iter().fold(0, |acc, x| acc + x);\n    println!(\"Sum: {}\", sum);\n    \n    // Any / All\n    let has_even = numbers.iter().any(|x| x % 2 == 0);\n    let all_positive = numbers.iter().all(|x| *x > 0);\n    println!(\"Has even: {}, All positive: {}\", has_even, all_positive);\n}\n",
+                    "output": "[4, 16, 36]\nSum: 55\nHas even: true, All positive: true"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Higher-Order Functions"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn apply_twice<F>(f: F, x: i32) -> i32\nwhere\n    F: Fn(i32) -> i32,\n{\n    f(f(x))\n}\n\nfn compose<F, G>(f: F, g: G) -> impl Fn(i32) -> i32\nwhere\n    F: Fn(i32) -> i32,\n    G: Fn(i32) -> i32,\n{\n    move |x| f(g(x))\n}\n\nfn main() {\n    let add_one = |x| x + 1;\n    let double = |x| x * 2;\n    \n    println!(\"Apply twice: {}\", apply_twice(add_one, 5));\n    \n    let add_then_double = compose(double, add_one);\n    println!(\"Compose: {}\", add_then_double(5));  // (5+1)*2 = 12\n}\n",
+                    "output": "Apply twice: 7\nCompose: 12"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Option and Result Combinators"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let some_number = Some(5);\n    \n    // map transforms Some, passes through None\n    let doubled = some_number.map(|x| x * 2);\n    println!(\"{:?}\", doubled);\n    \n    // and_then (flat_map) for chaining operations\n    let result = some_number\n        .and_then(|x| if x > 3 { Some(x * 2) } else { None })\n        .map(|x| x + 1);\n    println!(\"{:?}\", result);\n    \n    // unwrap_or provides a default\n    let absent: Option<i32> = None;\n    println!(\"{}\", absent.unwrap_or(0));\n    \n    // Result combinators\n    let ok_result: Result<i32, &str> = Ok(5);\n    let mapped = ok_result.map(|x| x * 2);\n    println!(\"{:?}\", mapped);\n}\n",
+                    "output": "Some(10)\nSome(11)\n0\nOk(10)"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does Option::map do?",
+                    "options": [
+                        "Always returns Some",
+                        "Transforms the value inside Some, passes None through",
+                        "Converts Option to Result",
+                        "Unwraps the value"
+                    ],
+                    "correctAnswer": "Transforms the value inside Some, passes None through",
+                    "explanation": "map applies a function to the value inside Some. If the Option is None, it returns None without calling the function."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the difference between map and and_then?",
+                    "options": [
+                        "No difference",
+                        "and_then takes a function that returns Option; map takes one that returns a plain value",
+                        "map is faster",
+                        "and_then is deprecated"
+                    ],
+                    "correctAnswer": "and_then takes a function that returns Option; map takes one that returns a plain value",
+                    "explanation": "and_then (flat_map) chains operations that return Option, avoiding nested Options. map wraps the result in Some automatically."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What method provides a default value for None?",
+                    "correctAnswer": "unwrap_or",
+                    "explanation": "unwrap_or(default) returns the value inside Some, or the provided default if None. unwrap_or_else takes a closure for lazy evaluation."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 38: Cargo Workspaces",
+            "badge": "Tooling",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Managing Multi-Crate Projects"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Workspaces help manage multiple related packages in one project. They share a single Cargo.lock and target directory, making dependency management easier for large projects."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Workspace Structure"
+                },
+                {
+                    "type": "code",
+                    "language": "toml",
+                    "value": "# Cargo.toml (workspace root)\n[workspace]\nmembers = [\n    \"adder\",\n    \"add-one\",\n]\n\n# adder/Cargo.toml\n[package]\nname = \"adder\"\nversion = \"0.1.0\"\nedition = \"2021\"\n\n[dependencies]\nadd-one = { path = \"../add-one\" }\n\n# add-one/Cargo.toml\n[package]\nname = \"add-one\"\nversion = \"0.1.0\"\nedition = \"2021\"",
+                    "output": ""
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Using Workspace Crates"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// add-one/src/lib.rs\npub fn add_one(x: i32) -> i32 {\n    x + 1\n}\n\n// adder/src/main.rs\nuse add_one;\n\nfn main() {\n    let num = 10;\n    println!(\"Hello, world! {} plus one is {}!\", num, add_one::add_one(num));\n}",
+                    "output": "Hello, world! 10 plus one is 11!"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Running Tests in Workspaces"
+                },
+                {
+                    "type": "code",
+                    "language": "bash",
+                    "value": "# Run tests for all workspace members\ncargo test --workspace\n\n# Run tests for a specific crate\ncargo test -p add-one\n\n# Build all workspace members\ncargo build --workspace",
+                    "output": "running 1 test\ntest tests::it_works ... ok\n\ntest result: ok. 1 passed"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What file defines workspace members?",
+                    "options": [
+                        "workspace.toml",
+                        "Cargo.toml at the workspace root",
+                        "members.toml",
+                        "rust-toolchain.toml"
+                    ],
+                    "correctAnswer": "Cargo.toml at the workspace root",
+                    "explanation": "The workspace root Cargo.toml contains [workspace] with a members array listing all crates in the workspace."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Do workspace crates share a target directory?",
+                    "options": [
+                        "No, each has its own",
+                        "Yes, at the workspace root",
+                        "Only in release mode",
+                        "Only if configured"
+                    ],
+                    "correctAnswer": "Yes, at the workspace root",
+                    "explanation": "Workspaces share a single target directory and Cargo.lock at the root, reducing build times and ensuring consistent dependencies."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What flag runs tests for all workspace members?",
+                    "correctAnswer": "--workspace",
+                    "explanation": "cargo test --workspace runs tests for all crates in the workspace. Use -p <crate> for a specific member."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 39: Documentation and Publishing",
+            "badge": "Tooling",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Documenting and Sharing Your Code"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Rust has excellent built-in documentation tools. Doc comments support Markdown and are compiled into searchable HTML by rustdoc. Crates can be published to crates.io, Rust's package registry."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Doc Comments"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "/// Adds one to the number given.\n///\n/// # Examples\n///\n/// ```\n/// let arg = 5;\n/// let answer = my_crate::add_one(arg);\n///\n/// assert_eq!(6, answer);\n/// ```\npub fn add_one(x: i32) -> i32 {\n    x + 1\n}\n\n//! # My Crate\n//!\n//! `my_crate` is a collection of utilities.\n\nfn main() {\n    println!(\"See the doc comments above\");\n}",
+                    "output": "See the doc comments above"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "/// documents the item after it. //! documents the enclosing item (module/crate). Code blocks in doc comments are run as tests (doc tests)."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generating and Viewing Docs"
+                },
+                {
+                    "type": "code",
+                    "language": "bash",
+                    "value": "# Generate documentation\ncargo doc\n\n# Open in browser\ncargo doc --open\n\n# Generate docs for all dependencies too\ncargo doc --no-deps",
+                    "output": "Documenting my_crate v0.1.0\nFinished dev [unoptimized]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Publishing to crates.io"
+                },
+                {
+                    "type": "code",
+                    "language": "bash",
+                    "value": "# Login with API token from crates.io\ncargo login <your-api-token>\n\n# Verify package before publishing\ncargo publish --dry-run\n\n# Publish to crates.io\ncargo publish\n\n# Update version in Cargo.toml for new releases",
+                    "output": "Uploading my_crate v0.1.0"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Useful Documentation Sections"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "/// # Panics\n///\n/// Panics if the input is zero.\n///\n/// # Errors\n///\n/// Returns an error if the file doesn't exist.\n///\n/// # Safety\n///\n/// This function is unsafe because...\n///\n/// # Examples\n///\n/// ```\n/// let result = my_function(5);\n/// ```\npub fn my_function(x: i32) -> i32 {\n    x\n}\n\nfn main() {}",
+                    "output": ""
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What happens to code blocks in doc comments?",
+                    "options": [
+                        "They are ignored",
+                        "They are run as tests (doc tests)",
+                        "They are stripped from output",
+                        "They are compiled but not run"
+                    ],
+                    "correctAnswer": "They are run as tests (doc tests)",
+                    "explanation": "Rust runs code blocks in doc comments as tests. This ensures your documentation examples stay correct and up to date."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What command opens generated docs in a browser?",
+                    "options": [
+                        "cargo doc --browser",
+                        "cargo doc --open",
+                        "cargo open-docs",
+                        "cargo docs"
+                    ],
+                    "correctAnswer": "cargo doc --open",
+                    "explanation": "cargo doc --open generates documentation and opens it in your default browser."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What is Rust's official package registry?",
+                    "correctAnswer": "crates.io",
+                    "explanation": "crates.io is the official package registry for Rust. Publish crates with cargo publish and install with cargo install."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 40: Capstone Project — CLI Task Manager",
+            "badge": "Project",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Build a Full-Featured Task Manager"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "This capstone combines everything learned: structs, enums, error handling, file I/O, modules, and CLI arguments. Build a command-line task manager with JSON persistence."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Project Structure"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// src/main.rs\nuse std::env;\nuse std::process;\n\nmod task;\nmod storage;\n\nuse task::TaskManager;\n\nfn main() {\n    let args: Vec<String> = env::args().collect();\n    \n    if args.len() < 2 {\n        eprintln!(\"Usage: task [add|list|done|remove] [args...]\");\n        process::exit(1);\n    }\n    \n    let mut manager = TaskManager::new();\n    manager.load().unwrap_or_else(|e| eprintln!(\"Warning: {}\", e));\n    \n    match args[1].as_str() {\n        \"add\" => {\n            if args.len() < 3 {\n                eprintln!(\"Usage: task add <description>\");\n                process::exit(1);\n            }\n            let desc = args[2..].join(\" \");\n            manager.add(desc);\n            manager.save().unwrap();\n            println!(\"Task added!\");\n        }\n        \"list\" => manager.list(),\n        \"done\" => {\n            if args.len() < 3 {\n                eprintln!(\"Usage: task done <id>\");\n                process::exit(1);\n            }\n            let id: usize = args[2].parse().unwrap_or_else(|_| {\n                eprintln!(\"Invalid id\");\n                process::exit(1);\n            });\n            manager.complete(id);\n            manager.save().unwrap();\n        }\n        _ => eprintln!(\"Unknown command\"),\n    }\n}",
+                    "output": "Usage: task [add|list|done|remove] [args...]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Task Module"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "// src/task.rs\nuse serde::{Serialize, Deserialize};\n\n#[derive(Serialize, Deserialize, Debug)]\npub struct Task {\n    pub id: usize,\n    pub description: String,\n    pub done: bool,\n}\n\npub struct TaskManager {\n    pub tasks: Vec<Task>,\n    next_id: usize,\n}\n\nimpl TaskManager {\n    pub fn new() -> Self {\n        TaskManager {\n            tasks: Vec::new(),\n            next_id: 1,\n        }\n    }\n    \n    pub fn add(&mut self, description: String) {\n        self.tasks.push(Task {\n            id: self.next_id,\n            description,\n            done: false,\n        });\n        self.next_id += 1;\n    }\n    \n    pub fn list(&self) {\n        if self.tasks.is_empty() {\n            println!(\"No tasks.\");\n            return;\n        }\n        for task in &self.tasks {\n            let status = if task.done { \"[X]\" } else { \"[ ]\" };\n            println!(\"{} {} - {}\", status, task.id, task.description);\n        }\n    }\n    \n    pub fn complete(&mut self, id: usize) {\n        if let Some(task) = self.tasks.iter_mut().find(|t| t.id == id) {\n            task.done = true;\n            println!(\"Task {} marked as done!\", id);\n        } else {\n            eprintln!(\"Task {} not found\", id);\n        }\n    }\n    \n    pub fn load(&mut self) -> Result<(), Box<dyn std::error::Error>> {\n        if std::path::Path::new(\"tasks.json\").exists() {\n            let data = std::fs::read_to_string(\"tasks.json\")?;\n            self.tasks = serde_json::from_str(&data)?;\n            self.next_id = self.tasks.iter().map(|t| t.id).max().unwrap_or(0) + 1;\n        }\n        Ok(())\n    }\n    \n    pub fn save(&self) -> Result<(), Box<dyn std::error::Error>> {\n        let data = serde_json::to_string_pretty(&self.tasks)?;\n        std::fs::write(\"tasks.json\", data)?;\n        Ok(())\n    }\n}",
+                    "output": ""
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "What You Practiced"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "• Structs and impl blocks for data modeling\n• Enums and pattern matching for command routing\n• Error handling with Result and ?\n• File I/O with JSON serialization (serde)\n• Modules for code organization\n• CLI argument parsing with std::env\n• Mutable state management\n• Persistence across program runs"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Challenge: Extend Your Task Manager"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Try these enhancements:\n• Add priority levels (low/medium/high)\n• Add due dates using chrono crate\n• Add filtering (show only pending tasks)\n• Use clap for professional argument parsing\n• Add categories/tags for tasks\n• Export to CSV\n• Add unit tests for TaskManager"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What crate is commonly used for JSON serialization in Rust?",
+                    "options": [
+                        "json",
+                        "serde",
+                        "serialize",
+                        "json-rs"
+                    ],
+                    "correctAnswer": "serde",
+                    "explanation": "serde is the standard serialization framework for Rust. With serde_json, it handles JSON serialization and deserialization."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What derive macro enables JSON serialization?",
+                    "options": [
+                        "#[derive(Json)]",
+                        "#[derive(Serialize, Deserialize)]",
+                        "#[derive(Encode, Decode)]",
+                        "#[derive(ToJson, FromJson)]"
+                    ],
+                    "correctAnswer": "#[derive(Serialize, Deserialize)]",
+                    "explanation": "serde provides Serialize and Deserialize derive macros that generate the trait implementations needed for JSON conversion."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What crate is the industry standard for CLI argument parsing in Rust?",
+                    "correctAnswer": "clap",
+                    "explanation": "clap is the most popular CLI argument parser for Rust. It provides derive macros for declarative argument definitions and automatic help generation."
+                }
+            ]
         }
   ]
 }
