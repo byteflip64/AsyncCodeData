@@ -1,0 +1,608 @@
+{
+  "id": "cpp-competitive-programming-mastery",
+  "course": {
+    "title": "C++ Competitive Programming & DSA Mastery",
+    "description": "A comprehensive 40-part course designed to transform you into a confident competitive programmer. Covers STL deep-dive, all essential data structures, algorithms, number theory, combinatorics, graph theory, dynamic programming, string algorithms, and advanced CP techniques with real contest examples and code.",
+    "category": "C++",
+    "level": "Intermediate to Advanced",
+    "tags": [
+      "Competitive Programming",
+      "C++",
+      "Data Structures",
+      "Algorithms",
+      "STL",
+      "Number Theory",
+      "Graph Theory",
+      "Dynamic Programming"
+    ]
+  },
+  "parts": [
+    {
+      "partTitle": "Part 1: CP Mindset & Fast I/O",
+      "badge": "Foundation",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Competitive Programming Mindset"
+        },
+        {
+          "type": "paragraph",
+          "value": "Competitive Programming (CP) is not just about knowing algorithms — it's about solving problems under time pressure with optimal code. In CP, every millisecond and every byte of memory matters. Your goal is to write correct, efficient, and concise code that passes all test cases within strict limits."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Timeline showing problem reading, analysis, coding, testing, and submission in a contest",
+          "caption": "CP is a race against time — optimize your workflow from reading to submission"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Infographic — Horizontal timeline with 5 stages: 1) Read Problem (clock icon, 2-3 min), 2) Analyze & Design (brain icon, 5-10 min), 3) Code (keyboard icon, 10-20 min), 4) Test (bug icon, 5 min), 5) Submit (checkmark icon). Show time estimates. Use contest-themed colors (dark background, neon accents)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Why C++ Dominates CP"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ is the #1 language in competitive programming for good reasons:\n• **Speed** — Compiled to machine code, no VM overhead like Java/Python\n• **STL** — Rich, optimized library of data structures and algorithms\n• **Control** — Fine-grained memory and performance tuning\n• **Templates** — Generic code that works with any type\n• **Community** — Most tutorials, editorials, and solutions are in C++\n\nTop platforms (Codeforces, AtCoder, LeetCode) show 70-80% of top submissions in C++."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The CP Template — Your Starting Point"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every CP coder has a template. It includes fast I/O, common macros, and type aliases. This saves precious seconds in contests. Here's a battle-tested template used by top coders."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>  // Includes EVERYTHING from STL\nusing namespace std;\n\n// Type aliases for speed typing\ntypedef long long ll;\ntypedef pair<int, int> pii;\ntypedef vector<int> vi;\ntypedef vector<ll> vll;\n\n// Fast I/O macros\n#define fast_io ios::sync_with_stdio(false); cin.tie(nullptr);\n#define pb push_back\n#define mp make_pair\n#define all(x) (x).begin(), (x).end()\n#define sz(x) (int)(x).size()\n\nconst int MOD = 1e9 + 7;\nconst ll INF = 1e18;\n\nint main() {\n    fast_io;\n    \n    int t;\n    cin >> t;\n    while (t--) {\n        int n;\n        cin >> n;\n        vi a(n);\n        for (int i = 0; i < n; i++) cin >> a[i];\n        \n        // Your solution here\n        cout << n << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fast I/O — The #1 Optimization"
+        },
+        {
+          "type": "paragraph",
+          "value": "By default, C++ iostream is synchronized with C stdio for compatibility. This makes it SLOW. `ios::sync_with_stdio(false)` disables this sync. `cin.tie(nullptr)` decouples cin from cout so cin doesn't flush cout before reading. Together, they make iostream as fast as scanf/printf."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    // SLOW (default)\n    // int n; cin >> n;\n    \n    // FAST — always use these two lines\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    \n    // For MASSIVE input (10^6+ numbers), use scanning:\n    // Or use custom fast scanner (shown in later parts)\n    \n    cout << n * 2 << \"\\n\";\n    \n    return 0;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Understanding Time & Memory Limits"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Time Complexity Guide:**\n• n ≤ 10: O(n!), O(2^n) brute force OK\n• n ≤ 20: O(2^n) with bitmasks\n• n ≤ 100: O(n^3) dynamic programming\n• n ≤ 1,000: O(n^2) algorithms\n• n ≤ 10^5: O(n log n) sorting, binary search\n• n ≤ 10^6: O(n) linear scan\n• n ≤ 10^7: O(n) with tight constants\n• n > 10^7: O(1) or O(log n) only\n\n**Memory:** 1 int = 4 bytes. Array of 10^6 ints = 4 MB. Most contests allow 256-1024 MB."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Common CP Platforms"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Codeforces** — Most popular, 2-3 hour contests, Div 1-4 rated. Problems A-E (or F).\n**AtCoder** — Japanese platform, Beginner/Regular contests, strong math focus.\n**LeetCode** — Interview prep, weekly contests, topic-focused.\n**CodeChef** — Indian platform, Long Challenges (10 days), Cook-Off, Lunchtime.\n**HackerRank** — Structured learning, interview practice.\n**TopCoder** — Classic platform, SRMs (Single Round Matches)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the maximum n for which O(n^2) algorithm is acceptable in 1 second?",
+          "options": [
+            "n ≤ 10",
+            "n ≤ 1,000",
+            "n ≤ 10^5",
+            "n ≤ 10^7"
+          ],
+          "correctAnswer": "n ≤ 1,000",
+          "explanation": "O(n^2) with n=1000 is ~1 million operations, which runs in under 0.1s. For n=10^5, n^2 = 10^10 operations — way too slow (would take ~10+ seconds)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does cin.tie(nullptr) do?",
+          "options": [
+            "Makes cin faster by buffering",
+            "Decouples cin from cout so cin doesn't flush cout",
+            "Enables multi-threaded input",
+            "Closes the input stream"
+          ],
+          "correctAnswer": "Decouples cin from cout so cin doesn't flush cout",
+          "explanation": "By default, cin flushes cout before reading. tie(nullptr) removes this coupling, preventing unnecessary flushes and speeding up I/O significantly."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which header includes all standard C++ libraries at once for CP?",
+          "correctAnswer": "bits/stdc++.h",
+          "explanation": "#include <bits/stdc++.h> is a GCC feature that includes every standard library header. It's accepted on most CP platforms and saves typing time in contests."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 2: STL Vector Deep Dive",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "vector: Your Go-To Container"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::vector` is the most used container in CP. It's a dynamic array with O(1) random access, O(1) amortized push_back, and cache-friendly contiguous memory. Mastering vector operations is essential for solving array-based problems efficiently."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing vector internal structure with capacity doubling when full",
+          "caption": "Vectors double capacity when full — O(1) amortized push_back"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top row: vector with 4 elements, capacity 4, all slots filled. Arrow labeled 'push_back(5)'. Bottom row: new vector with capacity 8 (doubled), 5 elements copied, new element 5 added. Show old memory freed. Label 'O(n) reallocation' but 'O(1) amortized per operation'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Essential Vector Operations for CP"
+        },
+        {
+          "type": "paragraph",
+          "value": "Know these operations by heart — you'll use them in almost every problem:\n• `v.push_back(x)` — Add to end (amortized O(1))\n• `v.pop_back()` — Remove last (O(1))\n• `v.back()` — Access last element (O(1))\n• `v.empty()` — Check if empty (O(1))\n• `v.size()` — Number of elements (O(1))\n• `v.clear()` — Remove all elements (O(n))\n• `v.resize(n)` — Change size (O(n))\n• `v.reserve(n)` — Pre-allocate capacity (O(n))"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    vector<int> v;\n    \n    // Building a vector\n    v.push_back(10);\n    v.push_back(20);\n    v.push_back(30);\n    cout << \"Size: \" << v.size() << \", Capacity: \" << v.capacity() << endl;\n    \n    // Accessing\n    cout << \"First: \" << v[0] << \", Last: \" << v.back() << endl;\n    \n    // Pop\n    v.pop_back();\n    cout << \"After pop, size: \" << v.size() << endl;\n    \n    // Reserve to avoid reallocations\n    vector<int> big;\n    big.reserve(100000);  // Pre-allocate\n    for (int i = 0; i < 100000; i++) {\n        big.push_back(i);  // No reallocations until 100000!\n    }\n    \n    // Initialize with values\n    vector<int> a(5, 100);        // {100, 100, 100, 100, 100}\n    vector<int> b = {1, 2, 3, 4, 5};\n    \n    return 0;\n}",
+          "output": "Size: 3, Capacity: 4\nFirst: 10, Last: 30\nAfter pop, size: 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "2D Vectors — The Grid Container"
+        },
+        {
+          "type": "paragraph",
+          "value": "2D vectors are essential for grid problems, adjacency matrices, and DP tables. Initialize properly to avoid segmentation faults. Use `v.assign(rows, vector<int>(cols, 0))` for clean initialization."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 3, m = 4;\n    \n    // Method 1: Constructor\n    vector<vector<int>> grid(n, vector<int>(m, 0));\n    \n    // Method 2: Assign\n    vector<vector<int>> dp;\n    dp.assign(n, vector<int>(m, -1));\n    \n    // Fill and print\n    int val = 1;\n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < m; j++) {\n            grid[i][j] = val++;\n        }\n    }\n    \n    for (int i = 0; i < n; i++) {\n        for (int j = 0; j < m; j++) {\n            cout << grid[i][j] << \" \";\n        }\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "1 2 3 4 \n5 6 7 8 \n9 10 11 12"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Running Maximum"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given an array, find the running maximum at each position. This is a classic warm-up that tests basic vector manipulation and loop skills."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    vector<int> runningMax(n);\n    runningMax[0] = a[0];\n    \n    for (int i = 1; i < n; i++) {\n        runningMax[i] = max(runningMax[i-1], a[i]);\n    }\n    \n    for (int x : runningMax) {\n        cout << x << \" \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5\n3 1 4 1 5\nOutput: 3 3 4 4 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Two Pointer Technique"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find if there exists a pair in a sorted array that sums to target. The two-pointer technique is O(n) vs O(n^2) brute force. Sort first (O(n log n)), then use two pointers from both ends."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, target;\n    cin >> n >> target;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    sort(a.begin(), a.end());\n    \n    int left = 0, right = n - 1;\n    bool found = false;\n    \n    while (left < right) {\n        int sum = a[left] + a[right];\n        if (sum == target) {\n            found = true;\n            break;\n        } else if (sum < target) {\n            left++;\n        } else {\n            right--;\n        }\n    }\n    \n    cout << (found ? \"YES\" : \"NO\") << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5 9\n2 7 11 15 3\nOutput: YES  (2 + 7 = 9)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of vector::push_back()?",
+          "options": [
+            "O(1) guaranteed",
+            "O(1) amortized",
+            "O(log n)",
+            "O(n)"
+          ],
+          "correctAnswer": "O(1) amortized",
+          "explanation": "push_back is O(1) amortized. Occasionally it triggers O(n) reallocation when capacity is full, but over many operations the average is O(1). Use reserve() if you know the size upfront."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How do you create a 2D vector of size n×m initialized to 0?",
+          "options": [
+            "vector<vector<int>> v(n, m);",
+            "vector<vector<int>> v(n, vector<int>(m));",
+            "vector<vector<int>> v(n, m, 0);",
+            "vector<vector<int>> v[n][m];"
+          ],
+          "correctAnswer": "vector<vector<int>> v(n, vector<int>(m));",
+          "explanation": "vector<vector<int>> v(n, vector<int>(m, 0)) creates n rows, each with m columns initialized to 0. The inner vector<int>(m, 0) is copied n times."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which vector method removes the last element in O(1) time?",
+          "correctAnswer": "pop_back",
+          "explanation": "pop_back() removes the last element in O(1) time. It does not return the removed element — use back() first if you need it."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 3: STL Pair, Tuple & Sorting",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Pair, Tuple & Custom Sorting"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::pair` and `std::tuple` are lightweight containers for grouping related data. They're essential for returning multiple values, storing coordinates, edges in graphs, and key-value associations. Combined with custom sorting, they solve countless CP problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing pair as two connected boxes and tuple as multiple connected boxes",
+          "caption": "pair holds 2 elements; tuple holds any number of elements"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top: pair<int, int> as two connected boxes labeled 'first' and 'second'. Bottom: tuple<int, string, double> as three connected boxes. Show make_pair() and make_tuple() constructors. Use clean, minimal style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "pair Essentials"
+        },
+        {
+          "type": "paragraph",
+          "value": "`pair<T1, T2>` stores two values of possibly different types. Access with `.first` and `.second`. Use `make_pair()` or brace initialization. Pairs are comparable — they compare lexicographically (first, then second)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Creating pairs\n    pair<int, int> p1 = {3, 5};\n    pair<int, string> p2 = make_pair(1, \"Alice\");\n    auto p3 = make_pair(2, \"Bob\");\n    \n    // Accessing\n    cout << p1.first << \" \" << p1.second << \"\\n\";\n    cout << p2.second << \"\\n\";\n    \n    // Comparison (lexicographic)\n    pair<int, int> a = {1, 10};\n    pair<int, int> b = {1, 5};\n    pair<int, int> c = {2, 3};\n    cout << (a < b) << \" \" << (a < c) << \"\\n\";  // 0 1\n    \n    // Swapping\n    swap(a, b);\n    cout << a.first << \" \" << b.first << \"\\n\";\n    \n    // Array of pairs\n    vector<pair<int, int>> points = {{1, 2}, {3, 4}, {0, 1}};\n    sort(points.begin(), points.end());  // Sorts by first, then second\n    \n    return 0;\n}",
+          "output": "3 5\nAlice\n0 1\n1 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "tuple for 3+ Values"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `tuple` when you need more than 2 values. Access elements with `get<index>(t)`. C++17 introduced structured bindings for cleaner tuple/pair unpacking."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Creating tuples\n    tuple<int, string, double> t1 = make_tuple(1, \"Alice\", 95.5);\n    auto t2 = make_tuple(2, \"Bob\", 87.0);\n    \n    // Accessing\n    cout << get<0>(t1) << \" \" << get<1>(t1) << \" \" << get<2>(t1) << \"\\n\";\n    \n    // C++17 structured bindings (clean!)\n    auto [id, name, score] = t2;\n    cout << id << \" \" << name << \" \" << score << \"\\n\";\n    \n    // Tie to unpack into existing variables\n    int x; string s; double d;\n    tie(x, s, d) = t1;\n    cout << x << \" \" << s << \"\\n\";\n    \n    return 0;\n}",
+          "output": "1 Alice 95.5\n2 Bob 87\n1 Alice"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Custom Sorting with Lambda"
+        },
+        {
+          "type": "paragraph",
+          "value": "`sort()` with a custom comparator is one of the most powerful CP techniques. Use lambda functions for inline, concise comparators. Sort by any criteria: descending, by second element, by absolute value, etc."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    vector<pair<int, int>> intervals = {{1, 5}, {2, 3}, {0, 4}, {6, 8}};\n    \n    // Sort by first element ascending\n    sort(intervals.begin(), intervals.end());\n    \n    // Sort by second element ascending\n    sort(intervals.begin(), intervals.end(), \n         [](const pair<int,int>& a, const pair<int,int>& b) {\n             return a.second < b.second;\n         });\n    \n    // Sort by first descending, then second ascending\n    sort(intervals.begin(), intervals.end(),\n         [](const pair<int,int>& a, const pair<int,int>& b) {\n             if (a.first != b.first) return a.first > b.first;\n             return a.second < b.second;\n         });\n    \n    for (auto& p : intervals) {\n        cout << \"[\" << p.first << \",\" << p.second << \"] \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "[6,8] [1,5] [0,4] [2,3]"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Activity Selection (Greedy)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given n activities with start and end times, select the maximum number of non-overlapping activities. The greedy strategy: sort by end time, then always pick the activity that ends earliest."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<pair<int, int>> activities;  // {end, start}\n    \n    for (int i = 0; i < n; i++) {\n        int s, e;\n        cin >> s >> e;\n        activities.push_back({e, s});\n    }\n    \n    // Sort by end time\n    sort(activities.begin(), activities.end());\n    \n    int count = 0, lastEnd = -1;\n    for (auto& act : activities) {\n        if (act.second >= lastEnd) {  // start >= last end\n            count++;\n            lastEnd = act.first;\n        }\n    }\n    \n    cout << count << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 6\n1 3\n2 5\n4 7\n1 8\n5 9\n8 10\nOutput: 4  (activities: [1,3], [4,7], [8,10], and one more)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How do you access the second element of a pair<int, int> named p?",
+          "options": [
+            "p[1]",
+            "p.second",
+            "p.get(1)",
+            "p.1"
+          ],
+          "correctAnswer": "p.second",
+          "explanation": "pair has two public members: first and second. Use p.first and p.second to access them. They are not accessed via index or get()."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which C++17 feature allows clean unpacking of tuples?",
+          "options": [
+            "auto unpacking",
+            "structured bindings",
+            "tuple destructuring",
+            "pair expansion"
+          ],
+          "correctAnswer": "structured bindings",
+          "explanation": "Structured bindings (C++17) allow auto [a, b, c] = tuple; syntax for clean unpacking. Before C++17, you had to use tie() or get<>()."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which function sorts a vector with a custom comparator in C++?",
+          "correctAnswer": "sort",
+          "explanation": "std::sort(begin, end, comparator) sorts the range. The comparator is a function/lambda returning true if a should come before b. Default is ascending order."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 4: STL Set, Multiset & Ordered Statistics",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "set, multiset & Order Statistics"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::set` stores unique elements in sorted order with O(log n) insertion, deletion, and lookup. `std::multiset` allows duplicates. Both use Red-Black trees internally. For CP, they're essential for maintaining dynamic sorted data and order statistics."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Red-Black tree visualization showing balanced binary search tree with set elements",
+          "caption": "set uses a balanced BST — all operations are O(log n)"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A balanced binary search tree (Red-Black tree) with nodes 10, 5, 15, 3, 7, 12, 20. Show the tree is balanced (black height equal). Label operations: insert, delete, find all O(log n). Use tree visualization with color-coded nodes (red/black)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "set Operations for CP"
+        },
+        {
+          "type": "paragraph",
+          "value": "**insert(x)** — O(log n), returns pair<iterator, bool>\n**erase(x)** — O(log n), removes element (or iterator)\n**find(x)** — O(log n), returns iterator or end()\n**count(x)** — O(log n), returns 0 or 1 (set), or multiplicity (multiset)\n**lower_bound(x)** — O(log n), first element >= x\n**upper_bound(x)** — O(log n), first element > x\n**begin()/end()** — O(1), smallest/largest (with rbegin for reverse)"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    set<int> s;\n    \n    // Insert\n    s.insert(5);\n    s.insert(2);\n    s.insert(8);\n    s.insert(2);  // Duplicate, ignored\n    \n    cout << \"Size: \" << s.size() << \"\\n\";  // 3\n    \n    // Find\n    if (s.find(5) != s.end()) {\n        cout << \"5 found\\n\";\n    }\n    \n    // Lower/Upper bound\n    auto it = s.lower_bound(4);  // First >= 4\n    cout << \"Lower bound of 4: \" << *it << \"\\n\";  // 5\n    \n    it = s.upper_bound(5);  // First > 5\n    cout << \"Upper bound of 5: \" << *it << \"\\n\";  // 8\n    \n    // Iterate (sorted order)\n    for (int x : s) cout << x << \" \";\n    cout << \"\\n\";\n    \n    // Erase\n    s.erase(5);\n    \n    return 0;\n}",
+          "output": "Size: 3\n5 found\nLower bound of 4: 5\nUpper bound of 5: 8\n2 5 8"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "multiset for Duplicates"
+        },
+        {
+          "type": "paragraph",
+          "value": "`multiset` allows duplicate values. `count()` returns the number of occurrences. `erase(x)` removes ALL occurrences — use `erase(iterator)` to remove just one. Be careful with `find()` — it returns an iterator to ONE occurrence."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    multiset<int> ms;\n    ms.insert(5);\n    ms.insert(2);\n    ms.insert(5);\n    ms.insert(5);\n    \n    cout << \"Count of 5: \" << ms.count(5) << \"\\n\";  // 3\n    \n    // Erase ONE occurrence\n    auto it = ms.find(5);\n    if (it != ms.end()) ms.erase(it);\n    cout << \"Count after one erase: \" << ms.count(5) << \"\\n\";  // 2\n    \n    // Erase ALL occurrences\n    ms.erase(5);\n    cout << \"Count after full erase: \" << ms.count(5) << \"\\n\";  // 0\n    \n    return 0;\n}",
+          "output": "Count of 5: 3\nCount after one erase: 2\nCount after full erase: 0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Order Statistics Tree (Policy-Based DS)"
+        },
+        {
+          "type": "paragraph",
+          "value": "GNU C++ provides **policy-based data structures** that extend set with two powerful operations: `find_by_order(k)` — returns iterator to k-th smallest element (0-indexed), and `order_of_key(x)` — returns number of elements strictly less than x. Both are O(log n). This is a game-changer for CP."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\n#include <ext/pb_ds/assoc_container.hpp>\n#include <ext/pb_ds/tree_policy.hpp>\nusing namespace std;\nusing namespace __gnu_pbds;\n\n// Order statistics tree\ntypedef tree<int, null_type, less<int>, rb_tree_tag,\n             tree_order_statistics_node_update> ordered_set;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    ordered_set os;\n    os.insert(5);\n    os.insert(2);\n    os.insert(8);\n    os.insert(1);\n    os.insert(9);\n    \n    // find_by_order(k) - k-th smallest (0-indexed)\n    cout << \"0th smallest: \" << *os.find_by_order(0) << \"\\n\";  // 1\n    cout << \"2nd smallest: \" << *os.find_by_order(2) << \"\\n\";  // 5\n    \n    // order_of_key(x) - count of elements < x\n    cout << \"Elements < 5: \" << os.order_of_key(5) << \"\\n\";    // 2\n    cout << \"Elements < 10: \" << os.order_of_key(10) << \"\\n\";  // 5\n    \n    return 0;\n}",
+          "output": "0th smallest: 1\n2nd smallest: 5\nElements < 5: 2\nElements < 10: 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Running Median"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given a stream of numbers, find the median after each insertion. Use two multisets: a max-heap (left half) and a min-heap (right half). Balance them so their sizes differ by at most 1. The median is the top of the larger heap or the average of both tops."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    \n    // Max heap for left half (store negatives for max heap)\n    multiset<int> left;\n    // Min heap for right half\n    multiset<int> right;\n    \n    for (int i = 0; i < n; i++) {\n        int x;\n        cin >> x;\n        \n        // Insert\n        if (left.empty() || x <= *left.rbegin()) {\n            left.insert(x);\n        } else {\n            right.insert(x);\n        }\n        \n        // Balance\n        if (left.size() > right.size() + 1) {\n            right.insert(*left.rbegin());\n            left.erase(prev(left.end()));\n        } else if (right.size() > left.size()) {\n            left.insert(*right.begin());\n            right.erase(right.begin());\n        }\n        \n        // Get median\n        if (left.size() == right.size()) {\n            cout << (*left.rbegin() + *right.begin()) / 2.0 << \" \";\n        } else {\n            cout << *left.rbegin() << \" \";\n        }\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 6\n5 2 8 1 9 3\nOutput: 5 3.5 5 3.5 5 4"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of set::insert()?",
+          "options": [
+            "O(1)",
+            "O(log n)",
+            "O(n)",
+            "O(n log n)"
+          ],
+          "correctAnswer": "O(log n)",
+          "explanation": "set uses a balanced BST (Red-Black tree). Insertion requires traversing the tree height, which is O(log n) for n elements."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In a policy-based ordered_set, what does order_of_key(x) return?",
+          "options": [
+            "The x-th smallest element",
+            "The number of elements strictly less than x",
+            "The rank of element x",
+            "The number of elements equal to x"
+          ],
+          "correctAnswer": "The number of elements strictly less than x",
+          "explanation": "order_of_key(x) returns the count of elements strictly less than x, which is essentially the rank/position x would have if inserted."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which multiset method returns an iterator to the first element not less than x?",
+          "correctAnswer": "lower_bound",
+          "explanation": "lower_bound(x) returns an iterator to the first element >= x. upper_bound(x) returns the first element > x. Both are O(log n) in set/multiset."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 5: STL Map, Unordered_Map & Frequency Counting",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "map, unordered_map & Frequency Problems"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::map` is an ordered key-value store with O(log n) operations. `std::unordered_map` uses hash tables for average O(1) operations. For CP, unordered_map is preferred for pure lookups, while map is needed when order matters or for lower_bound queries."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Comparison showing map as sorted tree vs unordered_map as hash table with buckets",
+          "caption": "map is ordered (BST); unordered_map is hashed (average O(1))"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Left: 'std::map' as a balanced BST with sorted keys. Right: 'std::unordered_map' as a hash table with buckets and chaining. Label time complexities: map O(log n) all ops, unordered_map O(1) average, O(n) worst. Use contrasting styles (tree vs buckets)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "map vs unordered_map — When to Use"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Use map when:**\n• You need elements in sorted order\n• You need lower_bound/upper_bound\n• Worst-case O(n) from hash collisions is unacceptable\n\n**Use unordered_map when:**\n• You only need fast lookups/inserts/deletes\n• Order doesn't matter\n• Keys have a good hash function\n\n**CP Tip:** unordered_map can be hacked with collision attacks on some platforms. Use `reserve()` and `max_load_factor()` to mitigate, or use gp_hash_table from ext/pb_ds."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // map - ordered\n    map<string, int> scores;\n    scores[\"Alice\"] = 95;\n    scores[\"Bob\"] = 87;\n    scores[\"Charlie\"] = 92;\n    \n    cout << \"Ordered by key:\" << \"\\n\";\n    for (auto& [name, score] : scores) {\n        cout << name << \": \" << score << \"\\n\";\n    }\n    \n    // unordered_map - hashed\n    unordered_map<string, int> freq;\n    freq.reserve(1000);  // Pre-allocate buckets\n    freq.max_load_factor(0.25);\n    \n    string words[] = {\"apple\", \"banana\", \"apple\", \"cherry\", \"banana\", \"apple\"};\n    for (string& w : words) {\n        freq[w]++;\n    }\n    \n    cout << \"\\nFrequencies:\" << \"\\n\";\n    for (auto& [word, count] : freq) {\n        cout << word << \": \" << count << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Ordered by key:\nAlice: 95\nBob: 87\nCharlie: 92\n\nFrequencies:\napple: 3\nbanana: 2\ncherry: 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Two Sum (Hash Map)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find two numbers in an array that add up to target. The hash map solution is O(n) — iterate once, storing each number's complement (target - num) in the map. This is a classic CP interview problem."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, target;\n    cin >> n >> target;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    unordered_map<int, int> seen;  // value -> index\n    \n    for (int i = 0; i < n; i++) {\n        int complement = target - a[i];\n        if (seen.count(complement)) {\n            cout << seen[complement] << \" \" << i << \"\\n\";\n            return 0;\n        }\n        seen[a[i]] = i;\n    }\n    \n    cout << \"No solution\\n\";\n    return 0;\n}",
+          "output": "Input: 4 9\n2 7 11 15\nOutput: 0 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Longest Substring Without Repeating Characters"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the length of the longest substring without repeating characters. Use a sliding window with a hash map tracking the last seen index of each character. When a repeat is found, shrink the window from the left."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    string s;\n    cin >> s;\n    \n    unordered_map<char, int> lastSeen;\n    int maxLen = 0, left = 0;\n    \n    for (int right = 0; right < s.size(); right++) {\n        if (lastSeen.count(s[right]) && lastSeen[s[right]] >= left) {\n            left = lastSeen[s[right]] + 1;\n        }\n        lastSeen[s[right]] = right;\n        maxLen = max(maxLen, right - left + 1);\n    }\n    \n    cout << maxLen << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: abcabcbb\nOutput: 3  (substring 'abc')"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Count Distinct Elements in Subarrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given an array and queries [L,R], count distinct elements in each range. Use Mo's Algorithm (sqrt decomposition) or a Fenwick tree with last occurrence tracking. Here's the last-occurrence approach for offline queries."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, q;\n    cin >> n >> q;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    vector<pair<int, int>> queries(q);\n    for (int i = 0; i < q; i++) {\n        cin >> queries[i].first >> queries[i].second;\n    }\n    \n    // Simple approach: use set for each query (O(n) per query)\n    // For large q, use Mo's algorithm or segment tree\n    for (auto& [l, r] : queries) {\n        unordered_set<int> distinct;\n        for (int i = l; i <= r; i++) {\n            distinct.insert(a[i]);\n        }\n        cout << distinct.size() << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: 5 2\n1 2 1 3 2\n0 2\n1 4\nOutput: 2\n3"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the average time complexity of unordered_map operations?",
+          "options": [
+            "O(log n)",
+            "O(1)",
+            "O(n)",
+            "O(sqrt(n))"
+          ],
+          "correctAnswer": "O(1)",
+          "explanation": "unordered_map uses hash tables, giving average O(1) for insert, delete, and find. Worst case is O(n) due to collisions, but this is rare with a good hash function."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which map method returns the number of elements with a given key?",
+          "options": [
+            "find()",
+            "contains()",
+            "count()",
+            "size()"
+          ],
+          "correctAnswer": "count()",
+          "explanation": "map::count(key) returns 1 if the key exists, 0 otherwise. For multiset, it returns the number of occurrences. find() returns an iterator, not a count."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which C++11 loop syntax iterates over key-value pairs in a map?",
+          "correctAnswer": "range-based for",
+          "explanation": "for (auto& [key, value] : map) is the C++17 structured binding syntax. In C++11, use for (auto& pair : map) and access pair.first/pair.second."
+        }
+      ]
+    }
+  ]
+}
