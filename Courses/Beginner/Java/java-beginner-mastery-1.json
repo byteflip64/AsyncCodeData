@@ -2308,6 +2308,355 @@
           "explanation": "sealed class Foo permits Bar, Baz {} restricts inheritance to only the listed permitted subclasses. Subclasses must be final, sealed, or non-sealed."
         }
       ]
+    },
+    {
+      "partTitle": "Part 34: JavaFX and Desktop GUI Development",
+      "badge": "GUI",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Building Desktop Applications with JavaFX"
+        },
+        {
+          "type": "paragraph",
+          "value": "JavaFX is the modern replacement for Swing/AWT for building cross-platform desktop applications. It uses a scene graph architecture, supports CSS styling, FXML for declarative UI, and hardware-accelerated graphics. JavaFX 11+ is decoupled from the JDK and distributed as standalone modules."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Hello JavaFX"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import javafx.application.Application;\nimport javafx.scene.Scene;\nimport javafx.scene.control.*;\nimport javafx.scene.layout.VBox;\nimport javafx.stage.Stage;\n\npublic class HelloJavaFX extends Application {\n    @Override\n    public void start(Stage primaryStage) {\n        // Create UI controls\n        Label label = new Label(\"Welcome to JavaFX!\");\n        Button button = new Button(\"Click Me\");\n        TextField textField = new TextField();\n        textField.setPromptText(\"Enter your name\");\n        \n        // Event handling with lambda\n        button.setOnAction(e -> {\n            String name = textField.getText();\n            label.setText(\"Hello, \" + (name.isEmpty() ? \"World\" : name) + \"!\");\n        });\n        \n        // Layout container\n        VBox root = new VBox(10);  // 10px spacing\n        root.getChildren().addAll(label, textField, button);\n        root.setStyle(\"-fx-padding: 20; -fx-alignment: center;\");\n        \n        // Scene and stage\n        Scene scene = new Scene(root, 300, 200);\n        primaryStage.setTitle(\"My First JavaFX App\");\n        primaryStage.setScene(scene);\n        primaryStage.show();\n    }\n    \n    public static void main(String[] args) {\n        launch(args);\n    }\n}",
+          "output": "[JavaFX window opens with label, text field, and button]"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "FXML and MVC Pattern"
+        },
+        {
+          "type": "code",
+          "language": "xml",
+          "value": "<!-- main.fxml -->\n<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<?import javafx.scene.layout.*?>\n<?import javafx.scene.control.*?>\n<?import javafx.geometry.Insets?>\n\n<VBox xmlns:fx=\"http://javafx.com/fxml\"\n      fx:controller=\"com.example.MainController\"\n      spacing=\"10\" alignment=\"CENTER\"\n      style=\"-fx-padding: 20;\">\n    <Label text=\"Task Manager\" style=\"-fx-font-size: 18; -fx-font-weight: bold;\"/>\n    <TextField fx:id=\"taskInput\" promptText=\"Enter task...\"/>\n    <Button text=\"Add Task\" onAction=\"#handleAddTask\"/>\n    <ListView fx:id=\"taskList\" VBox.vgrow=\"ALWAYS\"/>\n    <Button text=\"Delete Selected\" onAction=\"#handleDelete\"\n            style=\"-fx-background-color: #ff4444; -fx-text-fill: white;\"/>\n</VBox>",
+          "output": ""
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// MainController.java\npackage com.example;\n\nimport javafx.collections.*;\nimport javafx.fxml.*;\nimport javafx.scene.control.*;\nimport java.net.URL;\nimport java.util.ResourceBundle;\n\npublic class MainController implements Initializable {\n    @FXML private TextField taskInput;\n    @FXML private ListView<String> taskList;\n    \n    private ObservableList<String> tasks;\n    \n    @Override\n    public void initialize(URL location, ResourceBundle resources) {\n        tasks = FXCollections.observableArrayList();\n        taskList.setItems(tasks);\n    }\n    \n    @FXML\n    private void handleAddTask() {\n        String task = taskInput.getText().trim();\n        if (!task.isEmpty()) {\n            tasks.add(task);\n            taskInput.clear();\n        }\n    }\n    \n    @FXML\n    private void handleDelete() {\n        String selected = taskList.getSelectionModel().getSelectedItem();\n        if (selected != null) {\n            tasks.remove(selected);\n        }\n    }\n}\n\n// App.java\npublic class App extends Application {\n    @Override\n    public void start(Stage stage) throws Exception {\n        Parent root = FXMLLoader.load(getClass().getResource(\"/main.fxml\"));\n        Scene scene = new Scene(root, 400, 500);\n        scene.getStylesheets().add(getClass().getResource(\"/style.css\").toExternalForm());\n        stage.setTitle(\"Task Manager\");\n        stage.setScene(scene);\n        stage.show();\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CSS Styling in JavaFX"
+        },
+        {
+          "type": "code",
+          "language": "css",
+          "value": "/* style.css */\n.root {\n    -fx-font-family: 'Segoe UI', sans-serif;\n    -fx-background-color: #f5f5f5;\n}\n\n.button {\n    -fx-background-color: #4CAF50;\n    -fx-text-fill: white;\n    -fx-padding: 8 16;\n    -fx-cursor: hand;\n    -fx-background-radius: 4;\n}\n\n.button:hover {\n    -fx-background-color: #45a049;\n}\n\n.list-view {\n    -fx-border-color: #ddd;\n    -fx-border-radius: 4;\n}\n\n.list-cell:selected {\n    -fx-background-color: #2196F3;\n    -fx-text-fill: white;\n}\n\n.text-field {\n    -fx-padding: 8;\n    -fx-border-color: #ccc;\n    -fx-border-radius: 4;\n    -fx-background-radius: 4;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Data Binding and Observables"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import javafx.beans.property.*;\nimport javafx.beans.binding.*;\n\npublic class DataBinding {\n    public static void main(String[] args) {\n        // Simple properties\n        StringProperty name = new SimpleStringProperty(\"Alice\");\n        IntegerProperty age = new SimpleIntegerProperty(25);\n        \n        // Bind label text to property\n        Label nameLabel = new Label();\n        nameLabel.textProperty().bind(name);\n        \n        // Computed binding\n        StringProperty greeting = new SimpleStringProperty();\n        greeting.bind(Bindings.concat(\"Hello, \", name, \"! Age: \", age));\n        \n        System.out.println(greeting.get());  // Hello, Alice! Age: 25\n        \n        // Bidirectional binding\n        StringProperty field1 = new SimpleStringProperty();\n        StringProperty field2 = new SimpleStringProperty();\n        field1.bindBidirectional(field2);\n        \n        field1.set(\"test\");\n        System.out.println(field2.get());  // test\n        \n        // Observable collections\n        ObservableList<String> items = FXCollections.observableArrayList();\n        items.addListener((ListChangeListener<String>) change -> {\n            while (change.next()) {\n                if (change.wasAdded()) {\n                    System.out.println(\"Added: \" + change.getAddedSubList());\n                }\n            }\n        });\n        items.add(\"Item 1\");  // Prints: Added: [Item 1]\n    }\n}",
+          "output": "Hello, Alice! Age: 25\ntest\nAdded: [Item 1]"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What file format is used for declarative UI layout in JavaFX?",
+          "options": [
+            "XML",
+            "FXML",
+            "JSON",
+            "YAML"
+          ],
+          "correctAnswer": "FXML",
+          "explanation": "FXML is an XML-based markup language specifically designed for JavaFX. It separates UI design from controller logic, enabling the MVC pattern. Load it with FXMLLoader."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid JavaFX property types:",
+          "options": [
+            "StringProperty",
+            "IntegerProperty",
+            "DoubleProperty",
+            "BooleanProperty",
+            "ObjectProperty",
+            "ListProperty",
+            "MapProperty"
+          ],
+          "correctAnswers": [
+            "StringProperty",
+            "IntegerProperty",
+            "DoubleProperty",
+            "BooleanProperty",
+            "ObjectProperty",
+            "ListProperty",
+            "MapProperty"
+          ],
+          "explanation": "JavaFX provides properties for all primitives (IntegerProperty, DoubleProperty, etc.), StringProperty, ObjectProperty<T>, and collection properties (ListProperty, MapProperty, SetProperty). All support binding and change listeners."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What annotation connects an FXML element to a controller field?",
+          "options": [
+            "@Inject",
+            "@FXML",
+            "@Bind",
+            "@Control"
+          ],
+          "correctAnswer": "@FXML",
+          "explanation": "@FXML marks fields and methods that are injected by the FXMLLoader. It connects UI elements defined in FXML to the controller class. The field name must match the fx:id in FXML."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What class is the entry point for every JavaFX application?",
+          "correctAnswer": "Application",
+          "explanation": "Every JavaFX app extends javafx.application.Application and overrides the start(Stage) method. Call launch(args) from main() to start the JavaFX runtime."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 35: Android Development with Java",
+      "badge": "Mobile",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Building Mobile Apps with Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "Android is the world's most popular mobile OS, and Java was its original primary language (now alongside Kotlin). Understanding Android development with Java teaches you mobile architecture, the Activity lifecycle, UI components, and how Java adapts to resource-constrained environments."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Activity Lifecycle"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import android.os.Bundle;\nimport android.util.Log;\nimport androidx.appcompat.app.AppCompatActivity;\n\npublic class MainActivity extends AppCompatActivity {\n    private static final String TAG = \"MainActivity\";\n    \n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        setContentView(R.layout.activity_main);\n        Log.d(TAG, \"onCreate called\");\n        \n        // Initialize UI, restore state\n        if (savedInstanceState != null) {\n            String savedText = savedInstanceState.getString(\"user_input\");\n            // Restore to EditText\n        }\n    }\n    \n    @Override\n    protected void onStart() {\n        super.onStart();\n        Log.d(TAG, \"onStart: Activity becoming visible\");\n    }\n    \n    @Override\n    protected void onResume() {\n        super.onResume();\n        Log.d(TAG, \"onResume: Activity interactive\");\n        // Start animations, sensors, location updates\n    }\n    \n    @Override\n    protected void onPause() {\n        super.onPause();\n        Log.d(TAG, \"onPause: Activity losing focus\");\n        // Save data, stop animations, release sensors\n    }\n    \n    @Override\n    protected void onStop() {\n        super.onStop();\n        Log.d(TAG, \"onStop: Activity no longer visible\");\n    }\n    \n    @Override\n    protected void onDestroy() {\n        super.onDestroy();\n        Log.d(TAG, \"onDestroy: Activity being destroyed\");\n        // Cleanup resources\n    }\n    \n    @Override\n    protected void onSaveInstanceState(Bundle outState) {\n        super.onSaveInstanceState(outState);\n        outState.putString(\"user_input\", \"saved data\");\n    }\n}",
+          "output": "D/MainActivity: onCreate called\nD/MainActivity: onStart: Activity becoming visible\nD/MainActivity: onResume: Activity interactive\n\n[User rotates screen]\nD/MainActivity: onPause: Activity losing focus\nD/MainActivity: onStop: Activity no longer visible\nD/MainActivity: onDestroy: Activity being destroyed\nD/MainActivity: onCreate called\nD/MainActivity: onStart: Activity becoming visible\nD/MainActivity: onResume: Activity interactive"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Layouts and Views"
+        },
+        {
+          "type": "code",
+          "language": "xml",
+          "value": "<!-- res/layout/activity_main.xml -->\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<LinearLayout \n    xmlns:android=\"http://schemas.android.com/apk/res/android\"\n    android:layout_width=\"match_parent\"\n    android:layout_height=\"match_parent\"\n    android:orientation=\"vertical\"\n    android:padding=\"16dp\">\n    \n    <TextView\n        android:id=\"@+id/titleText\"\n        android:layout_width=\"wrap_content\"\n        android:layout_height=\"wrap_content\"\n        android:text=\"Hello Android!\"\n        android:textSize=\"24sp\"\n        android:textStyle=\"bold\" />\n    \n    <EditText\n        android:id=\"@+id/nameInput\"\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"wrap_content\"\n        android:hint=\"Enter your name\"\n        android:inputType=\"textPersonName\" />\n    \n    <Button\n        android:id=\"@+id/greetButton\"\n        android:layout_width=\"wrap_content\"\n        android:layout_height=\"wrap_content\"\n        android:text=\"Greet Me\" />\n    \n    <RecyclerView\n        android:id=\"@+id/recyclerView\"\n        android:layout_width=\"match_parent\"\n        android:layout_height=\"0dp\"\n        android:layout_weight=\"1\" />\n</LinearLayout>",
+          "output": ""
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Activity with view binding\npublic class MainActivity extends AppCompatActivity {\n    private ActivityMainBinding binding;\n    \n    @Override\n    protected void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        binding = ActivityMainBinding.inflate(getLayoutInflater());\n        setContentView(binding.getRoot());\n        \n        // Access views directly (no findViewById needed)\n        binding.greetButton.setOnClickListener(v -> {\n            String name = binding.nameInput.getText().toString();\n            binding.titleText.setText(\"Hello, \" + name + \"!\");\n        });\n        \n        // Setup RecyclerView\n        List<String> items = Arrays.asList(\"Item 1\", \"Item 2\", \"Item 3\");\n        binding.recyclerView.setLayoutManager(new LinearLayoutManager(this));\n        binding.recyclerView.setAdapter(new MyAdapter(items));\n    }\n    \n    @Override\n    protected void onDestroy() {\n        super.onDestroy();\n        binding = null;  // Prevent memory leaks\n    }\n}\n\n// RecyclerView Adapter\nclass MyAdapter extends RecyclerView.Adapter<MyAdapter.ViewHolder> {\n    private final List<String> items;\n    \n    MyAdapter(List<String> items) { this.items = items; }\n    \n    @Override\n    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {\n        View view = LayoutInflater.from(parent.getContext())\n            .inflate(R.layout.item_row, parent, false);\n        return new ViewHolder(view);\n    }\n    \n    @Override\n    public void onBindViewHolder(ViewHolder holder, int position) {\n        holder.textView.setText(items.get(position));\n    }\n    \n    @Override\n    public int getItemCount() { return items.size(); }\n    \n    static class ViewHolder extends RecyclerView.ViewHolder {\n        TextView textView;\n        ViewHolder(View itemView) {\n            super(itemView);\n            textView = itemView.findViewById(R.id.itemText);\n        }\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Intents and Navigation"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Explicit intent: navigate to another activity\nIntent intent = new Intent(this, DetailActivity.class);\nintent.putExtra(\"item_id\", 42);\nintent.putExtra(\"item_name\", \"Laptop\");\nstartActivity(intent);\n\n// Receive data in target activity\n@Override\nprotected void onCreate(Bundle savedInstanceState) {\n    super.onCreate(savedInstanceState);\n    int itemId = getIntent().getIntExtra(\"item_id\", -1);\n    String itemName = getIntent().getStringExtra(\"item_name\");\n}\n\n// Implicit intent: open web page\nIntent browserIntent = new Intent(Intent.ACTION_VIEW, \n    Uri.parse(\"https://developer.android.com\"));\nstartActivity(browserIntent);\n\n// Share content\nIntent shareIntent = new Intent(Intent.ACTION_SEND);\nshareIntent.setType(\"text/plain\");\nshareIntent.putExtra(Intent.EXTRA_TEXT, \"Check out this app!\");\nstartActivity(Intent.createChooser(shareIntent, \"Share via\"));",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Android Architecture Components"
+        },
+        {
+          "type": "paragraph",
+          "value": "Modern Android uses architecture components for clean, testable code:\n• ViewModel: Survives configuration changes (screen rotation)\n• LiveData: Observable data holder with lifecycle awareness\n• Room: SQLite abstraction layer with compile-time SQL verification\n• WorkManager: Background work with constraints\n• Navigation Component: Fragment navigation with deep links\n\nWhile Kotlin is now preferred for Android, Java remains fully supported. The concepts (lifecycle, MVVM, dependency injection with Dagger/Hilt) are identical."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which method is called when an Activity first becomes interactive?",
+          "options": [
+            "onCreate",
+            "onStart",
+            "onResume",
+            "onPause"
+          ],
+          "correctAnswer": "onResume",
+          "explanation": "onResume() is called when the Activity is in the foreground and user-interactive. onCreate() initializes, onStart() makes it visible, onPause() is called when losing focus."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid Android Intent types:",
+          "options": [
+            "Explicit Intent",
+            "Implicit Intent",
+            "Broadcast Intent",
+            "Service Intent",
+            "Pending Intent"
+          ],
+          "correctAnswers": [
+            "Explicit Intent",
+            "Implicit Intent",
+            "Broadcast Intent",
+            "Pending Intent"
+          ],
+          "explanation": "Valid Intent types: Explicit (targets specific component), Implicit (system chooses handler), Broadcast (sent to all receivers), Pending (executed by another app later). 'Service Intent' is not a standard Android term — you use explicit/implicit intents to start services."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What Android component survives configuration changes like screen rotation?",
+          "options": [
+            "Activity",
+            "Fragment",
+            "ViewModel",
+            "Service"
+          ],
+          "correctAnswer": "ViewModel",
+          "explanation": "ViewModel is designed to survive configuration changes. Activities and Fragments are destroyed and recreated on rotation. Services run in the background but aren't tied to UI state."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method inflates an XML layout resource in Android?",
+          "correctAnswer": "setContentView",
+          "explanation": "setContentView(R.layout.activity_main) inflates the XML layout and sets it as the Activity's UI. Modern apps use View Binding (ActivityMainBinding.inflate()) for type-safe view access."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 36: Big Data and Java Ecosystem",
+      "badge": "Big Data",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Java in the Data World"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java dominates the big data ecosystem. Hadoop, Spark, Kafka, Flink, and Cassandra are all Java-based. Understanding how Java integrates with these technologies opens doors to data engineering, stream processing, and distributed systems — some of the highest-paying domains in software engineering."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Apache Kafka: Event Streaming"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import org.apache.kafka.clients.producer.*;\nimport org.apache.kafka.clients.consumer.*;\nimport java.time.Duration;\nimport java.util.*;\n\npublic class KafkaDemo {\n    // Producer: send events\n    public static void produce() {\n        Properties props = new Properties();\n        props.put(\"bootstrap.servers\", \"localhost:9092\");\n        props.put(\"key.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\n        props.put(\"value.serializer\", \"org.apache.kafka.common.serialization.StringSerializer\");\n        props.put(\"acks\", \"all\");  // Wait for all replicas\n        \n        try (Producer<String, String> producer = new KafkaProducer<>(props)) {\n            for (int i = 0; i < 10; i++) {\n                ProducerRecord<String, String> record = new ProducerRecord<>(\n                    \"orders\", \"order-\" + i, \"Order payload \" + i\n                );\n                producer.send(record, (metadata, exception) -> {\n                    if (exception == null) {\n                        System.out.printf(\"Sent to %s-%d offset %d%n\",\n                            metadata.topic(), metadata.partition(), metadata.offset());\n                    }\n                });\n            }\n        }\n    }\n    \n    // Consumer: read events\n    public static void consume() {\n        Properties props = new Properties();\n        props.put(\"bootstrap.servers\", \"localhost:9092\");\n        props.put(\"group.id\", \"order-processor\");\n        props.put(\"key.deserializer\", \"org.apache.kafka.common.serialization.StringDeserializer\");\n        props.put(\"value.deserializer\", \"org.apache.kafka.common.serialization.StringDeserializer\");\n        \n        try (Consumer<String, String> consumer = new KafkaConsumer<>(props)) {\n            consumer.subscribe(List.of(\"orders\"));\n            \n            while (true) {\n                ConsumerRecords<String, String> records = consumer.poll(Duration.ofMillis(100));\n                for (ConsumerRecord<String, String> record : records) {\n                    System.out.printf(\"Received: %s = %s [partition=%d]%n\",\n                        record.key(), record.value(), record.partition());\n                }\n            }\n        }\n    }\n    \n    public static void main(String[] args) {\n        new Thread(KafkaDemo::produce).start();\n        KafkaDemo.consume();\n    }\n}",
+          "output": "Sent to orders-0 offset 0\nSent to orders-0 offset 1\n...\nReceived: order-0 = Order payload 0 [partition=0]\nReceived: order-1 = Order payload 1 [partition=0]\n..."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Apache Spark: Distributed Processing"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import org.apache.spark.sql.*;\nimport static org.apache.spark.sql.functions.*;\n\npublic class SparkDemo {\n    public static void main(String[] args) {\n        SparkSession spark = SparkSession.builder()\n            .appName(\"JavaSparkDemo\")\n            .master(\"local[*]\")  // Use all CPU cores locally\n            .getOrCreate();\n        \n        // Read JSON data\n        Dataset<Row> df = spark.read().json(\"data/users.json\");\n        \n        // Show schema and sample data\n        df.printSchema();\n        df.show(5);\n        \n        // Transformations (lazy)\n        Dataset<Row> adults = df.filter(col(\"age\").geq(18))\n            .select(\"name\", \"age\", \"city\")\n            .orderBy(desc(\"age\"));\n        \n        // Aggregations\n        Dataset<Row> cityCounts = df.groupBy(\"city\")\n            .agg(count(\"*\").alias(\"count\"), avg(\"age\").alias(\"avg_age\"))\n            .orderBy(desc(\"count\"));\n        \n        // Actions (trigger execution)\n        adults.show();\n        cityCounts.show();\n        \n        // SQL interface\n        df.createOrReplaceTempView(\"users\");\n        spark.sql(\"SELECT city, COUNT(*) as cnt FROM users GROUP BY city ORDER BY cnt DESC\").show();\n        \n        spark.stop();\n    }\n}",
+          "output": "root\n |-- age: long (nullable = true)\n |-- city: string (nullable = true)\n |-- name: string (nullable = true)\n\n+----+---+---------+\n|name|age|     city|\n+----+---+---------+\n+----+---+---------+\n\n+------+---+---------+\n|  name|age|     city|\n+------+---+---------+\n| Alice| 30| New York|\n|   Bob| 25|  Chicago|\n+------+---+---------+\n\n+---------+-----+-------+\n|     city|count|avg_age|\n+---------+-----+-------+\n| New York|    2|   27.5|\n|  Chicago|    1|   25.0|\n+---------+-----+-------+"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Java in the Big Data Stack"
+        },
+        {
+          "type": "paragraph",
+          "value": "| Technology | Purpose | Java API |\n|------------|---------|----------|\n| Apache Hadoop | Distributed storage (HDFS) and batch processing (MapReduce) | org.apache.hadoop |\n| Apache Spark | In-memory distributed data processing | org.apache.spark |\n| Apache Kafka | Distributed event streaming platform | org.apache.kafka |\n| Apache Flink | Real-time stream processing | org.apache.flink |\n| Apache Cassandra | Distributed NoSQL database | com.datastax.driver |\n| Apache Beam | Unified batch/stream processing | org.apache.beam |\n| Elasticsearch | Search and analytics engine | org.elasticsearch.client |\n\nJava's mature ecosystem, strong typing, and JVM performance make it the dominant language for data infrastructure that must run reliably at scale."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Reactive Programming with Project Reactor"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import reactor.core.publisher.*;\nimport reactor.core.scheduler.Schedulers;\nimport java.time.Duration;\n\npublic class ReactorDemo {\n    public static void main(String[] args) throws InterruptedException {\n        // Mono: 0 or 1 element\n        Mono<String> mono = Mono.just(\"Hello\");\n        mono.subscribe(System.out::println);\n        \n        // Flux: 0 to N elements\n        Flux<Integer> flux = Flux.range(1, 5);\n        flux.map(n -> n * n)\n            .filter(n -> n > 5)\n            .subscribe(n -> System.out.println(\"Flux: \" + n));\n        \n        // Async processing with backpressure\n        Flux.interval(Duration.ofMillis(100))\n            .take(10)\n            .map(i -> \"Tick \" + i)\n            .subscribeOn(Schedulers.boundedElastic())\n            .subscribe(System.out::println);\n        \n        // Error handling\n        Flux.just(1, 2, 0, 4)\n            .map(i -> 10 / i)\n            .onErrorResume(e -> Flux.just(-1))\n            .subscribe(System.out::println);\n        \n        Thread.sleep(2000);  // Wait for async operations\n    }\n}",
+          "output": "Hello\nFlux: 9\nFlux: 16\nFlux: 25\nTick 0\nTick 1\n...\n10\n5\n-1\n2"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What Kafka component publishes messages to topics?",
+          "options": [
+            "Consumer",
+            "Producer",
+            "Broker",
+            "Zookeeper"
+          ],
+          "correctAnswer": "Producer",
+          "explanation": "Producers send (publish) messages to Kafka topics. Consumers read (subscribe to) messages from topics. Brokers are the server nodes that store and serve messages."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all big data technologies built primarily in Java:",
+          "options": [
+            "Apache Hadoop",
+            "Apache Spark",
+            "Apache Kafka",
+            "TensorFlow",
+            "Apache Flink",
+            "PyTorch",
+            "Apache Cassandra"
+          ],
+          "correctAnswers": [
+            "Apache Hadoop",
+            "Apache Spark",
+            "Apache Kafka",
+            "Apache Flink",
+            "Apache Cassandra"
+          ],
+          "explanation": "Hadoop, Spark, Kafka, Flink, and Cassandra are Java/Scala-based. TensorFlow and PyTorch are Python/C++ deep learning frameworks, not part of the Java big data ecosystem."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In Project Reactor, what represents a stream of 0 to N elements?",
+          "options": [
+            "Mono",
+            "Flux",
+            "Observable",
+            "Flowable"
+          ],
+          "correctAnswer": "Flux",
+          "explanation": "Flux<T> emits 0 to N elements. Mono<T> emits 0 or 1 element. Observable and Flowable are from RxJava, not Project Reactor (though conceptually similar)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Spark abstraction represents a distributed collection of data with named columns?",
+          "correctAnswer": "DataFrame",
+          "explanation": "DataFrame (or Dataset<Row> in Java) is Spark's distributed table abstraction with named columns and schemas. It supports SQL-like operations and runs on clusters."
+        }
+      ]
     }
   ]
 }
