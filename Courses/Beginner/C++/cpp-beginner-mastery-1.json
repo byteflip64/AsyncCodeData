@@ -2690,6 +2690,642 @@
           "explanation": "Public inheritance is used for is-a relationships (a Dog is an Animal). It preserves the access levels of base class members in the derived class."
         }
       ]
+    },
+    {
+      "partTitle": "Part 25: Polymorphism and Virtual Functions",
+      "badge": "OOP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "One Interface, Multiple Implementations"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Polymorphism** means 'many forms.' In C++, it allows a base class pointer to call derived class methods. This is achieved through **virtual functions** — functions declared in the base class with the `virtual` keyword and overridden in derived classes. Polymorphism is the most powerful OOP feature, enabling flexible, extensible code."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing base class pointer Shape* pointing to different derived objects Circle, Rectangle, Triangle",
+          "caption": "A base class pointer can point to any derived object, calling the appropriate overridden method"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top: 'Shape* ptr' box with arrow that can point to Circle, Rectangle, or Triangle objects. Each object has its own draw() method. Show ptr->draw() calling different implementations based on actual object type. Use polymorphism visual with dynamic dispatch arrows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Virtual Functions and Override"
+        },
+        {
+          "type": "paragraph",
+          "value": "Declare a function `virtual` in the base class to enable dynamic dispatch. In the derived class, use `override` (C++11) to explicitly indicate you're overriding a base method. Without `virtual`, the base class version is always called, even through a derived pointer."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nclass Animal {\nprotected:\n    std::string name;\n\npublic:\n    Animal(std::string n) : name(n) {}\n    \n    // Virtual function - can be overridden\n    virtual void makeSound() {\n        std::cout << name << \" makes a generic sound.\" << std::endl;\n    }\n    \n    // Virtual destructor - important for polymorphic classes!\n    virtual ~Animal() {}\n};\n\nclass Dog : public Animal {\npublic:\n    Dog(std::string n) : Animal(n) {}\n    \n    void makeSound() override {  // Explicit override\n        std::cout << name << \" says: Woof!\" << std::endl;\n    }\n};\n\nclass Cat : public Animal {\npublic:\n    Cat(std::string n) : Animal(n) {}\n    \n    void makeSound() override {\n        std::cout << name << \" says: Meow!\" << std::endl;\n    }\n};\n\nint main() {\n    Animal* animals[3];\n    animals[0] = new Animal(\"Generic\");\n    animals[1] = new Dog(\"Buddy\");\n    animals[2] = new Cat(\"Whiskers\");\n    \n    std::cout << \"Polymorphic behavior:\" << std::endl;\n    for (int i = 0; i < 3; i++) {\n        animals[i]->makeSound();  // Calls the appropriate version!\n    }\n    \n    // Clean up\n    for (int i = 0; i < 3; i++) {\n        delete animals[i];\n    }\n    \n    return 0;\n}",
+          "output": "Polymorphic behavior:\nGeneric makes a generic sound.\nBuddy says: Woof!\nWhiskers says: Meow!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Pure Virtual Functions and Abstract Classes"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **pure virtual function** has no implementation in the base class: `virtual void func() = 0;`. A class with at least one pure virtual function is an **abstract class** — you cannot create objects of it. It serves as an interface that derived classes must implement."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\n// Abstract class - cannot be instantiated\nclass Shape {\npublic:\n    // Pure virtual function\n    virtual double area() = 0;\n    virtual double perimeter() = 0;\n    \n    virtual ~Shape() {}\n};\n\nclass Circle : public Shape {\nprivate:\n    double radius;\n\npublic:\n    Circle(double r) : radius(r) {}\n    \n    double area() override {\n        return 3.14159 * radius * radius;\n    }\n    \n    double perimeter() override {\n        return 2 * 3.14159 * radius;\n    }\n};\n\nclass Rectangle : public Shape {\nprivate:\n    double width, height;\n\npublic:\n    Rectangle(double w, double h) : width(w), height(h) {}\n    \n    double area() override {\n        return width * height;\n    }\n    \n    double perimeter() override {\n        return 2 * (width + height);\n    }\n};\n\nint main() {\n    // Shape s;  // ERROR: cannot instantiate abstract class!\n    \n    Shape* shapes[2];\n    shapes[0] = new Circle(5);\n    shapes[1] = new Rectangle(4, 6);\n    \n    for (int i = 0; i < 2; i++) {\n        std::cout << \"Area: \" << shapes[i]->area() << std::endl;\n        std::cout << \"Perimeter: \" << shapes[i]->perimeter() << std::endl;\n        std::cout << \"---\" << std::endl;\n    }\n    \n    for (int i = 0; i < 2; i++) {\n        delete shapes[i];\n    }\n    \n    return 0;\n}",
+          "output": "Area: 78.5397\nPerimeter: 31.4159\n---\nArea: 24\nPerimeter: 20\n---"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Virtual Destructors"
+        },
+        {
+          "type": "paragraph",
+          "value": "If a class has virtual functions, its destructor should also be virtual. Without a virtual destructor, deleting a derived object through a base pointer only calls the base destructor, leaking derived class resources. This is a critical rule in C++."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nclass Base {\npublic:\n    Base() { std::cout << \"Base constructor\" << std::endl; }\n    virtual ~Base() { std::cout << \"Base destructor\" << std::endl; }\n};\n\nclass Derived : public Base {\nprivate:\n    int* data;\n\npublic:\n    Derived() {\n        data = new int[100];\n        std::cout << \"Derived constructor\" << std::endl;\n    }\n    ~Derived() {\n        delete[] data;\n        std::cout << \"Derived destructor\" << std::endl;\n    }\n};\n\nint main() {\n    std::cout << \"With virtual destructor:\" << std::endl;\n    Base* ptr = new Derived();\n    delete ptr;  // Both destructors called correctly!\n    \n    return 0;\n}",
+          "output": "With virtual destructor:\nBase constructor\nDerived constructor\nDerived destructor\nBase destructor"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What keyword enables dynamic dispatch in C++?",
+          "options": [
+            "dynamic",
+            "virtual",
+            "override",
+            "polymorphic"
+          ],
+          "correctAnswer": "virtual",
+          "explanation": "The virtual keyword tells the compiler to use dynamic dispatch — the actual object's method is called at runtime, not the pointer's type method."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is a class with at least one pure virtual function called?",
+          "options": [
+            "A concrete class",
+            "An abstract class",
+            "A static class",
+            "A final class"
+          ],
+          "correctAnswer": "An abstract class",
+          "explanation": "An abstract class cannot be instantiated. It serves as an interface that derived classes must implement by providing definitions for all pure virtual functions."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which C++11 keyword explicitly indicates a function overrides a base class virtual function?",
+          "correctAnswer": "override",
+          "explanation": "The override keyword (C++11) tells the compiler to verify that the function actually overrides a base class virtual function. It catches typos and signature mismatches at compile time."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 26: Templates",
+      "badge": "Advanced",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Generic Programming with Templates"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Templates** allow you to write generic code that works with any data type. Instead of writing separate functions for int, double, and string, you write one template function. The compiler generates the specific versions automatically. Templates are the foundation of the C++ Standard Template Library (STL)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing template function swap<T> generating swap<int>, swap<double>, swap<string> automatically",
+          "caption": "The compiler generates type-specific versions from a single template definition"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top: 'template <typename T> void swap(T& a, T& b)' box. Three arrows pointing down to generated functions: swap(int&, int&), swap(double&, double&), swap(string&, string&). Label arrows 'compiler generates'. Use code font for template syntax."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Function Templates"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `template <typename T>` before a function to make it generic. `T` is a placeholder for any type. The compiler deduces `T` from the arguments you pass, or you can specify it explicitly."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\n// Function template\ntemplate <typename T>\nT maximum(T a, T b) {\n    return (a > b) ? a : b;\n}\n\n// Template with multiple types\ntemplate <typename T, typename U>\nvoid printPair(T first, U second) {\n    std::cout << \"Pair: (\" << first << \", \" << second << \")\" << std::endl;\n}\n\nint main() {\n    // Compiler deduces types automatically\n    std::cout << \"Max of 10, 20: \" << maximum(10, 20) << std::endl;\n    std::cout << \"Max of 3.14, 2.71: \" << maximum(3.14, 2.71) << std::endl;\n    std::cout << \"Max of 'apple', 'banana': \" << maximum(std::string(\"apple\"), std::string(\"banana\")) << std::endl;\n    \n    // Explicit type specification\n    std::cout << \"Max (explicit): \" << maximum<double>(5, 3.2) << std::endl;\n    \n    printPair(42, \"hello\");\n    printPair(3.14, true);\n    \n    return 0;\n}",
+          "output": "Max of 10, 20: 20\nMax of 3.14, 2.71: 3.14\nMax of 'apple', 'banana': banana\nMax (explicit): 5\nPair: (42, hello)\nPair: (3.14, 1)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Class Templates"
+        },
+        {
+          "type": "paragraph",
+          "value": "Class templates let you create generic classes. The type parameter `T` can be used for member variables, return types, and parameters. This is how `std::vector`, `std::map`, and other STL containers are implemented."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\ntemplate <typename T>\nclass Box {\nprivate:\n    T value;\n\npublic:\n    Box(T v) : value(v) {}\n    \n    void setValue(T v) {\n        value = v;\n    }\n    \n    T getValue() {\n        return value;\n    }\n};\n\nint main() {\n    Box<int> intBox(42);\n    Box<double> doubleBox(3.14);\n    Box<std::string> stringBox(\"Hello\");\n    \n    std::cout << \"Int box: \" << intBox.getValue() << std::endl;\n    std::cout << \"Double box: \" << doubleBox.getValue() << std::endl;\n    std::cout << \"String box: \" << stringBox.getValue() << std::endl;\n    \n    intBox.setValue(100);\n    std::cout << \"Updated int box: \" << intBox.getValue() << std::endl;\n    \n    return 0;\n}",
+          "output": "Int box: 42\nDouble box: 3.14\nString box: Hello\nUpdated int box: 100"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Template Specialization"
+        },
+        {
+          "type": "paragraph",
+          "value": "Sometimes you need a different implementation for a specific type. **Template specialization** lets you provide a custom version for a particular type while keeping the generic version for all others."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\n// Generic template\ntemplate <typename T>\nclass Printer {\npublic:\n    void print(T value) {\n        std::cout << \"Generic: \" << value << std::endl;\n    }\n};\n\n// Specialization for std::string\ntemplate <>\nclass Printer<std::string> {\npublic:\n    void print(std::string value) {\n        std::cout << \"String: \" << value << \" (length: \" << value.length() << \")\" << std::endl;\n    }\n};\n\nint main() {\n    Printer<int> intPrinter;\n    intPrinter.print(42);\n    \n    Printer<std::string> stringPrinter;\n    stringPrinter.print(\"Hello World\");\n    \n    return 0;\n}",
+          "output": "Generic: 42\nString: Hello World (length: 11)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the compiler do with template functions?",
+          "options": [
+            "Executes them at runtime",
+            "Generates type-specific versions at compile time",
+            "Stores them in a dynamic library",
+            "Interprets them line by line"
+          ],
+          "correctAnswer": "Generates type-specific versions at compile time",
+          "explanation": "Templates are a compile-time feature. The compiler generates concrete function/class versions for each type used, a process called template instantiation."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which STL containers are implemented as class templates?",
+          "options": [
+            "Only vector",
+            "vector, map, set, and others",
+            "Only arrays",
+            "None of them"
+          ],
+          "correctAnswer": "vector, map, set, and others",
+          "explanation": "All STL containers (vector, map, set, list, queue, stack, etc.) are class templates, allowing them to store any data type."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword declares a template type parameter in C++?",
+          "correctAnswer": "typename",
+          "explanation": "typename (or class) is used to declare template type parameters: template <typename T>. Both 'typename' and 'class' are valid and equivalent in this context."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 27: Standard Template Library (STL)",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "The Power of STL"
+        },
+        {
+          "type": "paragraph",
+          "value": "The **Standard Template Library (STL)** is a collection of template classes and functions that provide common data structures and algorithms. It is one of C++'s greatest strengths — battle-tested, highly optimized, and ready to use. The STL has three main components: **containers** (data structures), **algorithms** (operations on data), and **iterators** (access mechanisms)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing STL components: Containers, Algorithms, and Iterators connected together",
+          "caption": "STL = Containers + Algorithms + Iterators. They work together seamlessly."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Three interconnected circles labeled 'Containers' (vector, map, set), 'Algorithms' (sort, find, count), and 'Iterators' (begin, end). Arrows showing containers provide iterators, algorithms use iterators. Central label 'STL'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "std::vector — Dynamic Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::vector` is a dynamic array that grows automatically. It provides random access, fast insertion at the end, and automatic memory management. It replaces raw arrays in almost all cases and is the most commonly used STL container."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <vector>\n\nint main() {\n    // Creating vectors\n    std::vector<int> numbers;\n    std::vector<std::string> names = {\"Alice\", \"Bob\", \"Charlie\"};\n    \n    // Adding elements\n    numbers.push_back(10);\n    numbers.push_back(20);\n    numbers.push_back(30);\n    \n    // Accessing elements\n    std::cout << \"First: \" << numbers[0] << std::endl;\n    std::cout << \"Front: \" << numbers.front() << std::endl;\n    std::cout << \"Back: \" << numbers.back() << std::endl;\n    \n    // Size and capacity\n    std::cout << \"Size: \" << numbers.size() << std::endl;\n    std::cout << \"Capacity: \" << numbers.capacity() << std::endl;\n    \n    // Iterating\n    std::cout << \"Names: \";\n    for (const auto& name : names) {\n        std::cout << name << \" \";\n    }\n    std::cout << std::endl;\n    \n    return 0;\n}",
+          "output": "First: 10\nFront: 10\nBack: 30\nSize: 3\nCapacity: 4\nNames: Alice Bob Charlie"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "std::map — Key-Value Pairs"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::map` stores key-value pairs in sorted order by key. It uses a balanced binary search tree (typically Red-Black tree) for O(log n) lookups, insertions, and deletions. Keys must be unique. Use `.find()` for safe lookups."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <map>\n#include <string>\n\nint main() {\n    std::map<std::string, int> scores;\n    \n    // Inserting\n    scores[\"Alice\"] = 95;\n    scores[\"Bob\"] = 87;\n    scores[\"Charlie\"] = 92;\n    \n    // Accessing\n    std::cout << \"Alice's score: \" << scores[\"Alice\"] << std::endl;\n    \n    // Safe lookup with find\n    auto it = scores.find(\"Dave\");\n    if (it != scores.end()) {\n        std::cout << \"Dave's score: \" << it->second << std::endl;\n    } else {\n        std::cout << \"Dave not found\" << std::endl;\n    }\n    \n    // Iterating (sorted by key)\n    std::cout << \"All scores:\" << std::endl;\n    for (const auto& pair : scores) {\n        std::cout << pair.first << \": \" << pair.second << std::endl;\n    }\n    \n    return 0;\n}",
+          "output": "Alice's score: 95\nDave not found\nAll scores:\nAlice: 95\nBob: 87\nCharlie: 92"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "STL Algorithms"
+        },
+        {
+          "type": "paragraph",
+          "value": "The `<algorithm>` header provides powerful generic algorithms: `sort()` for sorting, `find()` for searching, `count()` for counting, `reverse()` for reversing, and many more. These work on any container with iterators."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <vector>\n#include <algorithm>\n\nint main() {\n    std::vector<int> nums = {5, 2, 8, 1, 9, 3};\n    \n    // Sort\n    std::sort(nums.begin(), nums.end());\n    std::cout << \"Sorted: \";\n    for (int n : nums) std::cout << n << \" \";\n    std::cout << std::endl;\n    \n    // Find\n    auto it = std::find(nums.begin(), nums.end(), 8);\n    if (it != nums.end()) {\n        std::cout << \"Found 8 at position: \" << (it - nums.begin()) << std::endl;\n    }\n    \n    // Reverse\n    std::reverse(nums.begin(), nums.end());\n    std::cout << \"Reversed: \";\n    for (int n : nums) std::cout << n << \" \";\n    std::cout << std::endl;\n    \n    // Count\n    std::vector<int> data = {1, 2, 2, 3, 2, 4};\n    int twos = std::count(data.begin(), data.end(), 2);\n    std::cout << \"Number of 2s: \" << twos << std::endl;\n    \n    return 0;\n}",
+          "output": "Sorted: 1 2 3 5 8 9 \nFound 8 at position: 4\nReversed: 9 8 5 3 2 1 \nNumber of 2s: 3"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which STL container is best for fast lookups by key?",
+          "options": [
+            "std::vector",
+            "std::map",
+            "std::list",
+            "std::queue"
+          ],
+          "correctAnswer": "std::map",
+          "explanation": "std::map provides O(log n) lookups by key using a balanced tree structure. std::vector requires O(n) linear search for unsorted data."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does push_back() do in std::vector?",
+          "options": [
+            "Removes the last element",
+            "Adds an element to the end",
+            "Inserts at the beginning",
+            "Sorts the vector"
+          ],
+          "correctAnswer": "Adds an element to the end",
+          "explanation": "push_back() appends an element to the end of the vector. The vector automatically manages memory and grows its capacity when needed."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which header file contains STL algorithms like sort, find, and count?",
+          "correctAnswer": "algorithm",
+          "explanation": "The <algorithm> header provides generic algorithms that work with iterators from any container, including sort, find, count, reverse, and many more."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 28: File I/O",
+      "badge": "I/O",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Reading and Writing Files"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ provides stream classes for file operations: `ofstream` for writing, `ifstream` for reading, and `fstream` for both. These classes work similarly to `cout` and `cin` but operate on files instead of the console. Always check if a file opened successfully before using it."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing ofstream writing to file and ifstream reading from file",
+          "caption": "ofstream writes to files; ifstream reads from files"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Left: 'ofstream' box with arrow pointing to 'data.txt' file (write operation). Right: 'data.txt' file with arrow pointing to 'ifstream' box (read operation). Use file icons and directional arrows. Label 'Output' and 'Input'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Writing to Files"
+        },
+        {
+          "type": "paragraph",
+          "value": "Create an `ofstream` object with the filename. Use `<<` just like `cout`. The file is automatically closed when the object goes out of scope (RAII in action), but you can also call `.close()` explicitly. Use `std::ios::app` to append instead of overwrite."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <fstream>\n#include <string>\n\nint main() {\n    // Write to file (overwrites existing content)\n    std::ofstream outFile(\"data.txt\");\n    \n    if (!outFile) {\n        std::cerr << \"Error: Could not create file!\" << std::endl;\n        return 1;\n    }\n    \n    outFile << \"Hello, File I/O!\" << std::endl;\n    outFile << \"Line 2: C++ is powerful.\" << std::endl;\n    outFile << \"Line 3: Numbers: \" << 42 << \" \" << 3.14 << std::endl;\n    \n    outFile.close();\n    std::cout << \"File written successfully.\" << std::endl;\n    \n    // Append to file\n    std::ofstream appendFile(\"data.txt\", std::ios::app);\n    appendFile << \"Line 4: Appended text.\" << std::endl;\n    appendFile.close();\n    \n    return 0;\n}",
+          "output": "File written successfully."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Reading from Files"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `ifstream` to read. You can read word by word with `>>`, line by line with `getline()`, or character by character. Always check `file.is_open()` or use `if (file)` to verify the file opened successfully."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <fstream>\n#include <string>\n\nint main() {\n    std::ifstream inFile(\"data.txt\");\n    \n    if (!inFile) {\n        std::cerr << \"Error: Could not open file!\" << std::endl;\n        return 1;\n    }\n    \n    // Method 1: Read line by line\n    std::cout << \"--- Line by line ---\" << std::endl;\n    std::string line;\n    while (std::getline(inFile, line)) {\n        std::cout << line << std::endl;\n    }\n    \n    // Reset to beginning for second read\n    inFile.clear();\n    inFile.seekg(0);\n    \n    // Method 2: Read word by word\n    std::cout << \"\\n--- Word by word ---\" << std::endl;\n    std::string word;\n    while (inFile >> word) {\n        std::cout << \"[\" << word << \"] \";\n    }\n    std::cout << std::endl;\n    \n    inFile.close();\n    return 0;\n}",
+          "output": "--- Line by line ---\nHello, File I/O!\nLine 2: C++ is powerful.\nLine 3: Numbers: 42 3.14\nLine 4: Appended text.\n\n--- Word by word ---\n[Hello,] [File] [I/O!] [Line] [2:] [C++] [is] [powerful.] [Line] [3:] [Numbers:] [42] [3.14] [Line] [4:] [Appended] [text.]"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Binary File I/O"
+        },
+        {
+          "type": "paragraph",
+          "value": "For non-text data (images, structs, numbers in binary form), use binary mode with `std::ios::binary`. Write with `.write()` and read with `.read()`, passing the address and size of data."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <fstream>\n\nstruct Player {\n    char name[20];\n    int score;\n    double health;\n};\n\nint main() {\n    // Write binary data\n    Player p1 = {\"Alice\", 1000, 95.5};\n    \n    std::ofstream outFile(\"player.dat\", std::ios::binary);\n    outFile.write(reinterpret_cast<char*>(&p1), sizeof(Player));\n    outFile.close();\n    \n    // Read binary data\n    Player p2;\n    std::ifstream inFile(\"player.dat\", std::ios::binary);\n    inFile.read(reinterpret_cast<char*>(&p2), sizeof(Player));\n    inFile.close();\n    \n    std::cout << \"Loaded player: \" << p2.name << std::endl;\n    std::cout << \"Score: \" << p2.score << std::endl;\n    std::cout << \"Health: \" << p2.health << std::endl;\n    \n    return 0;\n}",
+          "output": "Loaded player: Alice\nScore: 1000\nHealth: 95.5"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which class is used to write to a file in C++?",
+          "options": [
+            "ifstream",
+            "ofstream",
+            "fstream",
+            "iostream"
+          ],
+          "correctAnswer": "ofstream",
+          "explanation": "ofstream (output file stream) is used for writing to files. ifstream is for reading, fstream does both, and iostream is for console I/O."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What flag opens a file in append mode?",
+          "options": [
+            "std::ios::out",
+            "std::ios::in",
+            "std::ios::app",
+            "std::ios::trunc"
+          ],
+          "correctAnswer": "std::ios::app",
+          "explanation": "std::ios::app opens the file in append mode — new data is written at the end without overwriting existing content."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which function reads an entire line from a file into a string?",
+          "correctAnswer": "getline",
+          "explanation": "std::getline(file, string) reads an entire line from the file stream into the string, including spaces, until it encounters a newline."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 29: Exception Handling",
+      "badge": "Error Handling",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Handling Errors Gracefully"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Exceptions** provide a structured way to handle errors without cluttering normal code with error checks. When something goes wrong, code **throws** an exception. Calling code can **catch** it and handle the error. If uncaught, the program terminates."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing try block with throw, catch blocks handling different exception types",
+          "caption": "try contains risky code; catch handles specific exceptions; throw signals an error"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A try block (green) containing code that might throw. An arrow labeled 'throw' points to catch blocks (blue) below: catch(int), catch(std::string), catch(...). Show normal flow continuing after catch. Use exception flow visual with color coding."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "try, throw, and catch"
+        },
+        {
+          "type": "paragraph",
+          "value": "Wrap risky code in a `try` block. Use `throw` to signal an error. Use `catch` to handle specific exception types. You can have multiple catch blocks for different exception types. A `catch(...)` catches any exception."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <stdexcept>\n\ndouble divide(double a, double b) {\n    if (b == 0) {\n        throw std::runtime_error(\"Division by zero!\");\n    }\n    return a / b;\n}\n\nint main() {\n    try {\n        std::cout << \"10 / 2 = \" << divide(10, 2) << std::endl;\n        std::cout << \"10 / 0 = \" << divide(10, 0) << std::endl;\n    } catch (const std::runtime_error& e) {\n        std::cerr << \"Error caught: \" << e.what() << std::endl;\n    }\n    \n    std::cout << \"Program continues normally.\" << std::endl;\n    \n    return 0;\n}",
+          "output": "10 / 2 = 5\nError caught: Division by zero!\nProgram continues normally."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Multiple Catch Blocks"
+        },
+        {
+          "type": "paragraph",
+          "value": "Catch different exception types with separate catch blocks. Order matters — put specific catches before general ones. The standard library provides exception classes like `std::runtime_error`, `std::invalid_argument`, `std::out_of_range`, and `std::exception` (the base class)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <stdexcept>\n#include <string>\n\nvoid riskyFunction(int code) {\n    if (code == 1) {\n        throw std::invalid_argument(\"Invalid parameter\");\n    } else if (code == 2) {\n        throw std::runtime_error(\"Runtime problem\");\n    } else if (code == 3) {\n        throw 42;  // Throwing an int\n    }\n}\n\nint main() {\n    for (int i = 1; i <= 3; i++) {\n        try {\n            riskyFunction(i);\n        } catch (const std::invalid_argument& e) {\n            std::cout << \"Invalid argument: \" << e.what() << std::endl;\n        } catch (const std::runtime_error& e) {\n            std::cout << \"Runtime error: \" << e.what() << std::endl;\n        } catch (int num) {\n            std::cout << \"Caught int: \" << num << std::endl;\n        } catch (...) {\n            std::cout << \"Unknown exception caught\" << std::endl;\n        }\n    }\n    \n    return 0;\n}",
+          "output": "Invalid argument: Invalid parameter\nRuntime error: Runtime problem\nCaught int: 42"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "RAII and Exceptions"
+        },
+        {
+          "type": "paragraph",
+          "value": "RAII works beautifully with exceptions. When an exception is thrown, stack-allocated objects are destroyed automatically (stack unwinding), calling their destructors. This means resources are cleaned up even when exceptions occur — no memory leaks."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <fstream>\n#include <stdexcept>\n\nclass SafeResource {\npublic:\n    SafeResource() {\n        std::cout << \"Resource acquired\" << std::endl;\n    }\n    ~SafeResource() {\n        std::cout << \"Resource released (destructor)\" << std::endl;\n    }\n};\n\nvoid mightThrow() {\n    SafeResource res;  // Acquired here\n    std::cout << \"About to throw...\" << std::endl;\n    throw std::runtime_error(\"Oops!\");\n    // Destructor called automatically during stack unwinding!\n}\n\nint main() {\n    try {\n        mightThrow();\n    } catch (const std::exception& e) {\n        std::cout << \"Caught: \" << e.what() << std::endl;\n    }\n    \n    std::cout << \"Resource was safely released!\" << std::endl;\n    return 0;\n}",
+          "output": "Resource acquired\nAbout to throw...\nResource released (destructor)\nCaught: Oops!\nResource was safely released!"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens to stack-allocated objects when an exception is thrown?",
+          "options": [
+            "They are leaked",
+            "Their destructors are called during stack unwinding",
+            "They are moved to the heap",
+            "Nothing happens to them"
+          ],
+          "correctAnswer": "Their destructors are called during stack unwinding",
+          "explanation": "When an exception is thrown, C++ unwinds the stack, calling destructors for all stack-allocated objects in scope. This is why RAII works so well with exceptions."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which catch block catches ANY exception?",
+          "options": [
+            "catch (std::exception& e)",
+            "catch (...)",
+            "catch (all)",
+            "catch (void)"
+          ],
+          "correctAnswer": "catch (...)",
+          "explanation": "catch (...) is the catch-all handler that catches any exception type. It should be the last catch block since it matches everything."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword is used to signal an error in exception handling?",
+          "correctAnswer": "throw",
+          "explanation": "The throw keyword raises an exception, transferring control to the nearest matching catch block. throw can be used with any type: objects, primitives, or pointers."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 30: Capstone Project — Student Management System",
+      "badge": "Project",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Build Your First Real C++ Program"
+        },
+        {
+          "type": "paragraph",
+          "value": "Congratulations — you've learned all the fundamentals! Now let's build a Student Management System that ties together every concept: classes, inheritance, polymorphism, STL containers, file I/O, and exception handling. This project demonstrates how C++ is used in real-world applications."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Mind map showing all C++ concepts connected to the Student Management System project",
+          "caption": "This project ties together every concept you've learned in the course"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Mind Map — Central node 'Student Management System' with branches: 'Classes' (Student, Course), 'Inheritance' (UndergradStudent, GradStudent), 'STL' (vector, map), 'File I/O' (save/load data), 'Exceptions' (error handling), 'Polymorphism' (displayInfo). Each branch has a small icon."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Project Requirements"
+        },
+        {
+          "type": "paragraph",
+          "value": "Your system should:\n1. Store students with name, ID, and GPA\n2. Support different student types (Undergraduate, Graduate) via inheritance\n3. Add, remove, and display students\n4. Search students by ID or name\n5. Save data to a file and load it back\n6. Handle errors with exceptions\n7. Use STL containers (vector, map) for data storage"
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// student.h\n#ifndef STUDENT_H\n#define STUDENT_H\n\n#include <string>\n#include <iostream>\n\nclass Student {\nprotected:\n    std::string name;\n    int id;\n    double gpa;\n\npublic:\n    Student(std::string n, int i, double g);\n    virtual ~Student() = default;\n    \n    virtual void displayInfo() const;\n    virtual std::string getType() const = 0;\n    \n    int getId() const { return id; }\n    std::string getName() const { return name; }\n    double getGPA() const { return gpa; }\n    \n    virtual std::string toFileString() const;\n};\n\nclass Undergraduate : public Student {\nprivate:\n    std::string major;\n\npublic:\n    Undergraduate(std::string n, int i, double g, std::string m);\n    void displayInfo() const override;\n    std::string getType() const override { return \"Undergraduate\"; }\n    std::string toFileString() const override;\n};\n\nclass Graduate : public Student {\nprivate:\n    std::string thesis;\n\npublic:\n    Graduate(std::string n, int i, double g, std::string t);\n    void displayInfo() const override;\n    std::string getType() const override { return \"Graduate\"; }\n    std::string toFileString() const override;\n};\n\n#endif",
+          "output": ""
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// student.cpp\n#include \"student.h\"\n\nStudent::Student(std::string n, int i, double g) \n    : name(n), id(i), gpa(g) {}\n\nvoid Student::displayInfo() const {\n    std::cout << \"[\" << getType() << \"] \"\n              << name << \" (ID: \" << id << \") - GPA: \" << gpa;\n}\n\nstd::string Student::toFileString() const {\n    return std::to_string(id) + \"|\" + name + \"|\" + std::to_string(gpa);\n}\n\nUndergraduate::Undergraduate(std::string n, int i, double g, std::string m)\n    : Student(n, i, g), major(m) {}\n\nvoid Undergraduate::displayInfo() const {\n    Student::displayInfo();\n    std::cout << \" - Major: \" << major << std::endl;\n}\n\nstd::string Undergraduate::toFileString() const {\n    return \"UG|\" + Student::toFileString() + \"|\" + major;\n}\n\nGraduate::Graduate(std::string n, int i, double g, std::string t)\n    : Student(n, i, g), thesis(t) {}\n\nvoid Graduate::displayInfo() const {\n    Student::displayInfo();\n    std::cout << \" - Thesis: \" << thesis << std::endl;\n}\n\nstd::string Graduate::toFileString() const {\n    return \"GR|\" + Student::toFileString() + \"|\" + thesis;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Main Program with Menu"
+        },
+        {
+          "type": "paragraph",
+          "value": "The main program uses a vector of Student pointers for polymorphic storage, a map for fast ID lookups, and file I/O for persistence. Exception handling ensures the program doesn't crash on bad input."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// main.cpp\n#include <iostream>\n#include <vector>\n#include <map>\n#include <fstream>\n#include <memory>\n#include <limits>\n#include \"student.h\"\n\nclass StudentManager {\nprivate:\n    std::vector<std::unique_ptr<Student>> students;\n    std::map<int, size_t> idIndex;\n    const std::string filename = \"students.dat\";\n\npublic:\n    void addStudent(std::unique_ptr<Student> s) {\n        int id = s->getId();\n        if (idIndex.count(id)) {\n            throw std::invalid_argument(\"Student ID already exists!\");\n        }\n        idIndex[id] = students.size();\n        students.push_back(std::move(s));\n    }\n    \n    void displayAll() const {\n        if (students.empty()) {\n            std::cout << \"No students registered.\" << std::endl;\n            return;\n        }\n        std::cout << \"\\n=== All Students ===\" << std::endl;\n        for (const auto& s : students) {\n            s->displayInfo();\n        }\n    }\n    \n    void findById(int id) const {\n        auto it = idIndex.find(id);\n        if (it != idIndex.end()) {\n            students[it->second]->displayInfo();\n        } else {\n            std::cout << \"Student not found.\" << std::endl;\n        }\n    }\n    \n    void saveToFile() const {\n        std::ofstream file(filename);\n        if (!file) throw std::runtime_error(\"Cannot open file for writing\");\n        for (const auto& s : students) {\n            file << s->toFileString() << std::endl;\n        }\n        std::cout << \"Data saved to \" << filename << std::endl;\n    }\n};\n\nvoid showMenu() {\n    std::cout << \"\\n=== Student Management System ===\" << std::endl;\n    std::cout << \"1. Add Undergraduate\" << std::endl;\n    std::cout << \"2. Add Graduate\" << std::endl;\n    std::cout << \"3. Display All\" << std::endl;\n    std::cout << \"4. Find by ID\" << std::endl;\n    std::cout << \"5. Save to File\" << std::endl;\n    std::cout << \"6. Exit\" << std::endl;\n    std::cout << \"Choice: \";\n}\n\nint main() {\n    StudentManager manager;\n    int choice;\n    \n    do {\n        showMenu();\n        std::cin >> choice;\n        std::cin.ignore();\n        \n        try {\n            switch (choice) {\n                case 1: {\n                    std::string name, major;\n                    int id; double gpa;\n                    std::cout << \"Name: \"; std::getline(std::cin, name);\n                    std::cout << \"ID: \"; std::cin >> id;\n                    std::cout << \"GPA: \"; std::cin >> gpa;\n                    std::cin.ignore();\n                    std::cout << \"Major: \"; std::getline(std::cin, major);\n                    manager.addStudent(std::make_unique<Undergraduate>(name, id, gpa, major));\n                    std::cout << \"Undergraduate added!\" << std::endl;\n                    break;\n                }\n                case 2: {\n                    std::string name, thesis;\n                    int id; double gpa;\n                    std::cout << \"Name: \"; std::getline(std::cin, name);\n                    std::cout << \"ID: \"; std::cin >> id;\n                    std::cout << \"GPA: \"; std::cin >> gpa;\n                    std::cin.ignore();\n                    std::cout << \"Thesis: \"; std::getline(std::cin, thesis);\n                    manager.addStudent(std::make_unique<Graduate>(name, id, gpa, thesis));\n                    std::cout << \"Graduate added!\" << std::endl;\n                    break;\n                }\n                case 3:\n                    manager.displayAll();\n                    break;\n                case 4: {\n                    int id;\n                    std::cout << \"Enter ID: \"; std::cin >> id;\n                    manager.findById(id);\n                    break;\n                }\n                case 5:\n                    manager.saveToFile();\n                    break;\n                case 6:\n                    std::cout << \"Goodbye!\" << std::endl;\n                    break;\n                default:\n                    std::cout << \"Invalid choice!\" << std::endl;\n            }\n        } catch (const std::exception& e) {\n            std::cerr << \"Error: \" << e.what() << std::endl;\n            std::cin.clear();\n            std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\\n');\n        }\n    } while (choice != 6);\n    \n    return 0;\n}",
+          "output": "\n=== Student Management System ===\n1. Add Undergraduate\n2. Add Graduate\n3. Display All\n4. Find by ID\n5. Save to File\n6. Exit\nChoice: 1\nName: Alice\nID: 1001\nGPA: 3.8\nMajor: Computer Science\nUndergraduate added!\n\n=== Student Management System ===\n...\nChoice: 3\n\n=== All Students ===\n[Undergraduate] Alice (ID: 1001) - GPA: 3.8 - Major: Computer Science\n\nChoice: 5\nData saved to students.dat\n\nChoice: 6\nGoodbye!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "What You Practiced"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Classes & OOP** — Student base class with Undergraduate and Graduate derived classes\n**Polymorphism** — displayInfo() and getType() overridden in derived classes\n**Inheritance** — Base student data with type-specific extensions\n**STL** — vector for storage, map for fast ID lookups, unique_ptr for memory safety\n**File I/O** — Save/load student data to persistent storage\n**Exception Handling** — Invalid input and file errors caught gracefully\n**Headers** — Separated declaration (.h) from implementation (.cpp)\n**RAII** — unique_ptr automatically manages student object lifetimes"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Challenge: Extend Your System"
+        },
+        {
+          "type": "paragraph",
+          "value": "Try adding these features on your own:\n• Load data from file on startup\n• Delete students by ID\n• Sort students by GPA or name\n• Add a Course class with enrollment\n• Calculate class average GPA\n• Add input validation for GPA range (0.0 to 4.0)\n• Implement a search by name (partial match)\n• Add a Teacher class with course assignments"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Where to Go Next"
+        },
+        {
+          "type": "paragraph",
+          "value": "You've completed the beginner course! Here's your path forward:\n• **Smart Pointers** — shared_ptr, weak_ptr for safer memory management\n• **Move Semantics** — Rvalue references and perfect forwarding (C++11+)\n• **Lambdas** — Anonymous functions for concise code\n• **Multi-threading** — std::thread for concurrent programming\n• **Networking** — Boost.Asio or raw sockets\n• **GUI Development** — Qt, wxWidgets, or ImGui\n• **Game Development** — SFML, SDL, or Unreal Engine C++\n• **Competitive Programming** — Master algorithms and data structures"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which smart pointer automatically deletes the object when it goes out of scope?",
+          "options": [
+            "raw pointer",
+            "std::unique_ptr",
+            "int*",
+            "void*"
+          ],
+          "correctAnswer": "std::unique_ptr",
+          "explanation": "std::unique_ptr is a smart pointer that owns and manages an object, automatically deleting it when the unique_ptr goes out of scope. It implements RAII for single ownership."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which STL container provides O(log n) lookup by key?",
+          "options": [
+            "std::vector",
+            "std::list",
+            "std::map",
+            "std::queue"
+          ],
+          "correctAnswer": "std::map",
+          "explanation": "std::map uses a balanced binary search tree (typically Red-Black tree) to provide O(log n) insertion, deletion, and lookup by key."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which C++ feature ensures resources are cleaned up even when exceptions occur?",
+          "correctAnswer": "RAII",
+          "explanation": "RAII (Resource Acquisition Is Initialization) ties resource management to object lifetime. Destructors automatically clean up resources during stack unwinding when exceptions occur."
+        }
+      ]
     }
   ]
 }
