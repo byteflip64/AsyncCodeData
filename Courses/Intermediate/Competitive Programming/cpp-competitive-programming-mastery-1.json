@@ -603,6 +603,611 @@
           "explanation": "for (auto& [key, value] : map) is the C++17 structured binding syntax. In C++11, use for (auto& pair : map) and access pair.first/pair.second."
         }
       ]
+    },
+    {
+      "partTitle": "Part 6: Stack, Queue & Deque",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Stack, Queue & Deque — Linear Containers"
+        },
+        {
+          "type": "paragraph",
+          "value": "These three containers represent fundamental abstract data types. **Stack** is LIFO (Last In, First Out). **Queue** is FIFO (First In, First Out). **Deque** (Double-Ended Queue) allows insertion and deletion at both ends. All three are essential for CP — from bracket matching to BFS to sliding window problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual comparison of Stack (LIFO), Queue (FIFO), and Deque (both ends)",
+          "caption": "Stack: push/pop at one end. Queue: enqueue at back, dequeue from front. Deque: both ends."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Comparison Diagram — Three vertical sections. Left: Stack as a vertical tube with items pushed/popped from top only. Label 'LIFO'. Middle: Queue as a horizontal conveyor belt, items enter at back, exit from front. Label 'FIFO'. Right: Deque as a horizontal tube open at both ends. Label 'Both ends'. Use distinct colors per container."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "stack — LIFO Container"
+        },
+        {
+          "type": "paragraph",
+          "value": "`stack<T>` provides: `push(x)` — add to top, `pop()` — remove top, `top()` — access top, `empty()` — check if empty, `size()` — element count. All operations are O(1). The underlying container is deque by default."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    stack<int> st;\n    \n    st.push(10);\n    st.push(20);\n    st.push(30);\n    \n    cout << \"Top: \" << st.top() << \"\\n\";  // 30\n    st.pop();\n    cout << \"Top after pop: \" << st.top() << \"\\n\";  // 20\n    cout << \"Size: \" << st.size() << \"\\n\";\n    \n    // Iterate (must pop — no direct iteration)\n    while (!st.empty()) {\n        cout << st.top() << \" \";\n        st.pop();\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Top: 30\nTop after pop: 20\nSize: 2\n20 10"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "queue — FIFO Container"
+        },
+        {
+          "type": "paragraph",
+          "value": "`queue<T>` provides: `push(x)` — add to back, `pop()` — remove front, `front()` — access front, `back()` — access back, `empty()`, `size()`. All O(1). Essential for BFS and task scheduling problems."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    queue<int> q;\n    \n    q.push(10);\n    q.push(20);\n    q.push(30);\n    \n    cout << \"Front: \" << q.front() << \", Back: \" << q.back() << \"\\n\";\n    q.pop();\n    cout << \"Front after pop: \" << q.front() << \"\\n\";\n    \n    // Iterate\n    while (!q.empty()) {\n        cout << q.front() << \" \";\n        q.pop();\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Front: 10, Back: 30\nFront after pop: 20\n20 30"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "deque — Double-Ended Queue"
+        },
+        {
+          "type": "paragraph",
+          "value": "`deque<T>` combines stack and queue: `push_back()`, `push_front()`, `pop_back()`, `pop_front()`, `front()`, `back()`, `[]` random access. All O(1). It's the underlying container for stack and queue, but exposed directly it's incredibly powerful for sliding window problems."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    deque<int> dq;\n    \n    dq.push_back(10);\n    dq.push_front(5);\n    dq.push_back(20);\n    dq.push_front(1);\n    \n    // deque: 1, 5, 10, 20\n    cout << \"Front: \" << dq.front() << \", Back: \" << dq.back() << \"\\n\";\n    cout << \"dq[2]: \" << dq[2] << \"\\n\";  // Random access!\n    \n    dq.pop_front();\n    dq.pop_back();\n    \n    for (int x : dq) cout << x << \" \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Front: 1, Back: 20\ndq[2]: 10\n5 10"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Valid Parentheses (Stack)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given a string of brackets, determine if it's valid (every opening bracket has a matching closing bracket in correct order). This is the classic stack interview problem and a Codeforces Div 2 A staple."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    string s;\n    cin >> s;\n    \n    stack<char> st;\n    bool valid = true;\n    \n    for (char c : s) {\n        if (c == '(' || c == '[' || c == '{') {\n            st.push(c);\n        } else {\n            if (st.empty()) {\n                valid = false;\n                break;\n            }\n            char top = st.top();\n            if ((c == ')' && top != '(') ||\n                (c == ']' && top != '[') ||\n                (c == '}' && top != '{')) {\n                valid = false;\n                break;\n            }\n            st.pop();\n        }\n    }\n    \n    if (!st.empty()) valid = false;\n    \n    cout << (valid ? \"YES\" : \"NO\") << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: ()[]{}\nOutput: YES\n\nInput: ([)]\nOutput: NO"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Sliding Window Maximum (Deque)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given an array and window size k, find the maximum in every contiguous subarray of size k. The deque solution is O(n) — maintain a deque of indices where elements are in decreasing order. Remove elements outside the window and smaller than current."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, k;\n    cin >> n >> k;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    deque<int> dq;  // Stores indices, values in decreasing order\n    \n    for (int i = 0; i < n; i++) {\n        // Remove elements out of window\n        while (!dq.empty() && dq.front() <= i - k) {\n            dq.pop_front();\n        }\n        \n        // Remove smaller elements (they can't be max)\n        while (!dq.empty() && a[dq.back()] <= a[i]) {\n            dq.pop_back();\n        }\n        \n        dq.push_back(i);\n        \n        // Start outputting after first window\n        if (i >= k - 1) {\n            cout << a[dq.front()] << \" \";\n        }\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 8 3\n1 3 -1 -3 5 3 6 7\nOutput: 3 3 5 5 6 7"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which container follows LIFO (Last In, First Out) principle?",
+          "options": [
+            "queue",
+            "stack",
+            "deque",
+            "priority_queue"
+          ],
+          "correctAnswer": "stack",
+          "explanation": "stack is LIFO — the last element pushed is the first one popped. queue is FIFO, deque allows both ends, and priority_queue orders by priority."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of deque::push_front()?",
+          "options": [
+            "O(n)",
+            "O(log n)",
+            "O(1)",
+            "O(n log n)"
+          ],
+          "correctAnswer": "O(1)",
+          "explanation": "All deque operations (push_front, push_back, pop_front, pop_back, front, back) are O(1). Deque uses a chunked array structure that allows efficient operations at both ends."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which deque method removes an element from the front?",
+          "correctAnswer": "pop_front",
+          "explanation": "pop_front() removes the first element from the deque in O(1) time. It's one of the key advantages of deque over vector for front-removal operations."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 7: Priority Queue & Heaps",
+      "badge": "STL",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Priority Queue — The Heap Container"
+        },
+        {
+          "type": "paragraph",
+          "value": "`std::priority_queue` is a max-heap by default — the largest element is always at the top. It provides O(1) access to the maximum, O(log n) insertion and deletion. For CP, it's essential for greedy algorithms, Dijkstra's algorithm, merging k sorted arrays, and median maintenance."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Max-heap tree visualization with 50 at root and smaller elements below",
+          "caption": "Max-heap: parent is always >= children. Top() returns the maximum in O(1)."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A complete binary tree (max-heap) with 50 at root, children 30 and 20, etc. Show that every parent >= children. Label operations: top() O(1), push/pop O(log n). Use tree visualization with heap property highlighted."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "priority_queue Basics"
+        },
+        {
+          "type": "paragraph",
+          "value": "**push(x)** — O(log n), insert element\n**pop()** — O(log n), remove top\n**top()** — O(1), access maximum (or minimum for min-heap)\n**empty()**, **size()** — O(1)\n\nDefault is max-heap. For min-heap, use `priority_queue<int, vector<int>, greater<int>>`."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Max heap (default)\n    priority_queue<int> maxHeap;\n    maxHeap.push(30);\n    maxHeap.push(10);\n    maxHeap.push(50);\n    maxHeap.push(20);\n    \n    cout << \"Max heap top: \" << maxHeap.top() << \"\\n\";  // 50\n    maxHeap.pop();\n    cout << \"After pop: \" << maxHeap.top() << \"\\n\";  // 30\n    \n    // Min heap\n    priority_queue<int, vector<int>, greater<int>> minHeap;\n    minHeap.push(30);\n    minHeap.push(10);\n    minHeap.push(50);\n    \n    cout << \"Min heap top: \" << minHeap.top() << \"\\n\";  // 10\n    \n    // Custom comparator (max heap by second element of pair)\n    priority_queue<pair<int, int>> pq;\n    pq.push({5, 100});\n    pq.push({3, 200});\n    pq.push({10, 50});\n    cout << \"Top pair: {\" << pq.top().first << \",\" << pq.top().second << \"}\\n\";\n    \n    return 0;\n}",
+          "output": "Max heap top: 50\nAfter pop: 30\nMin heap top: 10\nTop pair: {10,50}"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: K Largest Elements"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the k largest elements in an array. Use a min-heap of size k — iterate through the array, if the heap has fewer than k elements, push current. Otherwise, if current > heap top, pop top and push current. At the end, the heap contains the k largest."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, k;\n    cin >> n >> k;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    priority_queue<int, vector<int>, greater<int>> minHeap;\n    \n    for (int x : a) {\n        if (minHeap.size() < k) {\n            minHeap.push(x);\n        } else if (x > minHeap.top()) {\n            minHeap.pop();\n            minHeap.push(x);\n        }\n    }\n    \n    cout << \"K largest: \";\n    while (!minHeap.empty()) {\n        cout << minHeap.top() << \" \";\n        minHeap.pop();\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 7 3\n3 1 5 2 8 4 7\nOutput: K largest: 5 7 8"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Merge K Sorted Arrays"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Merge k sorted arrays into one sorted array. Use a min-heap storing (value, array_index, element_index). Pop the smallest, push the next element from the same array. This is O(n log k) where n is total elements — much better than O(nk) naive merge."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int k;\n    cin >> k;\n    vector<vector<int>> arrays(k);\n    \n    for (int i = 0; i < k; i++) {\n        int n;\n        cin >> n;\n        arrays[i].resize(n);\n        for (int j = 0; j < n; j++) cin >> arrays[i][j];\n    }\n    \n    // Min heap: (value, array_idx, elem_idx)\n    priority_queue<tuple<int, int, int>, vector<tuple<int, int, int>>, greater<>> pq;\n    \n    for (int i = 0; i < k; i++) {\n        if (!arrays[i].empty()) {\n            pq.push({arrays[i][0], i, 0});\n        }\n    }\n    \n    vector<int> result;\n    while (!pq.empty()) {\n        auto [val, arrIdx, elemIdx] = pq.top();\n        pq.pop();\n        result.push_back(val);\n        \n        if (elemIdx + 1 < arrays[arrIdx].size()) {\n            pq.push({arrays[arrIdx][elemIdx + 1], arrIdx, elemIdx + 1});\n        }\n    }\n    \n    for (int x : result) cout << x << \" \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 3\n3 1 4 7\n2 2 5\n4 3 6 8 9\nOutput: 1 2 3 4 5 6 7 8 9"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Dijkstra's Algorithm Preview"
+        },
+        {
+          "type": "paragraph",
+          "value": "Dijkstra's shortest path algorithm uses a priority queue to always expand the node with the smallest known distance. This greedy strategy guarantees the shortest path in graphs with non-negative weights. We'll cover this fully in the Graph Theory section."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 5;  // nodes 0-4\n    vector<vector<pair<int, int>>> adj(n);  // adj[node] = list of {neighbor, weight}\n    \n    // Graph: 0-1(4), 0-2(1), 2-1(2), 2-3(5), 3-4(1), 1-4(3)\n    adj[0] = {{1, 4}, {2, 1}};\n    adj[1] = {{4, 3}};\n    adj[2] = {{1, 2}, {3, 5}};\n    adj[3] = {{4, 1}};\n    \n    vector<int> dist(n, INT_MAX);\n    dist[0] = 0;\n    \n    // Min heap: (distance, node)\n    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;\n    pq.push({0, 0});\n    \n    while (!pq.empty()) {\n        auto [d, u] = pq.top();\n        pq.pop();\n        if (d > dist[u]) continue;\n        \n        for (auto& [v, w] : adj[u]) {\n            if (dist[u] + w < dist[v]) {\n                dist[v] = dist[u] + w;\n                pq.push({dist[v], v});\n            }\n        }\n    }\n    \n    cout << \"Shortest distances from 0:\" << \"\\n\";\n    for (int i = 0; i < n; i++) {\n        cout << \"To \" << i << \": \" << dist[i] << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Shortest distances from 0:\nTo 0: 0\nTo 1: 3\nTo 2: 1\nTo 3: 6\nTo 4: 6"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of priority_queue::push()?",
+          "options": [
+            "O(1)",
+            "O(log n)",
+            "O(n)",
+            "O(n log n)"
+          ],
+          "correctAnswer": "O(log n)",
+          "explanation": "push() inserts an element and maintains the heap property by bubbling up, which takes O(log n) time where n is the current heap size."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How do you create a min-heap in C++?",
+          "options": [
+            "priority_queue<int> pq;",
+            "priority_queue<int, vector<int>, greater<int>> pq;",
+            "priority_queue<int, less<int>> pq;",
+            "min_heap<int> pq;"
+          ],
+          "correctAnswer": "priority_queue<int, vector<int>, greater<int>> pq;",
+          "explanation": "The third template parameter is the comparator. greater<int> makes it a min-heap (smallest on top). The second parameter is the underlying container (must be a random-access container like vector)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which priority_queue method returns the largest element without removing it?",
+          "correctAnswer": "top",
+          "explanation": "top() returns a reference to the largest element (for max-heap) in O(1) time. pop() removes it but doesn't return the value — you must call top() first if you need it."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 8: Binary Search — Lower/Upper Bound",
+      "badge": "Algorithms",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Binary Search — The O(log n) Powerhouse"
+        },
+        {
+          "type": "paragraph",
+          "value": "Binary search is the most important algorithm in CP. It reduces search space by half each iteration, giving O(log n) time. But it's not just for finding elements — the **binary search on answer** technique solves optimization problems that seem to need brute force. Master this and you unlock 30% of CP problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing binary search dividing sorted array in half repeatedly",
+          "caption": "Binary search halves the search space each step — O(log n) vs O(n) linear"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A sorted array [1,3,5,7,9,11,13,15] with target 7. Show mid=9 (index 3), then left half [1,3,5,7], mid=3 (index 1), then right half [5,7], mid=5 (index 0), then [7]. Arrows showing the halving process. Label 'O(log n) steps'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "STL lower_bound and upper_bound"
+        },
+        {
+          "type": "paragraph",
+          "value": "**lower_bound(first, last, x)** — returns iterator to first element >= x\n**upper_bound(first, last, x)** — returns iterator to first element > x\n**equal_range** — returns pair of both bounds\n\nAll are O(log n) on sorted ranges. They work on arrays, vectors, sets, and maps."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    vector<int> a = {1, 3, 3, 5, 7, 9, 11};\n    \n    auto lb = lower_bound(a.begin(), a.end(), 3);\n    auto ub = upper_bound(a.begin(), a.end(), 3);\n    \n    cout << \"Lower bound of 3: index \" << (lb - a.begin()) << \", value \" << *lb << \"\\n\";\n    cout << \"Upper bound of 3: index \" << (ub - a.begin()) << \", value \" << *ub << \"\\n\";\n    cout << \"Count of 3: \" << (ub - lb) << \"\\n\";\n    \n    // Check if element exists\n    int x = 5;\n    if (binary_search(a.begin(), a.end(), x)) {\n        cout << x << \" exists\\n\";\n    }\n    \n    // Find first element > 6\n    auto it = upper_bound(a.begin(), a.end(), 6);\n    cout << \"First > 6: \" << *it << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Lower bound of 3: index 1, value 3\nUpper bound of 3: index 3, value 5\nCount of 3: 2\n5 exists\nFirst > 6: 7"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Manual Binary Search Implementation"
+        },
+        {
+          "type": "paragraph",
+          "value": "Know how to write binary search manually. The key is avoiding infinite loops — use `mid = lo + (hi - lo) / 2` to prevent overflow, and carefully adjust lo and hi. There are two common patterns: finding exact match, and finding boundary conditions."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Find first index where a[i] >= target\nint lowerBound(vector<int>& a, int target) {\n    int lo = 0, hi = a.size();  // hi is exclusive\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (a[mid] < target) {\n            lo = mid + 1;\n        } else {\n            hi = mid;\n        }\n    }\n    return lo;  // Returns a.size() if not found\n}\n\n// Find last index where a[i] <= target\nint upperBound(vector<int>& a, int target) {\n    int lo = 0, hi = a.size();\n    while (lo < hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (a[mid] <= target) {\n            lo = mid + 1;\n        } else {\n            hi = mid;\n        }\n    }\n    return lo - 1;  // Last valid position\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    vector<int> a = {1, 3, 3, 5, 7, 9, 11};\n    \n    cout << \"lowerBound(3): \" << lowerBound(a, 3) << \"\\n\";\n    cout << \"upperBound(3): \" << upperBound(a, 3) << \"\\n\";\n    cout << \"lowerBound(4): \" << lowerBound(a, 4) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "lowerBound(3): 1\nupperBound(3): 2\nlowerBound(4): 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Binary Search on Answer"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given n boards of lengths L[i], paint them with k painters where each painter paints contiguous boards. Minimize the maximum length painted by any painter. The answer lies between max(L[i]) and sum(L[i]). Binary search on the maximum length and check if k painters suffice."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nbool isPossible(vector<int>& boards, int k, int maxLen) {\n    int painters = 1, current = 0;\n    for (int len : boards) {\n        if (current + len <= maxLen) {\n            current += len;\n        } else {\n            painters++;\n            current = len;\n            if (painters > k) return false;\n        }\n    }\n    return true;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, k;\n    cin >> n >> k;\n    vector<int> boards(n);\n    for (int i = 0; i < n; i++) cin >> boards[i];\n    \n    int lo = *max_element(boards.begin(), boards.end());\n    int hi = accumulate(boards.begin(), boards.end(), 0);\n    int ans = hi;\n    \n    while (lo <= hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (isPossible(boards, k, mid)) {\n            ans = mid;\n            hi = mid - 1;\n        } else {\n            lo = mid + 1;\n        }\n    }\n    \n    cout << ans << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 4 2\n10 20 30 40\nOutput: 60  (painter1: 10+20+30=60, painter2: 40)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Aggressive Cows (Binary Search + Greedy)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given n stalls and c cows, place cows in stalls such that the minimum distance between any two cows is maximized. Binary search on the minimum distance. For a given distance, greedily place cows and check if all c cows fit. This is a classic SPOJ/Codeforces problem."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nbool canPlace(vector<int>& stalls, int c, int minDist) {\n    int count = 1, lastPos = stalls[0];\n    for (int i = 1; i < stalls.size(); i++) {\n        if (stalls[i] - lastPos >= minDist) {\n            count++;\n            lastPos = stalls[i];\n            if (count >= c) return true;\n        }\n    }\n    return false;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, c;\n    cin >> n >> c;\n    vector<int> stalls(n);\n    for (int i = 0; i < n; i++) cin >> stalls[i];\n    \n    sort(stalls.begin(), stalls.end());\n    \n    int lo = 1, hi = stalls.back() - stalls[0];\n    int ans = 0;\n    \n    while (lo <= hi) {\n        int mid = lo + (hi - lo) / 2;\n        if (canPlace(stalls, c, mid)) {\n            ans = mid;\n            lo = mid + 1;\n        } else {\n            hi = mid - 1;\n        }\n    }\n    \n    cout << ans << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5 3\n1 2 8 4 9\nOutput: 3  (cows at 1, 4, 8)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of std::lower_bound on a sorted array?",
+          "options": [
+            "O(1)",
+            "O(log n)",
+            "O(n)",
+            "O(n log n)"
+          ],
+          "correctAnswer": "O(log n)",
+          "explanation": "lower_bound performs binary search on a sorted range, giving O(log n) time. It returns an iterator to the first element not less than the target."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In binary search on answer problems, what does the 'check' function typically do?",
+          "options": [
+            "Sorts the input",
+            "Verifies if a candidate answer is feasible",
+            "Finds the maximum element",
+            "Reverses the array"
+          ],
+          "correctAnswer": "Verifies if a candidate answer is feasible",
+          "explanation": "In binary search on answer, you binary search over possible answers. The check function verifies if a given candidate answer can be achieved, allowing you to narrow the search space."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which formula prevents integer overflow when calculating mid in binary search?",
+          "correctAnswer": "lo + (hi - lo) / 2",
+          "explanation": "lo + (hi - lo) / 2 prevents overflow that could occur with (lo + hi) / 2 when lo and hi are large (e.g., near INT_MAX). This is a critical detail in CP."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 9: Prefix Sum & Difference Array",
+      "badge": "Techniques",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Prefix Sum & Difference Array — Range Query Masters"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Prefix Sum** answers range sum queries in O(1) after O(n) preprocessing. **Difference Array** applies range updates in O(1) and computes the final array in O(n). Together, they solve a huge class of range query and range update problems that would otherwise need O(n) per query."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing original array, prefix sum array, and how range sum is computed as pref[r] - pref[l-1]",
+          "caption": "Prefix sum: pref[i] = sum of a[0..i]. Range sum [l,r] = pref[r] - pref[l-1]."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Three rows. Row 1: Original array a = [3,1,4,1,5]. Row 2: Prefix array pref = [3,4,8,9,14] with arrows showing cumulative sums. Row 3: Range sum [1,3] = pref[3] - pref[0] = 8 - 3 = 5, which equals a[1]+a[2]+a[3] = 1+4+1 = 6... wait, fix: [1,3] means indices 1 to 3: 1+4+1=6. pref[3]=8, pref[0]=3, 8-3=6. Show this calculation clearly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Prefix Sum — 1D and 2D"
+        },
+        {
+          "type": "paragraph",
+          "value": "1D: `pref[i] = pref[i-1] + a[i]`. Range sum [l,r] = `pref[r] - pref[l-1]`.\n2D: `pref[i][j] = a[i][j] + pref[i-1][j] + pref[i][j-1] - pref[i-1][j-1]`. Submatrix sum uses inclusion-exclusion."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    // 1D Prefix sum\n    vector<long long> pref(n + 1, 0);\n    for (int i = 0; i < n; i++) {\n        pref[i + 1] = pref[i] + a[i];\n    }\n    \n    // Range sum queries\n    int q;\n    cin >> q;\n    while (q--) {\n        int l, r;\n        cin >> l >> r;  // 0-indexed, inclusive\n        cout << pref[r + 1] - pref[l] << \"\\n\";\n    }\n    \n    // 2D Prefix sum\n    int rows = 3, cols = 4;\n    vector<vector<int>> grid = {{1,2,3,4},{5,6,7,8},{9,10,11,12}};\n    vector<vector<long long>> pref2D(rows + 1, vector<long long>(cols + 1, 0));\n    \n    for (int i = 0; i < rows; i++) {\n        for (int j = 0; j < cols; j++) {\n            pref2D[i+1][j+1] = grid[i][j] + pref2D[i][j+1] + pref2D[i+1][j] - pref2D[i][j];\n        }\n    }\n    \n    // Sum of submatrix (1,1) to (2,2)\n    int r1=1, c1=1, r2=2, c2=2;\n    long long sum = pref2D[r2+1][c2+1] - pref2D[r1][c2+1] - pref2D[r2+1][c1] + pref2D[r1][c1];\n    cout << \"Submatrix sum: \" << sum << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5\n3 1 4 1 5\n3\n0 2\n1 3\n0 4\nOutput: 8\n6\n14\nSubmatrix sum: 34"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Difference Array — Range Updates"
+        },
+        {
+          "type": "paragraph",
+          "value": "To add `val` to range [l,r]: `diff[l] += val`, `diff[r+1] -= val`. After all updates, compute prefix sum of diff to get the final array. This turns O(n) range updates into O(1) each — crucial for problems with many updates."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 5;\n    vector<int> a(n, 0);\n    vector<int> diff(n + 1, 0);\n    \n    // Range updates: add 3 to [1,3], add 2 to [0,2]\n    diff[1] += 3;\n    diff[4] -= 3;\n    diff[0] += 2;\n    diff[3] -= 2;\n    \n    // Build final array from diff\n    int cur = 0;\n    for (int i = 0; i < n; i++) {\n        cur += diff[i];\n        a[i] = cur;\n    }\n    \n    cout << \"Final array: \";\n    for (int x : a) cout << x << \" \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Final array: 2 5 5 3 0"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Range Addition Queries"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given an array of zeros and q queries, each query adds v to range [l,r]. Print the final array. With difference array, each query is O(1) and final computation is O(n)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, q;\n    cin >> n >> q;\n    vector<long long> diff(n + 1, 0);\n    \n    while (q--) {\n        int l, r, v;\n        cin >> l >> r >> v;\n        diff[l] += v;\n        if (r + 1 < n) diff[r + 1] -= v;\n    }\n    \n    long long cur = 0;\n    for (int i = 0; i < n; i++) {\n        cur += diff[i];\n        cout << cur << \" \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5 3\n1 3 2\n0 2 1\n2 4 3\nOutput: 1 3 6 3 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Maximum Subarray Sum (Kadane's with Prefix)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Find the maximum sum of any contiguous subarray. Kadane's algorithm is O(n), but the prefix sum approach (max subarray ending at i = pref[i] - min(pref[0..i-1])) gives the same result and is easier to extend to 2D."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    long long maxSum = a[0], minPref = 0, pref = 0;\n    \n    for (int i = 0; i < n; i++) {\n        pref += a[i];\n        maxSum = max(maxSum, pref - minPref);\n        minPref = min(minPref, pref);\n    }\n    \n    cout << maxSum << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 8\n-2 1 -3 4 -1 2 1 -5 4\nOutput: 6  (subarray [4,-1,2,1])"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of a range sum query with prefix sum?",
+          "options": [
+            "O(n)",
+            "O(log n)",
+            "O(1)",
+            "O(n^2)"
+          ],
+          "correctAnswer": "O(1)",
+          "explanation": "After O(n) preprocessing to build the prefix array, each range sum query is O(1): sum[l,r] = pref[r+1] - pref[l]. This is the power of prefix sums."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In a difference array, how do you add 'val' to range [l,r]?",
+          "options": [
+            "diff[l] += val; diff[r] -= val;",
+            "diff[l] += val; diff[r+1] -= val;",
+            "diff[l-1] += val; diff[r] -= val;",
+            "diff[l] = val; diff[r] = -val;"
+          ],
+          "correctAnswer": "diff[l] += val; diff[r+1] -= val;",
+          "explanation": "diff[l] += val starts the addition, diff[r+1] -= val cancels it after position r. When you compute the prefix sum of diff, the val applies exactly to indices [l,r]."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which technique allows O(1) range updates on an array?",
+          "correctAnswer": "difference array",
+          "explanation": "The difference array technique allows O(1) range updates by marking start and end+1 positions, then computing the final array with a single prefix sum pass in O(n)."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 10: Two Pointers & Sliding Window",
+      "badge": "Techniques",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Two Pointers & Sliding Window — O(n) Magic"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Two Pointers** maintains two indices that move through the array in a coordinated way — often one from each end, or both from the start. **Sliding Window** maintains a subarray (window) that slides through the array, adjusting its bounds based on conditions. Both reduce O(n^2) brute force to O(n) by avoiding redundant work."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing sliding window [left,right] moving across array, expanding and contracting",
+          "caption": "Sliding window adjusts left and right pointers to maintain a valid subarray"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A horizontal array with a window [left, right] highlighted. Show three stages: 1) Window expands (right moves), 2) Window becomes invalid, 3) Window contracts (left moves) until valid again. Use arrows and color coding for the window boundary."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Two Pointers from Both Ends"
+        },
+        {
+          "type": "paragraph",
+          "value": "Useful for: pair sum in sorted array, container with most water, trapping rain water, palindrome check. The key insight: if the array is sorted, you can eliminate half the search space with each comparison."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Container With Most Water\n    int n;\n    cin >> n;\n    vector<int> height(n);\n    for (int i = 0; i < n; i++) cin >> height[i];\n    \n    int left = 0, right = n - 1;\n    int maxArea = 0;\n    \n    while (left < right) {\n        int width = right - left;\n        int h = min(height[left], height[right]);\n        maxArea = max(maxArea, width * h);\n        \n        // Move the pointer with smaller height\n        if (height[left] < height[right]) {\n            left++;\n        } else {\n            right--;\n        }\n    }\n    \n    cout << maxArea << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 9\n1 8 6 2 5 4 8 3 7\nOutput: 49  (between heights 8 and 7, width 7)"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Sliding Window — Fixed Size"
+        },
+        {
+          "type": "paragraph",
+          "value": "For problems requiring a fixed-size subarray: maintain a window of size k, compute the initial sum, then slide by subtracting the leftmost element and adding the new right element. This is O(n) vs O(nk) naive."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n, k;\n    cin >> n >> k;\n    vector<int> a(n);\n    for (int i = 0; i < n; i++) cin >> a[i];\n    \n    long long windowSum = 0;\n    for (int i = 0; i < k; i++) windowSum += a[i];\n    \n    long long maxSum = windowSum;\n    for (int i = k; i < n; i++) {\n        windowSum += a[i] - a[i - k];\n        maxSum = max(maxSum, windowSum);\n    }\n    \n    cout << maxSum << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 6 3\n1 2 3 4 5 6\nOutput: 15  (subarray [4,5,6])"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Sliding Window — Variable Size"
+        },
+        {
+          "type": "paragraph",
+          "value": "For problems like 'longest substring with at most k distinct characters': expand the window by moving right, contract from left when the condition is violated. Track window state with a hash map or frequency array."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    string s;\n    int k;\n    cin >> s >> k;\n    \n    unordered_map<char, int> freq;\n    int left = 0, maxLen = 0;\n    \n    for (int right = 0; right < s.size(); right++) {\n        freq[s[right]]++;\n        \n        // Contract window while we have more than k distinct chars\n        while (freq.size() > k) {\n            freq[s[left]]--;\n            if (freq[s[left]] == 0) freq.erase(s[left]);\n            left++;\n        }\n        \n        maxLen = max(maxLen, right - left + 1);\n    }\n    \n    cout << maxLen << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: eceba 2\nOutput: 3  (substring 'ece')"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Minimum Window Substring"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given strings s and t, find the minimum window in s that contains all characters of t. This is a hard sliding window problem (LeetCode 76). Use two frequency maps: one for t's requirements, one for the current window. Expand right until valid, then contract left to find minimum."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    string s, t;\n    cin >> s >> t;\n    \n    unordered_map<char, int> need, window;\n    for (char c : t) need[c]++;\n    \n    int left = 0, valid = 0;\n    int start = 0, minLen = INT_MAX;\n    \n    for (int right = 0; right < s.size(); right++) {\n        char c = s[right];\n        window[c]++;\n        if (need.count(c) && window[c] == need[c]) valid++;\n        \n        while (valid == need.size()) {\n            if (right - left + 1 < minLen) {\n                minLen = right - left + 1;\n                start = left;\n            }\n            char d = s[left];\n            window[d]--;\n            if (need.count(d) && window[d] < need[d]) valid--;\n            left++;\n        }\n    }\n    \n    if (minLen == INT_MAX) {\n        cout << \"\\n\";\n    } else {\n        cout << s.substr(start, minLen) << \"\\n\";\n    }\n    \n    return 0;\n}",
+          "output": "Input: ADOBECODEBANC ABC\nOutput: BANC"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of the two-pointer technique on a sorted array?",
+          "options": [
+            "O(n^2)",
+            "O(n log n)",
+            "O(n)",
+            "O(log n)"
+          ],
+          "correctAnswer": "O(n)",
+          "explanation": "Two pointers traverse the array at most once each. Even though there are two pointers, each element is visited at most once, giving O(n) total time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In a variable-size sliding window, when do you move the left pointer?",
+          "options": [
+            "When the window is too small",
+            "When the window violates the condition",
+            "After every right pointer move",
+            "Only at the end"
+          ],
+          "correctAnswer": "When the window violates the condition",
+          "explanation": "The left pointer contracts the window when it becomes invalid (violates the problem condition). This maintains the invariant that the window is always valid between adjustments."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which data structure is commonly used to track window contents in sliding window problems?",
+          "correctAnswer": "hash map",
+          "explanation": "A hash map (or frequency array) tracks character/element frequencies in the current window, allowing O(1) checks for whether the window satisfies the problem conditions."
+        }
+      ]
     }
   ]
 }
