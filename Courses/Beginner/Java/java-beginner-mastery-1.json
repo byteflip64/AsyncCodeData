@@ -441,6 +441,421 @@
           "explanation": "Arrays have a length property (not a method): arr.length. Strings have a length() method: str.length()."
         }
       ]
-    }
+    },
+    {
+            "partTitle": "Part 6: Methods",
+            "badge": "Basics",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Defining Reusable Code Blocks"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Methods are reusable blocks of code that perform a specific task. They improve code organization, reduce duplication, and make programs easier to maintain. Every method has a signature (name + parameters) and a body."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Method Declaration and Calling"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class MethodDemo {\n    public static void main(String[] args) {\n        sayHello();\n        \n        int sum = add(5, 3);\n        System.out.println(\"Sum: \" + sum);\n        \n        double area = calculateArea(5.0);\n        System.out.println(\"Area: \" + area);\n        \n        printInfo(\"Alice\", 25);\n    }\n    \n    // Method with no parameters and no return\n    public static void sayHello() {\n        System.out.println(\"Hello!\");\n    }\n    \n    // Method with parameters and return value\n    public static int add(int a, int b) {\n        return a + b;\n    }\n    \n    // Method with single parameter\n    public static double calculateArea(double radius) {\n        return Math.PI * radius * radius;\n    }\n    \n    // Method with multiple parameters\n    public static void printInfo(String name, int age) {\n        System.out.println(name + \" is \" + age + \" years old\");\n    }\n}",
+                    "output": "Hello!\nSum: 8\nArea: 78.53981633974483\nAlice is 25 years old"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Method Overloading"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class OverloadingDemo {\n    public static void main(String[] args) {\n        System.out.println(add(2, 3));       // int version\n        System.out.println(add(2.5, 3.5));   // double version\n        System.out.println(add(1, 2, 3));    // three int version\n        System.out.println(add(\"Hello, \", \"World\")); // String version\n    }\n    \n    public static int add(int a, int b) {\n        return a + b;\n    }\n    \n    public static double add(double a, double b) {\n        return a + b;\n    }\n    \n    public static int add(int a, int b, int c) {\n        return a + b + c;\n    }\n    \n    public static String add(String a, String b) {\n        return a + b;\n    }\n}",
+                    "output": "5\n6.0\n6\nHello, World"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Method overloading allows multiple methods with the same name but different parameter lists (different types, different counts, or both). The compiler determines which method to call based on the arguments provided."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Pass-by-Value in Java"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class PassByValue {\n    public static void main(String[] args) {\n        int num = 10;\n        System.out.println(\"Before: \" + num);\n        modifyPrimitive(num);\n        System.out.println(\"After: \" + num);  // Still 10!\n        \n        int[] arr = {1, 2, 3};\n        System.out.println(\"Before: \" + arr[0]);\n        modifyArray(arr);\n        System.out.println(\"After: \" + arr[0]);  // Changed to 99!\n    }\n    \n    public static void modifyPrimitive(int x) {\n        x = 100;  // Only modifies local copy\n    }\n    \n    public static void modifyArray(int[] arr) {\n        arr[0] = 99;  // Modifies the actual array through reference\n    }\n}",
+                    "output": "Before: 10\nAfter: 10\nBefore: 1\nAfter: 99"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Java is strictly pass-by-value. For primitives, the value is copied. For objects, the reference (memory address) is copied — so you can modify the object's contents but cannot reassign the original reference."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is required for method overloading?",
+                    "options": [
+                        "Different return types",
+                        "Different parameter lists",
+                        "Different access modifiers",
+                        "Different method names"
+                    ],
+                    "correctAnswer": "Different parameter lists",
+                    "explanation": "Overloading requires different parameter types, counts, or order. Return type alone is not sufficient for overloading."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Is Java pass-by-value or pass-by-reference?",
+                    "options": [
+                        "Pass-by-reference",
+                        "Pass-by-value",
+                        "Both",
+                        "Depends on the type"
+                    ],
+                    "correctAnswer": "Pass-by-value",
+                    "explanation": "Java is always pass-by-value. For objects, the reference value is copied. You can modify object contents but cannot change the caller's reference variable."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What keyword indicates a method returns no value?",
+                    "correctAnswer": "void",
+                    "explanation": "void indicates the method returns nothing. Methods with a return type must use the return keyword to send back a value."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 7: Classes and Objects — Part 1",
+            "badge": "OOP",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Object-Oriented Programming in Java"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Java is fundamentally object-oriented. A class is a blueprint for creating objects. An object is an instance of a class. Classes encapsulate data (fields/attributes) and behavior (methods) into a single unit."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Creating a Class"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class Car {\n    // Fields (instance variables)\n    String brand;\n    String model;\n    int year;\n    double fuelLevel;\n    \n    // Constructor\n    public Car(String brand, String model, int year) {\n        this.brand = brand;\n        this.model = model;\n        this.year = year;\n        this.fuelLevel = 100.0;\n    }\n    \n    // Methods\n    public void drive(double distance) {\n        double fuelUsed = distance * 0.1;\n        if (fuelUsed <= fuelLevel) {\n            fuelLevel -= fuelUsed;\n            System.out.println(\"Drove \" + distance + \" km. Fuel left: \" + fuelLevel);\n        } else {\n            System.out.println(\"Not enough fuel!\");\n        }\n    }\n    \n    public void refuel(double amount) {\n        fuelLevel = Math.min(100.0, fuelLevel + amount);\n        System.out.println(\"Refueled. Current level: \" + fuelLevel);\n    }\n    \n    public void displayInfo() {\n        System.out.println(year + \" \" + brand + \" \" + model);\n    }\n}",
+                    "output": ""
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Creating and Using Objects"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class CarDemo {\n    public static void main(String[] args) {\n        // Creating objects with new\n        Car car1 = new Car(\"Toyota\", \"Corolla\", 2023);\n        Car car2 = new Car(\"Honda\", \"Civic\", 2024);\n        \n        // Using object methods\n        car1.displayInfo();\n        car1.drive(50);\n        car1.drive(600);  // Not enough fuel\n        car1.refuel(30);\n        \n        System.out.println();\n        car2.displayInfo();\n        car2.drive(100);\n        \n        // Accessing fields directly\n        System.out.println(\"\\nCar1 brand: \" + car1.brand);\n    }\n}",
+                    "output": "2023 Toyota Corolla\nDrove 50.0 km. Fuel left: 95.0\nNot enough fuel!\nRefueled. Current level: 100.0\n\n2024 Honda Civic\nDrove 100.0 km. Fuel left: 90.0\n\nCar1 brand: Toyota"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The this Keyword"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class Person {\n    String name;\n    int age;\n    \n    public Person(String name, int age) {\n        this.name = name;  // this.name = field, name = parameter\n        this.age = age;\n    }\n    \n    public void setName(String name) {\n        this.name = name;  // Disambiguates field from parameter\n    }\n    \n    public Person getOlder() {\n        this.age++;        // Optional: this refers to current object\n        return this;       // Method chaining: return current object\n    }\n    \n    public void display() {\n        System.out.println(this.name + \" is \" + this.age);\n    }\n    \n    public static void main(String[] args) {\n        Person p = new Person(\"Alice\", 25);\n        p.getOlder().getOlder().display();  // Method chaining\n    }\n}",
+                    "output": "Alice is 27"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What keyword creates a new object instance?",
+                    "options": [
+                        "create",
+                        "new",
+                        "instance",
+                        "object"
+                    ],
+                    "correctAnswer": "new",
+                    "explanation": "The new keyword allocates memory and calls the constructor to create a new object instance: new ClassName()."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does the this keyword refer to?",
+                    "options": [
+                        "The class itself",
+                        "The current object instance",
+                        "The parent class",
+                        "A static method"
+                    ],
+                    "correctAnswer": "The current object instance",
+                    "explanation": "this refers to the current object instance. It's used to disambiguate fields from parameters and for method chaining."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What is a special method that initializes a new object called?",
+                    "correctAnswer": "constructor",
+                    "explanation": "A constructor has the same name as the class and no return type. It runs automatically when an object is created with new."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 8: Classes and Objects — Part 2",
+            "badge": "OOP",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Access Modifiers and Encapsulation"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Encapsulation is one of the four pillars of OOP. It means bundling data and methods together and restricting direct access to some components. Access modifiers control visibility: public, private, protected, and default (package-private)."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Access Modifiers"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class BankAccount {\n    // private: only accessible within this class\n    private String accountNumber;\n    private double balance;\n    \n    // public: accessible from anywhere\n    public BankAccount(String accountNumber, double initialBalance) {\n        this.accountNumber = accountNumber;\n        this.balance = Math.max(0, initialBalance);\n    }\n    \n    // Getter (accessor)\n    public double getBalance() {\n        return balance;\n    }\n    \n    // Getter for account number\n    public String getAccountNumber() {\n        return accountNumber;\n    }\n    \n    // Setter with validation\n    public void deposit(double amount) {\n        if (amount > 0) {\n            balance += amount;\n            System.out.println(\"Deposited: \" + amount);\n        } else {\n            System.out.println(\"Invalid deposit amount\");\n        }\n    }\n    \n    public void withdraw(double amount) {\n        if (amount > 0 && amount <= balance) {\n            balance -= amount;\n            System.out.println(\"Withdrawn: \" + amount);\n        } else {\n            System.out.println(\"Insufficient funds or invalid amount\");\n        }\n    }\n}\n\npublic class BankDemo {\n    public static void main(String[] args) {\n        BankAccount account = new BankAccount(\"12345\", 1000.0);\n        \n        // Cannot access private fields directly!\n        // account.balance = 5000; // ERROR!\n        \n        System.out.println(\"Balance: \" + account.getBalance());\n        account.deposit(500);\n        account.withdraw(200);\n        System.out.println(\"Final balance: \" + account.getBalance());\n    }\n}",
+                    "output": "Balance: 1000.0\nDeposited: 500.0\nWithdrawn: 200.0\nFinal balance: 1300.0"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Static Members"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class Counter {\n    // Instance variable: each object has its own copy\n    private int instanceCount;\n    \n    // Static variable: shared across all instances\n    private static int staticCount = 0;\n    \n    public Counter() {\n        instanceCount++;\n        staticCount++;\n    }\n    \n    public void showCounts() {\n        System.out.println(\"Instance: \" + instanceCount + \", Static: \" + staticCount);\n    }\n    \n    // Static method: belongs to class, not instance\n    public static int getTotalCount() {\n        return staticCount;\n    }\n    \n    public static void main(String[] args) {\n        Counter c1 = new Counter();\n        c1.showCounts();  // Instance: 1, Static: 1\n        \n        Counter c2 = new Counter();\n        c2.showCounts();  // Instance: 1, Static: 2\n        \n        Counter c3 = new Counter();\n        c1.showCounts();  // Instance: 1, Static: 3\n        \n        // Call static method on class, not instance\n        System.out.println(\"Total: \" + Counter.getTotalCount());\n    }\n}",
+                    "output": "Instance: 1, Static: 1\nInstance: 1, Static: 2\nInstance: 1, Static: 3\nTotal: 3"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Access Modifier Visibility Table"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "| Modifier | Same Class | Same Package | Subclass | Anywhere |\n|----------|-----------|-------------|----------|----------|\n| public | Yes | Yes | Yes | Yes |\n| protected | Yes | Yes | Yes | No |\n| default | Yes | Yes | No | No |\n| private | Yes | No | No | No |"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which access modifier makes a member accessible only within its own class?",
+                    "options": [
+                        "public",
+                        "protected",
+                        "private",
+                        "default"
+                    ],
+                    "correctAnswer": "private",
+                    "explanation": "private is the most restrictive. The member is only accessible within the class it's declared in."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the purpose of getters and setters?",
+                    "options": [
+                        "To make code longer",
+                        "To control access and validate data",
+                        "To improve performance",
+                        "To enable inheritance"
+                    ],
+                    "correctAnswer": "To control access and validate data",
+                    "explanation": "Getters and setters encapsulate field access, allowing validation, computed values, and controlled modification."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What keyword makes a variable belong to the class rather than instances?",
+                    "correctAnswer": "static",
+                    "explanation": "static members belong to the class, not individual objects. There's only one copy shared across all instances."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 9: Inheritance",
+            "badge": "OOP",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Building Class Hierarchies"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Inheritance allows a class to acquire properties and methods from another class. The child class (subclass) extends the parent class (superclass). It promotes code reuse and establishes an 'is-a' relationship."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The extends Keyword"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "// Parent class (Superclass)\npublic class Animal {\n    protected String name;\n    protected int age;\n    \n    public Animal(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n    \n    public void eat() {\n        System.out.println(name + \" is eating\");\n    }\n    \n    public void sleep() {\n        System.out.println(name + \" is sleeping\");\n    }\n    \n    public void makeSound() {\n        System.out.println(\"Some generic animal sound\");\n    }\n}\n\n// Child class (Subclass)\npublic class Dog extends Animal {\n    private String breed;\n    \n    public Dog(String name, int age, String breed) {\n        super(name, age);  // Call parent constructor\n        this.breed = breed;\n    }\n    \n    @Override\n    public void makeSound() {\n        System.out.println(name + \" says: Woof!\");\n    }\n    \n    public void fetch() {\n        System.out.println(name + \" is fetching the ball\");\n    }\n}\n\npublic class Cat extends Animal {\n    public Cat(String name, int age) {\n        super(name, age);\n    }\n    \n    @Override\n    public void makeSound() {\n        System.out.println(name + \" says: Meow!\");\n    }\n}\n\npublic class InheritanceDemo {\n    public static void main(String[] args) {\n        Dog dog = new Dog(\"Buddy\", 3, \"Golden Retriever\");\n        Cat cat = new Cat(\"Whiskers\", 2);\n        \n        dog.eat();        // Inherited from Animal\n        dog.makeSound();  // Overridden in Dog\n        dog.fetch();      // Specific to Dog\n        \n        System.out.println();\n        cat.eat();        // Inherited from Animal\n        cat.makeSound();  // Overridden in Cat\n    }\n}",
+                    "output": "Buddy is eating\nBuddy says: Woof!\nBuddy is fetching the ball\n\nWhiskers is eating\nWhiskers says: Meow!"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "super Keyword"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class Employee {\n    protected String name;\n    protected double salary;\n    \n    public Employee(String name, double salary) {\n        this.name = name;\n        this.salary = salary;\n    }\n    \n    public void displayInfo() {\n        System.out.println(\"Name: \" + name + \", Salary: \" + salary);\n    }\n}\n\npublic class Manager extends Employee {\n    private String department;\n    \n    public Manager(String name, double salary, String department) {\n        super(name, salary);  // Must be first statement\n        this.department = department;\n    }\n    \n    @Override\n    public void displayInfo() {\n        super.displayInfo();  // Call parent's method\n        System.out.println(\"Department: \" + department);\n    }\n}\n\npublic class SuperDemo {\n    public static void main(String[] args) {\n        Manager mgr = new Manager(\"Alice\", 90000, \"Engineering\");\n        mgr.displayInfo();\n    }\n}",
+                    "output": "Name: Alice, Salary: 90000.0\nDepartment: Engineering"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Object Class"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class ObjectMethods {\n    public static void main(String[] args) {\n        Person p1 = new Person(\"Alice\", 25);\n        Person p2 = new Person(\"Alice\", 25);\n        Person p3 = p1;\n        \n        // toString() - string representation\n        System.out.println(p1.toString());\n        \n        // equals() - content comparison\n        System.out.println(\"p1.equals(p2): \" + p1.equals(p2));\n        System.out.println(\"p1 == p3: \" + (p1 == p3));\n        \n        // hashCode() - used in hash-based collections\n        System.out.println(\"p1 hash: \" + p1.hashCode());\n        \n        // getClass() - runtime class info\n        System.out.println(\"Class: \" + p1.getClass().getName());\n    }\n}\n\nclass Person {\n    private String name;\n    private int age;\n    \n    public Person(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n    \n    @Override\n    public String toString() {\n        return \"Person{name='\" + name + \"', age=\" + age + \"}\";\n    }\n    \n    @Override\n    public boolean equals(Object obj) {\n        if (this == obj) return true;\n        if (obj == null || getClass() != obj.getClass()) return false;\n        Person person = (Person) obj;\n        return age == person.age && name.equals(person.name);\n    }\n}",
+                    "output": "Person{name='Alice', age=25}\np1.equals(p2): true\np1 == p3: true\np1 hash: 63314389\nClass: Person"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What keyword establishes inheritance in Java?",
+                    "options": [
+                        "inherits",
+                        "extends",
+                        "implements",
+                        "super"
+                    ],
+                    "correctAnswer": "extends",
+                    "explanation": "class Child extends Parent establishes an inheritance relationship. implements is used for interfaces."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What annotation indicates a method overrides a parent method?",
+                    "options": [
+                        "@Override",
+                        "@Overwrite",
+                        "@Replace",
+                        "@Extend"
+                    ],
+                    "correctAnswer": "@Override",
+                    "explanation": "@Override tells the compiler to verify that the method actually overrides a parent method. It catches typos in method signatures."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What is the root class that every Java class implicitly extends?",
+                    "correctAnswer": "Object",
+                    "explanation": "Every class in Java implicitly extends java.lang.Object if no parent is specified. Object provides toString(), equals(), hashCode(), and other fundamental methods."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 10: Polymorphism and Abstraction",
+            "badge": "OOP",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Polymorphism: Many Forms"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Polymorphism means 'many forms.' In Java, it allows objects of different classes to be treated as objects of a common parent class. The same method call can behave differently based on the actual object's class. Combined with abstraction, it enables flexible, extensible designs."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Runtime Polymorphism"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class Animal {\n    public void makeSound() {\n        System.out.println(\"Animal sound\");\n    }\n}\n\npublic class Dog extends Animal {\n    @Override\n    public void makeSound() {\n        System.out.println(\"Woof!\");\n    }\n}\n\npublic class Cat extends Animal {\n    @Override\n    public void makeSound() {\n        System.out.println(\"Meow!\");\n    }\n}\n\npublic class PolymorphismDemo {\n    public static void main(String[] args) {\n        // Parent reference, child object\n        Animal myDog = new Dog();\n        Animal myCat = new Cat();\n        \n        // Same method call, different behavior\n        myDog.makeSound();  // Woof!\n        myCat.makeSound();  // Meow!\n        \n        // Array of parent type holding different children\n        Animal[] animals = {new Dog(), new Cat(), new Dog()};\n        for (Animal animal : animals) {\n            animal.makeSound();\n        }\n    }\n}",
+                    "output": "Woof!\nMeow!\nWoof!\nMeow!\nWoof!"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Abstract Classes"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "// Cannot be instantiated directly\npublic abstract class Shape {\n    protected String color;\n    \n    public Shape(String color) {\n        this.color = color;\n    }\n    \n    // Concrete method (has implementation)\n    public void printColor() {\n        System.out.println(\"Color: \" + color);\n    }\n    \n    // Abstract method (no implementation, must be overridden)\n    public abstract double calculateArea();\n    public abstract double calculatePerimeter();\n}\n\npublic class Circle extends Shape {\n    private double radius;\n    \n    public Circle(String color, double radius) {\n        super(color);\n        this.radius = radius;\n    }\n    \n    @Override\n    public double calculateArea() {\n        return Math.PI * radius * radius;\n    }\n    \n    @Override\n    public double calculatePerimeter() {\n        return 2 * Math.PI * radius;\n    }\n}\n\npublic class Rectangle extends Shape {\n    private double width, height;\n    \n    public Rectangle(String color, double width, double height) {\n        super(color);\n        this.width = width;\n        this.height = height;\n    }\n    \n    @Override\n    public double calculateArea() {\n        return width * height;\n    }\n    \n    @Override\n    public double calculatePerimeter() {\n        return 2 * (width + height);\n    }\n}\n\npublic class AbstractDemo {\n    public static void main(String[] args) {\n        // Shape s = new Shape(\"red\"); // ERROR! Cannot instantiate abstract class\n        \n        Shape circle = new Circle(\"red\", 5);\n        Shape rectangle = new Rectangle(\"blue\", 4, 6);\n        \n        System.out.println(\"Circle area: \" + circle.calculateArea());\n        System.out.println(\"Rectangle area: \" + rectangle.calculateArea());\n    }\n}",
+                    "output": "Circle area: 78.53981633974483\nRectangle area: 24.0"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Interfaces"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "// Interface: pure abstraction (before Java 8)\npublic interface Drawable {\n    void draw();  // Implicitly public and abstract\n    \n    // Default method (Java 8+)\n    default void printInfo() {\n        System.out.println(\"This is drawable\");\n    }\n    \n    // Static method (Java 8+)\n    static void describe() {\n        System.out.println(\"Drawable objects can be drawn\");\n    }\n}\n\npublic interface Resizable {\n    void resize(double factor);\n}\n\n// A class can implement multiple interfaces\npublic class Rectangle implements Drawable, Resizable {\n    private double width, height;\n    \n    public Rectangle(double width, double height) {\n        this.width = width;\n        this.height = height;\n    }\n    \n    @Override\n    public void draw() {\n        System.out.println(\"Drawing rectangle: \" + width + \"x\" + height);\n    }\n    \n    @Override\n    public void resize(double factor) {\n        width *= factor;\n        height *= factor;\n    }\n}\n\npublic class InterfaceDemo {\n    public static void main(String[] args) {\n        Drawable d = new Rectangle(10, 20);\n        d.draw();\n        d.printInfo();\n        \n        Drawable.describe();\n    }\n}",
+                    "output": "Drawing rectangle: 10.0x20.0\nThis is drawable\nDrawable objects can be drawn"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Interfaces define contracts that classes must fulfill. A class can implement multiple interfaces (unlike inheritance which is single). Java 8+ added default and static methods to interfaces, allowing some implementation."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Can an abstract class be instantiated?",
+                    "options": [
+                        "Yes, with new",
+                        "No, it must be subclassed",
+                        "Yes, if it has no abstract methods",
+                        "Only in static context"
+                    ],
+                    "correctAnswer": "No, it must be subclassed",
+                    "explanation": "Abstract classes cannot be instantiated directly. They exist to be extended by concrete subclasses that implement all abstract methods."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "How many interfaces can a class implement?",
+                    "options": [
+                        "Only one",
+                        "Up to three",
+                        "Any number",
+                        "Depends on the Java version"
+                    ],
+                    "correctAnswer": "Any number",
+                    "explanation": "A class can implement multiple interfaces, separated by commas: class X implements A, B, C. This is Java's way of achieving multiple inheritance of type."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What keyword is used to implement an interface?",
+                    "correctAnswer": "implements",
+                    "explanation": "class MyClass implements MyInterface { ... }. extends is for classes; implements is for interfaces. A class can do both: extends Parent implements Interface1, Interface2."
+                }
+            ]
+        }
   ]
 }
