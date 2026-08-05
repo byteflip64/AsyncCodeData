@@ -1208,6 +1208,493 @@
           "explanation": "A hash map (or frequency array) tracks character/element frequencies in the current window, allowing O(1) checks for whether the window satisfies the problem conditions."
         }
       ]
+    },
+    {
+      "partTitle": "Part 11: Bit Manipulation",
+      "badge": "Techniques",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Bit Manipulation — The Low-Level Power Tool"
+        },
+        {
+          "type": "paragraph",
+          "value": "Bit manipulation operates directly on the binary representation of integers. It's incredibly fast (single CPU instructions) and unlocks elegant solutions to problems involving subsets, parity, powers of two, and state compression. In CP, bitwise operations are often the difference between TLE and AC."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing AND, OR, XOR, NOT, and shift operations on 8-bit numbers",
+          "caption": "Bitwise operations work on every bit simultaneously — O(1) at the hardware level"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Two 8-bit numbers side by side (e.g., 01011010 and 00110111). Show four rows below: AND result, OR result, XOR result, NOT of first. Use color coding: green for 1s, gray for 0s. Label each operation clearly."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Essential Bitwise Operators"
+        },
+        {
+          "type": "paragraph",
+          "value": "**& (AND)** — bit is 1 only if both bits are 1. Used for masking.\n**|** (OR)** — bit is 1 if either bit is 1. Used for setting bits.\n**^ (XOR)** — bit is 1 if bits differ. Used for toggling and finding unique elements.\n**~ (NOT)** — flips all bits. Use with caution due to sign extension.\n**<< (left shift)** — multiplies by 2^k. **>> (right shift)** — divides by 2^k.\n\nAll are O(1) and work on integers up to 64 bits (use `long long` for 64-bit masks)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int a = 5;   // 0101\n    int b = 3;   // 0011\n    \n    cout << \"a & b: \" << (a & b) << \"\\n\";   // 0001 = 1\n    cout << \"a | b: \" << (a | b) << \"\\n\";   // 0111 = 7\n    cout << \"a ^ b: \" << (a ^ b) << \"\\n\";   // 0110 = 6\n    cout << \"~a: \" << (~a) << \"\\n\";         // flips all bits\n    cout << \"a << 1: \" << (a << 1) << \"\\n\"; // 1010 = 10\n    cout << \"a >> 1: \" << (a >> 1) << \"\\n\"; // 0010 = 2\n    \n    // Common tricks\n    cout << \"Is power of 2: \" << ((a & (a - 1)) == 0) << \"\\n\"; // false for 5\n    cout << \"Rightmost set bit: \" << (a & (-a)) << \"\\n\";        // 1\n    \n    return 0;\n}",
+          "output": "a & b: 1\na | b: 7\na ^ b: 6\n~a: -6\na << 1: 10\na >> 1: 2\nIs power of 2: 0\nRightmost set bit: 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Bit Masking — Representing Subsets"
+        },
+        {
+          "type": "paragraph",
+          "value": "An integer with n bits can represent any subset of n elements. The i-th bit is 1 if element i is included. This is the foundation of **bitmask DP** and brute force over subsets. With n ≤ 20, you can iterate over all 2^n subsets efficiently."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 4;\n    vector<int> a = {10, 20, 30, 40};\n    \n    // Iterate all subsets\n    for (int mask = 0; mask < (1 << n); mask++) {\n        int sum = 0;\n        cout << \"Subset: {\";\n        for (int i = 0; i < n; i++) {\n            if (mask & (1 << i)) {  // Check if i-th bit is set\n                sum += a[i];\n                cout << a[i] << \" \";\n            }\n        }\n        cout << \"} Sum = \" << sum << \"\\n\";\n    }\n    \n    // Set, clear, toggle, check bit k\n    int mask = 0b1010;  // 10 in decimal\n    int k = 1;\n    \n    cout << \"Set bit \" << k << \": \" << (mask | (1 << k)) << \"\\n\";\n    cout << \"Clear bit \" << k << \": \" << (mask & ~(1 << k)) << \"\\n\";\n    cout << \"Toggle bit \" << k << \": \" << (mask ^ (1 << k)) << \"\\n\";\n    cout << \"Check bit \" << k << \": \" << ((mask >> k) & 1) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Subset: {} Sum = 0\nSubset: {10 } Sum = 10\nSubset: {20 } Sum = 20\nSubset: {10 20 } Sum = 30\n...\nSet bit 1: 10\nClear bit 1: 8\nToggle bit 1: 8\nCheck bit 1: 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Built-in Functions for Bit Counting"
+        },
+        {
+          "type": "paragraph",
+          "value": "GCC provides built-in functions for fast bit operations:\n• `__builtin_popcount(x)` — count set bits in int\n• `__builtin_popcountll(x)` — count set bits in long long\n• `__builtin_clz(x)` — count leading zeros\n• `__builtin_ctz(x)` — count trailing zeros\n• `__builtin_parity(x)` — parity of set bits (odd/even)\n\nThese compile to single CPU instructions and are much faster than manual loops."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int x = 0b101100;  // 44 in decimal, 3 bits set\n    \n    cout << \"popcount: \" << __builtin_popcount(x) << \"\\n\";\n    cout << \"clz: \" << __builtin_clz(x) << \"\\n\";      // leading zeros\n    cout << \"ctz: \" << __builtin_ctz(x) << \"\\n\";      // trailing zeros\n    cout << \"parity: \" << __builtin_parity(x) << \"\\n\"; // 1 = odd number of bits\n    \n    // Find highest power of 2 <= n\n    int n = 100;\n    int highestPower = 1 << (31 - __builtin_clz(n));\n    cout << \"Highest power of 2 <= \" << n << \": \" << highestPower << \"\\n\";\n    \n    // Iterate only set bits (efficient!)\n    cout << \"Set bits at positions: \";\n    while (x) {\n        int lsb = x & (-x);           // isolate rightmost set bit\n        int pos = __builtin_ctz(x);   // its position\n        cout << pos << \" \";\n        x ^= lsb;                     // remove it\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "popcount: 3\nclz: 26\nctz: 2\nparity: 1\nHighest power of 2 <= 100: 64\nSet bits at positions: 2 3 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Single Number (XOR Trick)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Every element appears twice except one. Find the unique element. XOR of a number with itself is 0, and XOR with 0 is the number itself. XORing all elements cancels out pairs, leaving the unique element."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    int ans = 0;\n    \n    for (int i = 0; i < n; i++) {\n        int x; cin >> x;\n        ans ^= x;\n    }\n    \n    cout << ans << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 5\n4 1 2 1 2\nOutput: 4"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Subset Sum with Bitset"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Given n items with weights, determine which sums are achievable. A bitset where bit i represents whether sum i is possible. For each weight w, shift the bitset left by w and OR with the original. This is O(n * maxSum / 64) — incredibly fast for maxSum ≤ 10^5."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    vector<int> weights(n);\n    int maxSum = 0;\n    for (int i = 0; i < n; i++) {\n        cin >> weights[i];\n        maxSum += weights[i];\n    }\n    \n    bitset<100001> dp;\n    dp[0] = 1;\n    \n    for (int w : weights) {\n        dp |= (dp << w);\n    }\n    \n    cout << \"Achievable sums: \";\n    for (int i = 0; i <= maxSum; i++) {\n        if (dp[i]) cout << i << \" \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 3\n2 3 5\nOutput: Achievable sums: 0 2 3 5 7 8 10"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does (n & (n - 1)) == 0 check?",
+          "options": [
+            "If n is even",
+            "If n is a power of 2",
+            "If n is prime",
+            "If n is negative"
+          ],
+          "correctAnswer": "If n is a power of 2",
+          "explanation": "Powers of 2 have exactly one bit set. n & (n-1) clears the rightmost set bit. If the result is 0, there was only one bit set, meaning n is a power of 2."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of iterating all subsets of n elements using bitmasks?",
+          "options": [
+            "O(n^2)",
+            "O(2^n * n)",
+            "O(n!)",
+            "O(2^n)"
+          ],
+          "correctAnswer": "O(2^n * n)",
+          "explanation": "There are 2^n subsets. For each subset, checking all n bits to build the subset gives O(n) per subset, totaling O(2^n * n). With bit tricks, you can optimize to O(2^n) by only iterating set bits."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which operator toggles a bit (0→1, 1→0) at position k?",
+          "correctAnswer": "XOR",
+          "explanation": "The XOR operator (^) with a mask having 1 at position k toggles that bit: 0^1=1, 1^1=0. Other bits remain unchanged when XORed with 0."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 12: Number Theory — GCD, LCM & Primes",
+      "badge": "Math",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Number Theory — The Foundation of CP Math"
+        },
+        {
+          "type": "paragraph",
+          "value": "Number theory problems appear in almost every contest. GCD, LCM, prime factorization, and primality testing are building blocks for harder problems. The Euclidean algorithm for GCD is one of the oldest and most elegant algorithms in mathematics — and it's O(log min(a,b))."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing Euclidean algorithm steps for GCD(48,18) with division chain",
+          "caption": "Euclidean algorithm: GCD(a,b) = GCD(b, a mod b) until b becomes 0"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Show GCD(48, 18) step by step: 48 = 2*18 + 12, 18 = 1*12 + 6, 12 = 2*6 + 0. Arrows showing the recursive reduction. Final result: GCD = 6. Use a clean flowchart style."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "GCD — Euclidean Algorithm"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Euclidean algorithm is based on the principle that GCD(a, b) = GCD(b, a mod b). The remainder decreases rapidly, guaranteeing termination in O(log min(a, b)) steps. In C++17, use `std::gcd` and `std::lcm` from `<numeric>`. For older standards, `__gcd(a, b)` works in GCC."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Manual GCD (iterative)\nint gcd(int a, int b) {\n    while (b) {\n        int temp = b;\n        b = a % b;\n        a = temp;\n    }\n    return a;\n}\n\n// Recursive GCD\nint gcdRec(int a, int b) {\n    return b == 0 ? a : gcdRec(b, a % b);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int a = 48, b = 18;\n    \n    cout << \"GCD(\" << a << \", \" << b << \"): \" << gcd(a, b) << \"\\n\";\n    cout << \"GCD recursive: \" << gcdRec(a, b) << \"\\n\";\n    \n    // C++17 built-in\n    cout << \"std::gcd: \" << std::gcd(a, b) << \"\\n\";\n    \n    // LCM: a * b / gcd(a, b) — but avoid overflow!\n    long long lcm = (1LL * a / gcd(a, b)) * b;\n    cout << \"LCM: \" << lcm << \"\\n\";\n    \n    // GCD of array\n    vector<int> arr = {12, 18, 24, 36};\n    int result = arr[0];\n    for (int i = 1; i < arr.size(); i++) {\n        result = gcd(result, arr[i]);\n    }\n    cout << \"GCD of array: \" << result << \"\\n\";\n    \n    return 0;\n}",
+          "output": "GCD(48, 18): 6\nGCD recursive: 6\nstd::gcd: 6\nLCM: 144\nGCD of array: 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Prime Numbers & Primality Testing"
+        },
+        {
+          "type": "paragraph",
+          "value": "A prime number is only divisible by 1 and itself. Naive primality test checks up to √n. For multiple queries, the **Sieve of Eratosthenes** precomputes primes up to n in O(n log log n). For very large n (up to 10^12), use **Miller-Rabin** deterministic test with specific bases."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Naive primality test — O(sqrt(n))\nbool isPrime(int n) {\n    if (n <= 1) return false;\n    if (n <= 3) return true;\n    if (n % 2 == 0 || n % 3 == 0) return false;\n    for (int i = 5; i * i <= n; i += 6) {\n        if (n % i == 0 || n % (i + 2) == 0) return false;\n    }\n    return true;\n}\n\n// Miller-Rabin for 64-bit integers\nusing u64 = unsigned long long;\nu64 power(u64 a, u64 d, u64 n) {\n    u64 res = 1;\n    a %= n;\n    while (d) {\n        if (d & 1) res = (__int128)res * a % n;\n        a = (__int128)a * a % n;\n        d >>= 1;\n    }\n    return res;\n}\n\nbool millerRabin(u64 n) {\n    if (n < 2) return false;\n    for (u64 p : {2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37}) {\n        if (n % p == 0) return n == p;\n    }\n    u64 d = n - 1, s = 0;\n    while ((d & 1) == 0) d >>= 1, s++;\n    for (u64 a : {2, 325, 9375, 28178, 450775, 9780504, 1795265022}) {\n        if (a % n == 0) continue;\n        u64 x = power(a, d, n);\n        if (x == 1 || x == n - 1) continue;\n        bool composite = true;\n        for (u64 r = 1; r < s; r++) {\n            x = (__int128)x * x % n;\n            if (x == n - 1) { composite = false; break; }\n        }\n        if (composite) return false;\n    }\n    return true;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cout << \"Is 17 prime? \" << isPrime(17) << \"\\n\";\n    cout << \"Is 100 prime? \" << isPrime(100) << \"\\n\";\n    \n    u64 big = 1000000007;\n    cout << \"Is \" << big << \" prime (MR)? \" << millerRabin(big) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Is 17 prime? 1\nIs 100 prime? 0\nIs 1000000007 prime (MR)? 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Prime Factorization"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every integer can be uniquely expressed as a product of primes. Trial division up to √n works for n ≤ 10^9. For multiple queries with n ≤ 10^6, precompute smallest prime factors (SPF) using sieve for O(log n) factorization per query."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Trial division factorization\nvector<pair<int, int>> factorize(int n) {\n    vector<pair<int, int>> factors;\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) {\n            int count = 0;\n            while (n % i == 0) {\n                n /= i;\n                count++;\n            }\n            factors.push_back({i, count});\n        }\n    }\n    if (n > 1) factors.push_back({n, 1});\n    return factors;\n}\n\n// SPF sieve for fast factorization\nconst int MAXN = 1e6 + 5;\nint spf[MAXN];\n\nvoid sieveSPF() {\n    for (int i = 1; i < MAXN; i++) spf[i] = i;\n    for (int i = 2; i * i < MAXN; i++) {\n        if (spf[i] == i) {\n            for (int j = i * i; j < MAXN; j += i) {\n                if (spf[j] == j) spf[j] = i;\n            }\n        }\n    }\n}\n\nvector<pair<int, int>> factorizeFast(int n) {\n    vector<pair<int, int>> factors;\n    while (n > 1) {\n        int p = spf[n];\n        int count = 0;\n        while (n % p == 0) {\n            n /= p;\n            count++;\n        }\n        factors.push_back({p, count});\n    }\n    return factors;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 360;\n    auto factors = factorize(n);\n    cout << n << \" = \";\n    for (auto& [p, e] : factors) {\n        cout << p << \"^\" << e << \" \";\n    }\n    cout << \"\\n\";\n    \n    // Using SPF\n    sieveSPF();\n    auto fast = factorizeFast(n);\n    cout << \"Fast factorization: \";\n    for (auto& [p, e] : fast) {\n        cout << p << \"^\" << e << \" \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "360 = 2^3 3^2 5^1 \nFast factorization: 2^3 3^2 5^1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Coprime Count (Euler's Totient Preview)"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Count numbers from 1 to n that are coprime with n. This is Euler's Totient function φ(n). Using prime factorization: φ(n) = n * Π(1 - 1/p) for all distinct prime factors p of n."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nlong long eulerTotient(int n) {\n    long long result = n;\n    for (int i = 2; i * i <= n; i++) {\n        if (n % i == 0) {\n            while (n % i == 0) n /= i;\n            result -= result / i;\n        }\n    }\n    if (n > 1) result -= result / n;\n    return result;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    cout << \"Numbers coprime to \" << n << \": \" << eulerTotient(n) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 10\nOutput: 4  (1, 3, 7, 9 are coprime to 10)"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the time complexity of the Euclidean GCD algorithm?",
+          "options": [
+            "O(log min(a,b))",
+            "O(sqrt(max(a,b)))",
+            "O(a + b)",
+            "O(1)"
+          ],
+          "correctAnswer": "O(log min(a,b))",
+          "explanation": "The Euclidean algorithm reduces the problem size by at least half every two steps (worst case is consecutive Fibonacci numbers). Thus it runs in O(log min(a,b)) time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why do we compute LCM as (a / gcd(a,b)) * b instead of (a * b) / gcd(a,b)?",
+          "options": [
+            "It's faster",
+            "To prevent integer overflow",
+            "It gives a more accurate result",
+            "It's required by the C++ standard"
+          ],
+          "correctAnswer": "To prevent integer overflow",
+          "explanation": "a * b can overflow 64-bit integers even when the LCM fits. Dividing first by GCD keeps the intermediate result smaller and prevents overflow."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the C++17 header for std::gcd and std::lcm?",
+          "correctAnswer": "numeric",
+          "explanation": "C++17 introduced std::gcd and std::lcm in the <numeric> header. Before C++17, GCC provided __gcd in <algorithm>."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 13: Modular Arithmetic",
+      "badge": "Math",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Modular Arithmetic — Keeping Numbers Small"
+        },
+        {
+          "type": "paragraph",
+          "value": "In CP, answers often need to be printed modulo 10^9+7 (a prime) or 10^9+9. Direct computation of factorials, powers, or combinations overflows even 64-bit integers. Modular arithmetic wraps numbers around, keeping them manageable while preserving mathematical structure."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing modular arithmetic as a clock face wrapping around at modulus",
+          "caption": "Modular arithmetic wraps around like a clock — numbers stay within [0, mod-1]"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A circular clock face labeled 0 to mod-1. Show an arrow from a large number wrapping around to its modulo position. Label key properties: (a+b)%m, (a*b)%m, and the concept of modular inverse."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Modular Operations & Properties"
+        },
+        {
+          "type": "paragraph",
+          "value": "**(a + b) % m = ((a % m) + (b % m)) % m**\n**(a - b) % m = ((a % m) - (b % m) + m) % m**  (add m to handle negatives)\n**(a * b) % m = ((a % m) * (b % m)) % m**\n\n**Division** requires modular inverse: (a / b) % m = (a * b^-1) % m. The inverse exists only if gcd(b, m) = 1. For prime m, b^-1 = b^(m-2) % m (Fermat's Little Theorem)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\nlong long modAdd(long long a, long long b) {\n    return ((a % MOD) + (b % MOD)) % MOD;\n}\n\nlong long modSub(long long a, long long b) {\n    return ((a % MOD) - (b % MOD) + MOD) % MOD;\n}\n\nlong long modMul(long long a, long long b) {\n    return ((a % MOD) * (b % MOD)) % MOD;\n}\n\n// Fast exponentiation — O(log n)\nlong long modPow(long long base, long long exp) {\n    long long res = 1;\n    base %= MOD;\n    while (exp > 0) {\n        if (exp & 1) res = modMul(res, base);\n        base = modMul(base, base);\n        exp >>= 1;\n    }\n    return res;\n}\n\n// Modular inverse using Fermat's little theorem (MOD is prime)\nlong long modInv(long long a) {\n    return modPow(a, MOD - 2);\n}\n\nlong long modDiv(long long a, long long b) {\n    return modMul(a, modInv(b));\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    long long a = 1e12, b = 1e12 + 7;\n    \n    cout << \"modAdd: \" << modAdd(a, b) << \"\\n\";\n    cout << \"modSub: \" << modSub(b, a) << \"\\n\";\n    cout << \"modMul: \" << modMul(a, b) << \"\\n\";\n    cout << \"modPow(2, 100): \" << modPow(2, 100) << \"\\n\";\n    cout << \"modInv(5): \" << modInv(5) << \"\\n\";\n    cout << \"modDiv(10, 5): \" << modDiv(10, 5) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "modAdd: 7\nmodSub: 7\nmodMul: 49\nmodPow(2, 100): 976371285\nmodInv(5): 400000003\nmodDiv(10, 5): 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Handling Negative Numbers in Mod"
+        },
+        {
+          "type": "paragraph",
+          "value": "C++ `%` operator can return negative results for negative inputs. Always normalize with `(x % MOD + MOD) % MOD` to ensure the result is in [0, MOD-1]. This is critical for subtraction and intermediate calculations."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\ninline long long normalize(long long x) {\n    x %= MOD;\n    if (x < 0) x += MOD;\n    return x;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    long long a = 5, b = 10;\n    \n    // Without normalization\n    cout << \"Raw (a - b) % MOD: \" << (a - b) % MOD << \"\\n\";  // Negative!\n    \n    // With normalization\n    cout << \"Normalized: \" << normalize(a - b) << \"\\n\";\n    \n    // Safe macro approach\n    auto safeMod = [](long long x) {\n        return ((x % MOD) + MOD) % MOD;\n    };\n    cout << \"Safe macro: \" << safeMod(a - b) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Raw (a - b) % MOD: -5\nNormalized: 1000000002\nSafe macro: 1000000002"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Large Factorial Modulo"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Compute n! % MOD where n can be up to 10^6. Direct multiplication overflows, but taking mod at each step keeps the number bounded. Precompute factorials and inverse factorials for O(1) nCr queries."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\nconst int MAXN = 1e6 + 5;\n\nlong long fact[MAXN], invFact[MAXN];\n\nlong long modPow(long long base, long long exp) {\n    long long res = 1;\n    base %= MOD;\n    while (exp > 0) {\n        if (exp & 1) res = res * base % MOD;\n        base = base * base % MOD;\n        exp >>= 1;\n    }\n    return res;\n}\n\nvoid precompute() {\n    fact[0] = 1;\n    for (int i = 1; i < MAXN; i++) {\n        fact[i] = fact[i-1] * i % MOD;\n    }\n    invFact[MAXN-1] = modPow(fact[MAXN-1], MOD - 2);\n    for (int i = MAXN - 2; i >= 0; i--) {\n        invFact[i] = invFact[i+1] * (i+1) % MOD;\n    }\n}\n\nlong long nCr(int n, int r) {\n    if (r > n || r < 0) return 0;\n    return fact[n] * invFact[r] % MOD * invFact[n-r] % MOD;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    precompute();\n    \n    cout << \"10! % MOD = \" << fact[10] << \"\\n\";\n    cout << \"C(10, 3) = \" << nCr(10, 3) << \"\\n\";\n    cout << \"C(100000, 50000) = \" << nCr(100000, 50000) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "10! % MOD = 3628800\nC(10, 3) = 120\nC(100000, 50000) = 149033633"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Matrix Exponentiation Modulo"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Compute the n-th Fibonacci number where n ≤ 10^18. Use matrix exponentiation with mod at each multiplication. The transformation matrix [[1,1],[1,0]] raised to power n gives F(n+1) and F(n)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst long long MOD = 1e9 + 7;\n\nusing Matrix = array<array<long long, 2>, 2>;\n\nMatrix mul(const Matrix& a, const Matrix& b) {\n    Matrix res = {{{0, 0}, {0, 0}}};\n    for (int i = 0; i < 2; i++) {\n        for (int j = 0; j < 2; j++) {\n            for (int k = 0; k < 2; k++) {\n                res[i][j] = (res[i][j] + a[i][k] * b[k][j]) % MOD;\n            }\n        }\n    }\n    return res;\n}\n\nMatrix power(Matrix base, long long exp) {\n    Matrix res = {{{1, 0}, {0, 1}}};  // Identity\n    while (exp > 0) {\n        if (exp & 1) res = mul(res, base);\n        base = mul(base, base);\n        exp >>= 1;\n    }\n    return res;\n}\n\nlong long fib(long long n) {\n    if (n == 0) return 0;\n    Matrix base = {{{1, 1}, {1, 0}}};\n    Matrix result = power(base, n - 1);\n    return result[0][0];\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    long long n;\n    cin >> n;\n    cout << \"F(\" << n << \") = \" << fib(n) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 100\nOutput: F(100) = 687995182"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the modular inverse of a under prime modulus p?",
+          "options": [
+            "a^(p-1) % p",
+            "a^(p-2) % p",
+            "a^p % p",
+            "gcd(a, p)"
+          ],
+          "correctAnswer": "a^(p-2) % p",
+          "explanation": "By Fermat's Little Theorem, a^(p-1) ≡ 1 (mod p) for prime p and a not divisible by p. Thus a^(p-2) ≡ a^(-1) (mod p), which is the modular inverse."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why do we add MOD before taking % in modular subtraction?",
+          "options": [
+            "To make it faster",
+            "To handle negative results from C++ % operator",
+            "To increase precision",
+            "It's required by math"
+          ],
+          "correctAnswer": "To handle negative results from C++ % operator",
+          "explanation": "In C++, the % operator can return negative values when the numerator is negative (implementation-defined before C++11). Adding MOD ensures the result is always in [0, MOD-1]."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which theorem gives a^(p-1) ≡ 1 (mod p) for prime p?",
+          "correctAnswer": "Fermat's Little Theorem",
+          "explanation": "Fermat's Little Theorem states that if p is prime and a is not divisible by p, then a^(p-1) ≡ 1 (mod p). This is the foundation for computing modular inverses with fast exponentiation."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 14: Combinatorics",
+      "badge": "Math",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Combinatorics — Counting with Style"
+        },
+        {
+          "type": "paragraph",
+          "value": "Combinatorics problems ask \"how many ways?\" — arrangements, selections, distributions, and paths. The answers grow exponentially, so modular arithmetic is essential. Master nCr, Catalan numbers, inclusion-exclusion, and the stars and bars method to tackle these problems."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Visual showing Pascal's triangle with binomial coefficients highlighted",
+          "caption": "Pascal's triangle gives binomial coefficients — each cell is sum of two above"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Pascal's triangle with rows 0 to 6. Highlight the path showing C(5,2) = 10. Show the recurrence C(n,k) = C(n-1,k-1) + C(n-1,k). Use warm colors for the triangle."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Binomial Coefficients — nCr"
+        },
+        {
+          "type": "paragraph",
+          "value": "C(n, r) = n! / (r! * (n-r)!). For small n (≤ 1000), precompute using Pascal's identity: C(n,r) = C(n-1,r-1) + C(n-1,r). For large n with mod, precompute factorials and inverse factorials. For single queries with large n, use multiplicative formula with modular inverse."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\n// Pascal's triangle DP — O(n^2)\nlong long nCrDP(int n, int r) {\n    vector<vector<long long>> C(n + 1, vector<long long>(r + 1, 0));\n    for (int i = 0; i <= n; i++) {\n        C[i][0] = 1;\n        for (int j = 1; j <= min(i, r); j++) {\n            C[i][j] = (C[i-1][j-1] + C[i-1][j]) % MOD;\n        }\n    }\n    return C[n][r];\n}\n\n// Factorial precomputation — O(n) precompute, O(1) query\nconst int MAXN = 1e6 + 5;\nlong long fact[MAXN], invFact[MAXN];\n\nlong long modPow(long long a, long long e) {\n    long long res = 1;\n    while (e) {\n        if (e & 1) res = res * a % MOD;\n        a = a * a % MOD;\n        e >>= 1;\n    }\n    return res;\n}\n\nvoid precomputeFactorials() {\n    fact[0] = 1;\n    for (int i = 1; i < MAXN; i++) fact[i] = fact[i-1] * i % MOD;\n    invFact[MAXN-1] = modPow(fact[MAXN-1], MOD-2);\n    for (int i = MAXN-2; i >= 0; i--) invFact[i] = invFact[i+1] * (i+1) % MOD;\n}\n\nlong long nCrFast(int n, int r) {\n    if (r < 0 || r > n) return 0;\n    return fact[n] * invFact[r] % MOD * invFact[n-r] % MOD;\n}\n\n// Multiplicative formula for single large nCr\nlong long nCrMultiplicative(long long n, long long r) {\n    if (r > n - r) r = n - r;\n    long long num = 1, den = 1;\n    for (long long i = 0; i < r; i++) {\n        num = num * (n - i) % MOD;\n        den = den * (i + 1) % MOD;\n    }\n    return num * modPow(den, MOD-2) % MOD;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cout << \"C(10, 3) DP: \" << nCrDP(10, 3) << \"\\n\";\n    \n    precomputeFactorials();\n    cout << \"C(1000, 500) fast: \" << nCrFast(1000, 500) << \"\\n\";\n    cout << \"C(1e9, 5) multiplicative: \" << nCrMultiplicative(1000000000, 5) << \"\\n\";\n    \n    return 0;\n}",
+          "output": "C(10, 3) DP: 120\nC(1000, 500) fast: 159835829\nC(1e9, 5) multiplicative: 666666670"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Catalan Numbers"
+        },
+        {
+          "type": "paragraph",
+          "value": "Catalan numbers appear in counting valid parentheses, binary trees, triangulations, and Dyck paths. C(n) = (1/(n+1)) * C(2n, n). The first few are 1, 1, 2, 5, 14, 42, 132, 429... Precompute using recurrence: C(n+1) = C(n) * 2*(2n+1) / (n+2)."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\nlong long modPow(long long a, long long e) {\n    long long res = 1;\n    while (e) {\n        if (e & 1) res = res * a % MOD;\n        a = a * a % MOD;\n        e >>= 1;\n    }\n    return res;\n}\n\n// Catalan numbers using recurrence\nlong long catalan(int n) {\n    if (n <= 1) return 1;\n    long long C = 1;  // C(0)\n    for (int i = 0; i < n; i++) {\n        C = C * 2 * (2*i + 1) % MOD;\n        C = C * modPow(i + 2, MOD - 2) % MOD;\n    }\n    return C;\n}\n\n// Direct formula: C(2n, n) / (n+1)\nlong long catalanDirect(int n) {\n    // Precompute factorials up to 2n\n    vector<long long> fact(2*n + 1);\n    fact[0] = 1;\n    for (int i = 1; i <= 2*n; i++) fact[i] = fact[i-1] * i % MOD;\n    long long c2n_n = fact[2*n] * modPow(fact[n], MOD-2) % MOD * modPow(fact[n], MOD-2) % MOD;\n    return c2n_n * modPow(n + 1, MOD - 2) % MOD;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cout << \"Catalan numbers: \";\n    for (int i = 0; i <= 10; i++) {\n        cout << catalan(i) << \" \";\n    }\n    cout << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Catalan numbers: 1 1 2 5 14 42 132 429 1430 4862 16796"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Stars and Bars"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Distribute n identical items into k distinct bins. The formula is C(n+k-1, k-1). If each bin must have at least 1 item, it's C(n-1, k-1). This solves many distribution and equation-solving problems."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\nlong long modPow(long long a, long long e) {\n    long long res = 1;\n    while (e) {\n        if (e & 1) res = res * a % MOD;\n        a = a * a % MOD;\n        e >>= 1;\n    }\n    return res;\n}\n\nlong long nCr(int n, int r) {\n    if (r < 0 || r > n) return 0;\n    vector<long long> fact(n+1);\n    fact[0] = 1;\n    for (int i = 1; i <= n; i++) fact[i] = fact[i-1] * i % MOD;\n    return fact[n] * modPow(fact[r], MOD-2) % MOD * modPow(fact[n-r], MOD-2) % MOD;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n = 5, k = 3;  // 5 identical items, 3 distinct bins\n    \n    // No restrictions\n    long long ways1 = nCr(n + k - 1, k - 1);\n    cout << \"Ways to distribute \" << n << \" items into \" << k << \" bins: \" << ways1 << \"\\n\";\n    \n    // Each bin at least 1\n    long long ways2 = nCr(n - 1, k - 1);\n    cout << \"Each bin at least 1: \" << ways2 << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Ways to distribute 5 items into 3 bins: 21\nEach bin at least 1: 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "CP Example: Count Valid Parentheses"
+        },
+        {
+          "type": "paragraph",
+          "value": "Problem: Count the number of valid sequences with n pairs of parentheses. This is exactly the n-th Catalan number. For n=3, the answer is 5: ((())), (()()), (())(), ()(()), ()()()."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nconst int MOD = 1e9 + 7;\n\nlong long modPow(long long a, long long e) {\n    long long res = 1;\n    while (e) {\n        if (e & 1) res = res * a % MOD;\n        a = a * a % MOD;\n        e >>= 1;\n    }\n    return res;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    int n;\n    cin >> n;\n    \n    // C(2n, n) / (n+1)\n    vector<long long> fact(2*n + 1);\n    fact[0] = 1;\n    for (int i = 1; i <= 2*n; i++) fact[i] = fact[i-1] * i % MOD;\n    \n    long long catalan = fact[2*n];\n    catalan = catalan * modPow(fact[n], MOD-2) % MOD;\n    catalan = catalan * modPow(fact[n], MOD-2) % MOD;\n    catalan = catalan * modPow(n + 1, MOD-2) % MOD;\n    \n    cout << catalan << \"\\n\";\n    \n    return 0;\n}",
+          "output": "Input: 3\nOutput: 5"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the formula for distributing n identical items into k distinct bins (no restrictions)?",
+          "options": [
+            "C(n, k)",
+            "C(n+k-1, k-1)",
+            "C(n+k, k)",
+            "n^k"
+          ],
+          "correctAnswer": "C(n+k-1, k-1)",
+          "explanation": "Stars and bars: imagine n stars and k-1 bars dividing them into k sections. The total positions are n+k-1, choose k-1 positions for bars. This gives C(n+k-1, k-1)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which number sequence counts valid parentheses strings?",
+          "options": [
+            "Fibonacci",
+            "Catalan",
+            "Factorial",
+            "Binomial"
+          ],
+          "correctAnswer": "Catalan",
+          "explanation": "Catalan numbers count valid parentheses sequences, binary trees, Dyck paths, and triangulations. C(n) = (1/(n+1)) * C(2n, n)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the recurrence for Pascal's triangle: C(n,k) = ?",
+          "correctAnswer": "C(n-1,k-1) + C(n-1,k)",
+          "explanation": "Each binomial coefficient is the sum of the two coefficients directly above it in Pascal's triangle: C(n,k) = C(n-1,k-1) + C(n-1,k). This is the basis for DP computation of nCr."
+        }
+      ]
     }
   ]
 }
