@@ -2114,6 +2114,475 @@
           "explanation": "The assert! macro checks a boolean condition. If false, it panics with an optional message. assert_eq! checks equality."
         }
       ]
-    }
+    },
+    {
+            "partTitle": "Part 21: Generics",
+            "badge": "Generics",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Writing Code for Multiple Types"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Generics allow you to write code that works with multiple types without duplication. They are a form of parametric polymorphism. Rust uses monomorphization — the compiler generates specific code for each type used, so there's no runtime cost."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generic Functions"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn largest<T: std::cmp::PartialOrd>(list: &[T]) -> &T {\n    let mut largest = &list[0];\n    \n    for item in list {\n        if item > largest {\n            largest = item;\n        }\n    }\n    \n    largest\n}\n\nfn main() {\n    let number_list = vec![34, 50, 25, 100, 65];\n    let result = largest(&number_list);\n    println!(\"The largest number is {}\", result);\n    \n    let char_list = vec!['y', 'm', 'a', 'q'];\n    let result = largest(&char_list);\n    println!(\"The largest char is {}\", result);\n}",
+                    "output": "The largest number is 100\nThe largest char is y"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generic Structs"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "struct Point<T> {\n    x: T,\n    y: T,\n}\n\nstruct Point2<T, U> {\n    x: T,\n    y: U,\n}\n\nfn main() {\n    let integer = Point { x: 5, y: 10 };\n    let float = Point { x: 1.0, y: 4.0 };\n    \n    let mixed = Point2 { x: 5, y: 4.0 };\n    \n    println!(\"integer: ({}, {})\", integer.x, integer.y);\n    println!(\"float: ({}, {})\", float.x, float.y);\n    println!(\"mixed: ({}, {})\", mixed.x, mixed.y);\n}",
+                    "output": "integer: (5, 10)\nfloat: (1, 4)\nmixed: (5, 4)"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generic Enums"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "enum Option<T> {\n    Some(T),\n    None,\n}\n\nenum Result<T, E> {\n    Ok(T),\n    Err(E),\n}\n\nfn main() {\n    let some_number: Option<i32> = Some(5);\n    let absent_number: Option<i32> = None;\n    \n    let result: Result<i32, &str> = Ok(42);\n    \n    println!(\"{:?}, {:?}, {:?}\", some_number, absent_number, result);\n}",
+                    "output": "Some(5), None, Ok(42)"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generic Methods"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "struct Point<T> {\n    x: T,\n    y: T,\n}\n\nimpl<T> Point<T> {\n    fn x(&self) -> &T {\n        &self.x\n    }\n}\n\nimpl Point<f32> {\n    fn distance_from_origin(&self) -> f32 {\n        (self.x.powi(2) + self.y.powi(2)).sqrt()\n    }\n}\n\nfn main() {\n    let p = Point { x: 5, y: 10 };\n    println!(\"p.x = {}\", p.x());\n    \n    let p2 = Point { x: 3.0, y: 4.0 };\n    println!(\"Distance: {}\", p2.distance_from_origin());\n}",
+                    "output": "p.x = 5\nDistance: 5"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "You can implement methods on generic types with impl<T>. You can also implement methods only for specific concrete types, like Point<f32>, which is called specialization."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is monomorphization?",
+                    "options": [
+                        "Runtime type checking",
+                        "Compile-time code generation for each concrete type",
+                        "Dynamic dispatch",
+                        "Memory allocation"
+                    ],
+                    "correctAnswer": "Compile-time code generation for each concrete type",
+                    "explanation": "Rust generates specific code for each type used with generics at compile time. This means zero runtime cost for generics."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Can you implement methods only for a specific generic type?",
+                    "options": [
+                        "No, all implementations must be generic",
+                        "Yes, using impl Point<f32> { ... }",
+                        "Only with traits",
+                        "Only in nightly Rust"
+                    ],
+                    "correctAnswer": "Yes, using impl Point<f32> { ... }",
+                    "explanation": "You can write impl blocks for specific concrete types, allowing specialized behavior for certain type instantiations."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What syntax declares a generic type parameter?",
+                    "correctAnswer": "<T>",
+                    "explanation": "Generic type parameters are declared inside angle brackets <T>. Multiple parameters use <T, U>."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 22: Traits — Defining Shared Behavior",
+            "badge": "Traits",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Traits: Rust's Interfaces"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "A trait defines shared behavior that types can implement. They are similar to interfaces in Java or abstract base classes in C++. Traits let you define methods that can be called on any type that implements the trait."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Defining a Trait"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "pub trait Summary {\n    fn summarize(&self) -> String;\n    \n    fn summarize_author(&self) -> String {\n        String::from(\"(Read more...)\")\n    }\n}\n\npub struct NewsArticle {\n    pub headline: String,\n    pub location: String,\n    pub author: String,\n    pub content: String,\n}\n\nimpl Summary for NewsArticle {\n    fn summarize(&self) -> String {\n        format!(\"{}, by {} ({})\", self.headline, self.author, self.location)\n    }\n}\n\npub struct Tweet {\n    pub username: String,\n    pub content: String,\n    pub reply: bool,\n    pub retweet: bool,\n}\n\nimpl Summary for Tweet {\n    fn summarize(&self) -> String {\n        format!(\"{}: {}\", self.username, self.content)\n    }\n}\n\nfn main() {\n    let tweet = Tweet {\n        username: String::from(\"horse_ebooks\"),\n        content: String::from(\"of course, as you probably already know, people\"),\n        reply: false,\n        retweet: false,\n    };\n    \n    println!(\"1 new tweet: {}\", tweet.summarize());\n}",
+                    "output": "1 new tweet: horse_ebooks: of course, as you probably already know, people"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Traits as Parameters"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fmt::Display;\n\npub trait Summary {\n    fn summarize(&self) -> String;\n}\n\npub fn notify(item: &impl Summary) {\n    println!(\"Breaking news! {}\", item.summarize());\n}\n\npub fn notify2<T: Summary>(item: &T) {\n    println!(\"Breaking news! {}\", item.summarize());\n}\n\npub fn notify3<T: Summary + Display>(item: &T) {\n    println!(\"{}\", item);\n}\n\nfn main() {}",
+                    "output": ""
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Where Clauses for Complex Bounds"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "use std::fmt::{Display, Debug};\n\nfn some_function<T: Display + Clone, U: Clone + Debug>(t: &T, u: &U) -> i32 {\n    42\n}\n\nfn some_function2<T, U>(t: &T, u: &U) -> i32\nwhere\n    T: Display + Clone,\n    U: Clone + Debug,\n{\n    42\n}\n\nfn main() {}",
+                    "output": ""
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the Rust equivalent of an interface in Java?",
+                    "options": [
+                        "Struct",
+                        "Trait",
+                        "Enum",
+                        "Module"
+                    ],
+                    "correctAnswer": "Trait",
+                    "explanation": "Traits define shared behavior that types can implement. They are Rust's answer to interfaces."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Can traits have default implementations?",
+                    "options": [
+                        "No, only abstract methods",
+                        "Yes, methods with default behavior",
+                        "Only in nightly Rust",
+                        "Only for generic traits"
+                    ],
+                    "correctAnswer": "Yes, methods with default behavior",
+                    "explanation": "Traits can provide default implementations. Types can override them or use the default."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What keyword implements a trait for a type?",
+                    "correctAnswer": "impl",
+                    "explanation": "impl TraitName for TypeName { ... } implements a trait for a specific type."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 23: Lifetimes",
+            "badge": "Lifetimes",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Preventing Dangling References"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Lifetimes are Rust's way of ensuring references are always valid. Every reference has a lifetime — the scope for which it is valid. The borrow checker uses lifetimes to prevent dangling references. Most of the time, lifetimes are inferred (lifetime elision), but sometimes you must annotate them explicitly."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Dangling Reference Problem"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let x = 5;\n    let r = &x;\n    println!(\"r: {}\", r);\n}",
+                    "output": "r: 5"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Lifetime Annotations"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {\n    if x.len() > y.len() {\n        x\n    } else {\n        y\n    }\n}\n\nfn main() {\n    let string1 = String::from(\"long string is long\");\n    {\n        let string2 = String::from(\"xyz\");\n        let result = longest(string1.as_str(), string2.as_str());\n        println!(\"The longest string is {}\", result);\n    }\n}",
+                    "output": "The longest string is long string is long"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "The 'a is a lifetime parameter. It says: the returned reference will be valid as long as both input references are valid. The concrete lifetime is the intersection of the lifetimes of x and y."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Lifetime Elision Rules"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn first_word(s: &str) -> &str {\n    let bytes = s.as_bytes();\n    for (i, &item) in bytes.iter().enumerate() {\n        if item == b' ' {\n            return &s[0..i];\n        }\n    }\n    &s[..]\n}\n\nfn main() {\n    let s = \"hello world\";\n    println!(\"{}\", first_word(s));\n}",
+                    "output": "hello"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "The compiler applies three elision rules to infer lifetimes: 1) Each parameter gets its own lifetime, 2) If there's exactly one input lifetime, it's assigned to all output lifetimes, 3) If &self or &mut self, its lifetime is assigned to all output lifetimes."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Lifetime Annotations in Structs"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "struct ImportantExcerpt<'a> {\n    part: &'a str,\n}\n\nimpl<'a> ImportantExcerpt<'a> {\n    fn level(&self) -> i32 {\n        3\n    }\n    \n    fn announce_and_return_part(&self, announcement: &str) -> &str {\n        println!(\"Attention please: {}\", announcement);\n        self.part\n    }\n}\n\nfn main() {\n    let novel = String::from(\"Call me Ishmael. Some years ago...\");\n    let first_sentence = novel.split('.').next().expect(\"Could not find a '.'\");\n    let i = ImportantExcerpt {\n        part: first_sentence,\n    };\n    println!(\"{}\", i.part);\n}",
+                    "output": "Call me Ishmael"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does the borrow checker use lifetimes for?",
+                    "options": [
+                        "To optimize memory usage",
+                        "To ensure references are always valid",
+                        "To manage heap allocation",
+                        "To implement garbage collection"
+                    ],
+                    "correctAnswer": "To ensure references are always valid",
+                    "explanation": "Lifetimes track how long references are valid, preventing dangling references and use-after-free bugs."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "When do you need to write lifetime annotations explicitly?",
+                    "options": [
+                        "Always",
+                        "Never",
+                        "When the compiler can't infer them",
+                        "Only for structs"
+                    ],
+                    "correctAnswer": "When the compiler can't infer them",
+                    "explanation": "Lifetime elision rules handle most cases automatically. You only annotate when the compiler can't determine the relationships."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What symbol introduces a lifetime annotation?",
+                    "correctAnswer": "'",
+                    "explanation": "A single quote ' followed by a name (like 'a) introduces a lifetime parameter: fn foo<'a>(x: &'a str)."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 24: Iterators",
+            "badge": "Iterators",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Processing Sequences with Iterators"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Iterators are lazy sequences that produce values on demand. The Iterator trait defines a next() method that returns Option<Item>. Iterators are central to idiomatic Rust and enable powerful, composable data processing."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Iterator Trait"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let v1 = vec![1, 2, 3];\n    let v1_iter = v1.iter();\n    \n    for val in v1_iter {\n        println!(\"Got: {}\", val);\n    }\n}",
+                    "output": "Got: 1\nGot: 2\nGot: 3"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Iterator Adapters"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let v1 = vec![1, 2, 3];\n    \n    let v2: Vec<i32> = v1.iter().map(|x| x + 1).collect();\n    println!(\"{:?}\", v2);\n    \n    let evens: Vec<&i32> = v1.iter().filter(|x| *x % 2 == 0).collect();\n    println!(\"{:?}\", evens);\n    \n    let sum: i32 = v1.iter()\n        .filter(|x| *x > 1)\n        .map(|x| x * 2)\n        .sum();\n    println!(\"Sum: {}\", sum);\n}",
+                    "output": "[2, 3, 4]\n[2]\nSum: 10"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Consuming vs Producing Iterators"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let v1 = vec![1, 2, 3];\n    \n    let v2 = v1.iter().map(|x| x + 1);\n    let v2_collected: Vec<i32> = v2.collect();\n    println!(\"{:?}\", v2_collected);\n    \n    let sum: i32 = v1.iter().sum();\n    let count = v1.iter().count();\n    let max = v1.iter().max();\n    \n    println!(\"sum={}, count={}, max={:?}\", sum, count, max);\n}",
+                    "output": "[2, 3, 4]\nsum=6, count=3, max=Some(3)"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Iterator adapters (map, filter) are lazy — they return a new iterator without doing work. Consuming adapters (collect, sum, count) trigger the actual computation. This composability is powerful and efficient."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Creating Custom Iterators"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "struct Counter {\n    count: u32,\n}\n\nimpl Counter {\n    fn new() -> Counter {\n        Counter { count: 0 }\n    }\n}\n\nimpl Iterator for Counter {\n    type Item = u32;\n    \n    fn next(&mut self) -> Option<Self::Item> {\n        if self.count < 5 {\n            self.count += 1;\n            Some(self.count)\n        } else {\n            None\n        }\n    }\n}\n\nfn main() {\n    for val in Counter::new() {\n        println!(\"{}\", val);\n    }\n    \n    let sum: u32 = Counter::new()\n        .zip(Counter::new().skip(1))\n        .map(|(a, b)| a * b)\n        .filter(|x| x % 3 == 0)\n        .sum();\n    println!(\"Sum: {}\", sum);\n}",
+                    "output": "1\n2\n3\n4\n5\nSum: 18"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Are iterator adapters like map() eager or lazy?",
+                    "options": [
+                        "Eager (execute immediately)",
+                        "Lazy (execute when consumed)",
+                        "Depends on the type",
+                        "Only lazy in debug mode"
+                    ],
+                    "correctAnswer": "Lazy (execute when consumed)",
+                    "explanation": "Adapters like map and filter are lazy. They return a new iterator without processing. You need a consuming adapter like collect() or sum() to execute."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What method converts an iterator into a collection?",
+                    "options": [
+                        "to_vec()",
+                        "collect()",
+                        "into()",
+                        "from_iter()"
+                    ],
+                    "correctAnswer": "collect()",
+                    "explanation": "collect() consumes an iterator and produces a collection. The type is often inferred, but you can specify it: .collect::<Vec<i32>>()."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What method returns an iterator of immutable references to a vector's elements?",
+                    "correctAnswer": "iter",
+                    "explanation": "v.iter() returns an iterator of &T references. v.iter_mut() returns &mut T, and v.into_iter() takes ownership."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 25: Closures",
+            "badge": "Closures",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Anonymous Functions That Capture Their Environment"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Closures are anonymous functions that can capture variables from their surrounding scope. They are used extensively with iterators and in asynchronous programming. Rust infers parameter and return types."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Closure Syntax"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let add_one = |x| x + 1;\n    println!(\"{}\", add_one(5));\n    \n    let add = |x, y| x + y;\n    println!(\"{}\", add(2, 3));\n    \n    let multiply = |x: i32, y: i32| -> i32 { x * y };\n    println!(\"{}\", multiply(4, 5));\n    \n    let complex = |x: i32| {\n        let y = x * 2;\n        let z = y + 10;\n        z\n    };\n    println!(\"{}\", complex(3));\n}",
+                    "output": "6\n5\n20\n16"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Capturing the Environment"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let x = 4;\n    let equal_to_x = |z| z == x;\n    let y = 4;\n    println!(\"{}\", equal_to_x(y));\n    println!(\"x = {}\", x);\n}",
+                    "output": "true\nx = 4"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Closure Traits: Fn, FnMut, FnOnce"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let list = vec![1, 2, 3];\n    let print_list = || println!(\"{:?}\", list);\n    print_list();\n    println!(\"List still available: {:?}\", list);\n    \n    let mut count = 0;\n    let mut increment = || {\n        count += 1;\n        println!(\"Count: {}\", count);\n    };\n    increment();\n    increment();\n    println!(\"Final count: {}\", count);\n    \n    let list = vec![1, 2, 3];\n    let consume = || list;\n    let new_list = consume();\n    println!(\"Moved list: {:?}\", new_list);\n}",
+                    "output": "[1, 2, 3]\nList still available: [1, 2, 3]\nCount: 1\nCount: 2\nFinal count: 2\nMoved list: [1, 2, 3]"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Closures automatically implement traits based on how they capture variables: Fn borrows immutably, FnMut borrows mutably, FnOnce takes ownership."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Closures with Iterators"
+                },
+                {
+                    "type": "code",
+                    "language": "rust",
+                    "value": "fn main() {\n    let v = vec![1, 2, 3, 4, 5];\n    \n    let doubled: Vec<i32> = v.iter().map(|x| x * 2).collect();\n    println!(\"{:?}\", doubled);\n    \n    let threshold = 3;\n    let filtered: Vec<&i32> = v.iter().filter(|x| **x > threshold).collect();\n    println!(\"{:?}\", filtered);\n    \n    let mut words = vec![\"banana\", \"apple\", \"cherry\"];\n    words.sort_by(|a, b| a.len().cmp(&b.len()));\n    println!(\"{:?}\", words);\n}",
+                    "output": "[2, 4, 6, 8, 10]\n[4, 5]\n[\"apple\", \"banana\", \"cherry\"]"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which closure trait takes ownership of captured variables?",
+                    "options": [
+                        "Fn",
+                        "FnMut",
+                        "FnOnce",
+                        "All of them"
+                    ],
+                    "correctAnswer": "FnOnce",
+                    "explanation": "FnOnce takes ownership and can only be called once. Fn borrows immutably; FnMut borrows mutably."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Does Rust require explicit types in closures?",
+                    "options": [
+                        "Yes, always",
+                        "No, types are inferred",
+                        "Only for return types",
+                        "Only when capturing environment"
+                    ],
+                    "correctAnswer": "No, types are inferred",
+                    "explanation": "Rust infers closure parameter and return types. You can add explicit types if needed for clarity or when the compiler can't infer them."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What syntax defines an anonymous function in Rust?",
+                    "correctAnswer": "|params| body",
+                    "explanation": "Closures use pipe syntax: |x, y| x + y. The parameter list is between pipes, followed by the expression or block body."
+                }
+            ]
+        }
   ]
 }
