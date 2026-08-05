@@ -2033,6 +2033,663 @@
           "explanation": "void is the return type for functions that don't return anything. void functions perform actions but don't produce a result."
         }
       ]
+    },
+    {
+      "partTitle": "Part 19: Recursion",
+      "badge": "Functions",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Functions That Call Themselves"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Recursion** is when a function calls itself to solve a smaller version of the same problem. Every recursive function needs two things: a **base case** (stopping condition) and a **recursive case** (the function calls itself with modified input). Without a base case, recursion leads to infinite calls and a **stack overflow**."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing factorial(5) breaking down into 5 * factorial(4) and so on until factorial(1) = 1",
+          "caption": "Recursion breaks a problem into smaller sub-problems until reaching the base case"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — A tree showing factorial(5) at top, branching to 5 * factorial(4), then 4 * factorial(3), etc., down to factorial(1) = 1. Then show the unwinding: 1 → 1*2=2 → 2*3=6 → 6*4=24 → 24*5=120. Use arrows and color-coded levels."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Factorial: The Classic Example"
+        },
+        {
+          "type": "paragraph",
+          "value": "The factorial of n (written n!) is n × (n-1) × (n-2) × ... × 1. Recursively: n! = n × (n-1)!. The base case is 0! = 1 and 1! = 1."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\n// Recursive factorial\nunsigned long long factorial(int n) {\n    // Base case\n    if (n <= 1) {\n        return 1;\n    }\n    // Recursive case\n    return n * factorial(n - 1);\n}\n\nint main() {\n    for (int i = 0; i <= 10; i++) {\n        std::cout << i << \"! = \" << factorial(i) << std::endl;\n    }\n    return 0;\n}",
+          "output": "0! = 1\n1! = 1\n2! = 2\n3! = 6\n4! = 24\n5! = 120\n6! = 720\n7! = 5040\n8! = 40320\n9! = 362880\n10! = 3628800"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Fibonacci Sequence"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Fibonacci sequence: each number is the sum of the two preceding ones. fib(0)=0, fib(1)=1, fib(n)=fib(n-1)+fib(n-2). Note: this naive recursive version is very slow for large n due to repeated calculations."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\n// Recursive Fibonacci (naive - slow for large n)\nint fibonacci(int n) {\n    if (n <= 1) {\n        return n;\n    }\n    return fibonacci(n - 1) + fibonacci(n - 2);\n}\n\nint main() {\n    std::cout << \"Fibonacci sequence:\" << std::endl;\n    for (int i = 0; i <= 10; i++) {\n        std::cout << \"fib(\" << i << \") = \" << fibonacci(i) << std::endl;\n    }\n    return 0;\n}",
+          "output": "Fibonacci sequence:\nfib(0) = 0\nfib(1) = 1\nfib(2) = 1\nfib(3) = 2\nfib(4) = 3\nfib(5) = 5\nfib(6) = 8\nfib(7) = 13\nfib(8) = 21\nfib(9) = 34\nfib(10) = 55"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Recursion vs Iteration"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every recursive solution can be rewritten iteratively (with loops). Recursion is elegant for problems with recursive structure (trees, divide-and-conquer), but iteration is usually faster and uses less memory. Recursion uses the call stack — too deep and you get a **stack overflow**."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\n// Iterative factorial (more efficient)\nunsigned long long factorialIterative(int n) {\n    unsigned long long result = 1;\n    for (int i = 2; i <= n; i++) {\n        result *= i;\n    }\n    return result;\n}\n\n// Recursive sum of array\nint sumArray(int arr[], int n) {\n    if (n <= 0) {\n        return 0;\n    }\n    return arr[n - 1] + sumArray(arr, n - 1);\n}\n\nint main() {\n    std::cout << \"Iterative 10! = \" << factorialIterative(10) << std::endl;\n    \n    int numbers[] = {1, 2, 3, 4, 5};\n    std::cout << \"Sum of array: \" << sumArray(numbers, 5) << std::endl;\n    \n    return 0;\n}",
+          "output": "Iterative 10! = 3628800\nSum of array: 15"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What happens if a recursive function has no base case?",
+          "options": [
+            "It returns 0",
+            "It causes a stack overflow",
+            "It runs forever but uses no memory",
+            "The compiler optimizes it away"
+          ],
+          "correctAnswer": "It causes a stack overflow",
+          "explanation": "Without a base case, the function calls itself infinitely. Each call uses stack memory until the stack is exhausted, causing a stack overflow crash."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which is generally more memory-efficient: recursion or iteration?",
+          "options": [
+            "Recursion",
+            "Iteration",
+            "They use the same amount",
+            "Depends on the compiler"
+          ],
+          "correctAnswer": "Iteration",
+          "explanation": "Iteration uses a fixed amount of memory (loop variables). Recursion uses the call stack, with each recursive call consuming stack frame memory."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What is the condition that stops a recursive function from calling itself?",
+          "correctAnswer": "base case",
+          "explanation": "The base case is the stopping condition in a recursive function. When reached, the function returns a value without making another recursive call."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Variable Scope and Lifetime",
+      "badge": "Functions",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Where Variables Live and Die"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Scope** determines where a variable is visible and accessible. **Lifetime** determines when a variable is created and destroyed. C++ has several scope levels: local (block), function parameter, global, namespace, and class scope. Understanding scope prevents naming conflicts and bugs."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Nested boxes diagram showing global scope containing function scope containing block scope",
+          "caption": "Inner scopes can access outer scope variables, but not vice versa"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Nested Boxes Diagram — Large outer rectangle 'Global Scope' containing 'globalVar'. Inside it, rectangle 'main() Function Scope' containing 'localVar'. Inside that, smaller rectangle 'if Block Scope' containing 'blockVar'. Arrows showing inner can see outer (green) but outer cannot see inner (red X)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Local vs Global Scope"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Local variables** are declared inside a function or block and exist only there. **Global variables** are declared outside all functions and are accessible everywhere. Global variables are initialized to zero by default, but their use is discouraged — they make code harder to debug and maintain."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint globalVar = 100;  // Global variable\n\nvoid demoFunction() {\n    int localVar = 50;  // Local to this function\n    std::cout << \"Inside function - local: \" << localVar << std::endl;\n    std::cout << \"Inside function - global: \" << globalVar << std::endl;\n}\n\nint main() {\n    int mainLocal = 25;  // Local to main\n    \n    std::cout << \"In main - global: \" << globalVar << std::endl;\n    std::cout << \"In main - mainLocal: \" << mainLocal << std::endl;\n    \n    demoFunction();\n    \n    // localVar is NOT accessible here!\n    // std::cout << localVar;  // COMPILE ERROR!\n    \n    return 0;\n}",
+          "output": "In main - global: 100\nIn main - mainLocal: 25\nInside function - local: 50\nInside function - global: 100"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Variable Shadowing"
+        },
+        {
+          "type": "paragraph",
+          "value": "When a local variable has the same name as a global variable, the local **shadows** the global. To access the global version, use the **scope resolution operator** `::` before the variable name."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nint value = 100;  // Global\n\nint main() {\n    int value = 50;  // Local shadows global\n    \n    std::cout << \"Local value: \" << value << std::endl;\n    std::cout << \"Global value: \" << ::value << std::endl;  // :: accesses global\n    \n    {\n        int value = 25;  // Inner block shadows outer local\n        std::cout << \"Inner value: \" << value << std::endl;\n    }\n    \n    std::cout << \"Back to local: \" << value << std::endl;\n    \n    return 0;\n}",
+          "output": "Local value: 50\nGlobal value: 100\nInner value: 25\nBack to local: 50"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Storage Classes: auto, static, extern"
+        },
+        {
+          "type": "paragraph",
+          "value": "**auto** — Compiler deduces type (C++11+). Rarely used for storage now.\n**static** — Variable retains its value between function calls. Local static variables have global lifetime but local scope.\n**extern** — Declares a variable defined in another file. Used for multi-file projects."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nvoid counterDemo() {\n    int normal = 0;       // Created and destroyed each call\n    static int persistent = 0;  // Created once, retains value\n    \n    normal++;\n    persistent++;\n    \n    std::cout << \"normal: \" << normal << \", persistent: \" << persistent << std::endl;\n}\n\nint main() {\n    std::cout << \"Calling counterDemo 3 times:\" << std::endl;\n    counterDemo();\n    counterDemo();\n    counterDemo();\n    \n    return 0;\n}",
+          "output": "Calling counterDemo 3 times:\nnormal: 1, persistent: 1\nnormal: 1, persistent: 2\nnormal: 1, persistent: 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Lifetime of Variables"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Automatic (local):** Created when entering scope, destroyed when leaving. Stored on the stack.\n**Static:** Created at program start, destroyed at program end. Stored in data segment.\n**Dynamic:** Created with `new`, destroyed with `delete`. Stored on the heap. You control the lifetime."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What operator accesses a global variable that is shadowed by a local variable?",
+          "options": [
+            "*",
+            "&",
+            "::",
+            "->"
+          ],
+          "correctAnswer": "::",
+          "explanation": "The scope resolution operator :: accesses global variables when a local variable with the same name shadows them. ::value refers to the global 'value'."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is special about a static local variable?",
+          "options": [
+            "It can be accessed from other functions",
+            "It retains its value between function calls",
+            "It is stored on the heap",
+            "It is initialized to a random value"
+          ],
+          "correctAnswer": "It retains its value between function calls",
+          "explanation": "A static local variable is initialized only once and retains its value across multiple function calls, unlike normal local variables which are recreated each time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which keyword makes a variable's lifetime extend for the entire program duration?",
+          "correctAnswer": "static",
+          "explanation": "The static keyword gives a variable global lifetime — it exists from program start to program end, even if declared inside a function."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 21: Header Files and Multiple Files",
+      "badge": "Organization",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Organizing Code Across Files"
+        },
+        {
+          "type": "paragraph",
+          "value": "Real C++ projects are split across multiple files: **header files** (`.h` or `.hpp`) contain declarations, and **source files** (`.cpp`) contain implementations. This separation allows code reuse, faster compilation, and better organization."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Diagram showing main.cpp including math_utils.h which connects to math_utils.cpp",
+          "caption": "Header files declare; source files define. The #include directive links them together."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Three boxes: 'main.cpp' with '#include math_utils.h' arrow pointing to 'math_utils.h' (declarations). Another arrow from 'math_utils.h' to 'math_utils.cpp' (implementations). Show compilation linking them together. Use file icons and arrows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating a Header File"
+        },
+        {
+          "type": "paragraph",
+          "value": "Header files contain function declarations, class definitions, constants, and macros. They use **include guards** (`#ifndef`, `#define`, `#endif`) or `#pragma once` to prevent multiple inclusions, which would cause redefinition errors."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// math_utils.h - Header file\n#ifndef MATH_UTILS_H\n#define MATH_UTILS_H\n\n// Function declarations (no body)\nint add(int a, int b);\nint subtract(int a, int b);\nint multiply(int a, int b);\ndouble divide(int a, int b);\n\n// Constant\nconst double PI = 3.14159;\n\n#endif // MATH_UTILS_H",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating a Source File"
+        },
+        {
+          "type": "paragraph",
+          "value": "Source files contain the actual implementations of functions declared in the header. Include the header at the top so the compiler knows the function signatures match."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// math_utils.cpp - Implementation file\n#include \"math_utils.h\"\n\nint add(int a, int b) {\n    return a + b;\n}\n\nint subtract(int a, int b) {\n    return a - b;\n}\n\nint multiply(int a, int b) {\n    return a * b;\n}\n\ndouble divide(int a, int b) {\n    if (b == 0) {\n        return 0;  // Simple error handling\n    }\n    return static_cast<double>(a) / b;\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Using the Header in main.cpp"
+        },
+        {
+          "type": "paragraph",
+          "value": "Include your header with quotes `#include \"file.h\"` (for your files) or angle brackets `#include <file>` (for system libraries). Compile all `.cpp` files together."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// main.cpp\n#include <iostream>\n#include \"math_utils.h\"\n\nint main() {\n    std::cout << \"PI = \" << PI << std::endl;\n    std::cout << \"10 + 5 = \" << add(10, 5) << std::endl;\n    std::cout << \"10 - 5 = \" << subtract(10, 5) << std::endl;\n    std::cout << \"10 * 5 = \" << multiply(10, 5) << std::endl;\n    std::cout << \"10 / 5 = \" << divide(10, 5) << std::endl;\n    \n    return 0;\n}",
+          "output": "PI = 3.14159\n10 + 5 = 15\n10 - 5 = 5\n10 * 5 = 50\n10 / 5 = 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Compiling Multiple Files"
+        },
+        {
+          "type": "paragraph",
+          "value": "When compiling, list all `.cpp` files. The compiler compiles each `.cpp` separately, then the linker combines them into one executable. Header files (`.h`) are not compiled directly — they are included by `.cpp` files."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "// Compile command (Linux/Mac):\n// g++ main.cpp math_utils.cpp -o program\n\n// Compile command (Windows):\n// g++ main.cpp math_utils.cpp -o program.exe\n\n// Or compile separately and link:\n// g++ -c main.cpp -o main.o\n// g++ -c math_utils.cpp -o math_utils.o\n// g++ main.o math_utils.o -o program",
+          "output": ""
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the purpose of include guards in header files?",
+          "options": [
+            "To make the code run faster",
+            "To prevent multiple inclusions causing redefinition errors",
+            "To protect the file from being deleted",
+            "To encrypt the header content"
+          ],
+          "correctAnswer": "To prevent multiple inclusions causing redefinition errors",
+          "explanation": "Include guards (#ifndef/#define/#endif) ensure a header is processed only once per compilation unit, preventing redefinition errors when multiple files include the same header."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which include syntax is used for your own header files?",
+          "options": [
+            "#include <header.h>",
+            "#include \"header.h\"",
+            "#include 'header.h'",
+            "#include [header.h]"
+          ],
+          "correctAnswer": "#include \"header.h\"",
+          "explanation": "Use quotes \" \" for your own headers. The compiler searches the current directory first. Use angle brackets <> for system headers like <iostream>."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which directive is a modern alternative to include guards?",
+          "correctAnswer": "pragma once",
+          "explanation": "#pragma once is a non-standard but widely supported directive that serves the same purpose as include guards — preventing multiple inclusions of the same header."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 22: Introduction to Classes and Objects",
+      "badge": "OOP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Object-Oriented Programming in C++"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Object-Oriented Programming (OOP)** organizes code around objects rather than functions. An **object** is a self-contained unit that combines data (attributes) and behavior (methods). A **class** is the blueprint for creating objects. C++ was literally created to add OOP features to C."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Class blueprint 'Car' with attributes and methods, creating objects car1 and car2",
+          "caption": "A class is a blueprint; objects are the actual instances built from it"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Diagram — Top: Blueprint labeled 'class Car' with attributes (brand, color, speed) and methods (accelerate(), brake()). Bottom: Two car objects created from blueprint: car1 (Toyota, Red, 0) and car2 (Honda, Blue, 0). Arrows from blueprint to objects labeled 'instantiate'."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Defining a Class"
+        },
+        {
+          "type": "paragraph",
+          "value": "A class is defined with the `class` keyword. Inside, you declare **member variables** (data) and **member functions** (methods). By default, class members are **private** — accessible only within the class. Use `public:` to make members accessible from outside."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nclass Car {\nprivate:  // Only accessible inside the class\n    std::string brand;\n    std::string color;\n    int speed;\n\npublic:  // Accessible from outside\n    // Constructor: called when object is created\n    Car(std::string b, std::string c) {\n        brand = b;\n        color = c;\n        speed = 0;\n    }\n    \n    // Member functions\n    void accelerate(int amount) {\n        speed += amount;\n    }\n    \n    void brake(int amount) {\n        speed -= amount;\n        if (speed < 0) speed = 0;\n    }\n    \n    void displayInfo() {\n        std::cout << brand << \" (\" << color << \") - Speed: \" << speed << \" km/h\" << std::endl;\n    }\n};\n\nint main() {\n    Car myCar(\"Toyota\", \"Red\");\n    Car yourCar(\"Honda\", \"Blue\");\n    \n    myCar.accelerate(50);\n    myCar.displayInfo();\n    \n    yourCar.accelerate(30);\n    yourCar.brake(10);\n    yourCar.displayInfo();\n    \n    return 0;\n}",
+          "output": "Toyota (Red) - Speed: 50 km/h\nHonda (Blue) - Speed: 20 km/h"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Access Specifiers: public, private, protected"
+        },
+        {
+          "type": "paragraph",
+          "value": "**private** — Only the class itself can access. Use for internal data.\n**public** — Anyone can access. Use for the class interface.\n**protected** — The class and its derived classes can access. Used in inheritance.\n\nThe principle of **encapsulation** says: keep data private, expose only necessary methods."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nclass BankAccount {\nprivate:\n    std::string owner;\n    double balance;  // Private - cannot be accessed directly\n\npublic:\n    BankAccount(std::string name, double initial) {\n        owner = name;\n        balance = initial;\n    }\n    \n    // Getter (accessor)\n    double getBalance() {\n        return balance;\n    }\n    \n    // Setter with validation\n    void deposit(double amount) {\n        if (amount > 0) {\n            balance += amount;\n        }\n    }\n    \n    void withdraw(double amount) {\n        if (amount > 0 && amount <= balance) {\n            balance -= amount;\n        } else {\n            std::cout << \"Insufficient funds or invalid amount!\" << std::endl;\n        }\n    }\n};\n\nint main() {\n    BankAccount account(\"Alice\", 1000.0);\n    \n    // account.balance = 5000;  // ERROR: balance is private!\n    \n    account.deposit(500);\n    std::cout << \"Balance: $\" << account.getBalance() << std::endl;\n    \n    account.withdraw(200);\n    std::cout << \"Balance: $\" << account.getBalance() << std::endl;\n    \n    account.withdraw(2000);  // Should fail\n    \n    return 0;\n}",
+          "output": "Balance: $1500\nBalance: $1300\nInsufficient funds or invalid amount!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "The this Pointer"
+        },
+        {
+          "type": "paragraph",
+          "value": "Every object has a hidden `this` pointer that points to itself. Use it to resolve naming conflicts when parameter names match member variable names, or to explicitly refer to the current object."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nclass Person {\nprivate:\n    std::string name;\n    int age;\n\npublic:\n    // Using 'this' to distinguish parameters from members\n    Person(std::string name, int age) {\n        this->name = name;  // this->name is the member, name is the parameter\n        this->age = age;\n    }\n    \n    void introduce() {\n        std::cout << \"Hi, I'm \" << this->name << \" and I'm \" << this->age << \" years old.\" << std::endl;\n    }\n};\n\nint main() {\n    Person alice(\"Alice\", 25);\n    alice.introduce();\n    \n    return 0;\n}",
+          "output": "Hi, I'm Alice and I'm 25 years old."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the default access specifier for class members in C++?",
+          "options": [
+            "public",
+            "private",
+            "protected",
+            "internal"
+          ],
+          "correctAnswer": "private",
+          "explanation": "In a class, members are private by default. In a struct, they are public by default. This is the only difference between class and struct in C++."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is encapsulation in OOP?",
+          "options": [
+            "Inheriting from multiple classes",
+            "Hiding internal data and exposing only necessary methods",
+            "Creating multiple objects from a class",
+            "Overriding parent class methods"
+          ],
+          "correctAnswer": "Hiding internal data and exposing only necessary methods",
+          "explanation": "Encapsulation is the principle of bundling data with methods that operate on that data, while restricting direct access to some components. Private data + public getters/setters is the classic pattern."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which hidden pointer does every object have that points to itself?",
+          "correctAnswer": "this",
+          "explanation": "The 'this' pointer is an implicit parameter to all non-static member functions, pointing to the object on which the function was called."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 23: Constructors and Destructors",
+      "badge": "OOP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Birth and Death of Objects"
+        },
+        {
+          "type": "paragraph",
+          "value": "A **constructor** is a special member function called automatically when an object is created. A **destructor** is called automatically when an object is destroyed. Together, they manage the object's lifecycle — from initialization to cleanup. This is the foundation of **RAII** (Resource Acquisition Is Initialization)."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Timeline showing object creation calling constructor, object use, then destruction calling destructor",
+          "caption": "Constructors initialize; destructors clean up. Both are called automatically."
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Timeline Diagram — Horizontal timeline: 'Object Created' → Constructor runs (green) → 'Object in Use' → 'Object Destroyed' → Destructor runs (red). Show constructor allocating resources and destructor freeing them. Use lifecycle visual with arrows."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Constructors"
+        },
+        {
+          "type": "paragraph",
+          "value": "Constructors have the same name as the class and no return type. You can have multiple constructors (overloading). The **default constructor** takes no parameters. A **parameterized constructor** takes arguments to initialize the object."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nclass Rectangle {\nprivate:\n    double width;\n    double height;\n\npublic:\n    // Default constructor\n    Rectangle() {\n        width = 1.0;\n        height = 1.0;\n        std::cout << \"Default constructor called\" << std::endl;\n    }\n    \n    // Parameterized constructor\n    Rectangle(double w, double h) {\n        width = w;\n        height = h;\n        std::cout << \"Parameterized constructor called\" << std::endl;\n    }\n    \n    double area() {\n        return width * height;\n    }\n};\n\nint main() {\n    Rectangle r1;           // Default constructor\n    Rectangle r2(5, 3);     // Parameterized constructor\n    \n    std::cout << \"r1 area: \" << r1.area() << std::endl;\n    std::cout << \"r2 area: \" << r2.area() << std::endl;\n    \n    return 0;\n}",
+          "output": "Default constructor called\nParameterized constructor called\nr1 area: 1\nr2 area: 15"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Member Initializer List"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use a **member initializer list** (after the colon `:`) to initialize members before the constructor body runs. This is more efficient and required for const members and references. It's the preferred way in modern C++."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\nclass Student {\nprivate:\n    std::string name;\n    const int id;  // Must be initialized in initializer list!\n    double& gpa;   // Must be initialized in initializer list!\n\npublic:\n    // Member initializer list after the colon\n    Student(std::string n, int i, double& g) \n        : name(n), id(i), gpa(g) {  // Initialize before body\n        std::cout << \"Student created: \" << name << \" (ID: \" << id << \")\" << std::endl;\n    }\n    \n    void display() {\n        std::cout << name << \" - GPA: \" << gpa << std::endl;\n    }\n};\n\nint main() {\n    double studentGPA = 3.8;\n    Student alice(\"Alice\", 12345, studentGPA);\n    alice.display();\n    \n    return 0;\n}",
+          "output": "Student created: Alice (ID: 12345)\nAlice - GPA: 3.8"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Destructors"
+        },
+        {
+          "type": "paragraph",
+          "value": "A destructor has the same name as the class prefixed with `~`. It takes no parameters and returns nothing. It is called automatically when the object goes out of scope or is deleted. Destructors are crucial for releasing resources like memory, file handles, and network connections."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nclass Logger {\nprivate:\n    std::string name;\n\npublic:\n    Logger(std::string n) : name(n) {\n        std::cout << \"Constructor: \" << name << \" created\" << std::endl;\n    }\n    \n    ~Logger() {\n        std::cout << \"Destructor: \" << name << \" destroyed\" << std::endl;\n    }\n};\n\nvoid demoScope() {\n    Logger local(\"Local Object\");\n    std::cout << \"Inside demoScope\" << std::endl;\n}  // Destructor called here when local goes out of scope\n\nint main() {\n    std::cout << \"Creating main object...\" << std::endl;\n    Logger mainObj(\"Main Object\");\n    \n    std::cout << \"Calling demoScope...\" << std::endl;\n    demoScope();\n    \n    std::cout << \"Back in main...\" << std::endl;\n    \n    return 0;  // mainObj destructor called here\n}",
+          "output": "Creating main object...\nConstructor: Main Object created\nCalling demoScope...\nConstructor: Local Object created\nInside demoScope\nDestructor: Local Object destroyed\nBack in main...\nDestructor: Main Object destroyed"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "RAII: Resource Acquisition Is Initialization"
+        },
+        {
+          "type": "paragraph",
+          "value": "RAII is a C++ idiom where resource acquisition happens in the constructor and release happens in the destructor. This ensures resources are always properly cleaned up, even if exceptions occur. It's one of C++'s most powerful features and the reason C++ doesn't need a garbage collector."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nclass SmartArray {\nprivate:\n    int* data;\n    int size;\n\npublic:\n    // Constructor acquires resource\n    SmartArray(int s) : size(s) {\n        data = new int[size];\n        std::cout << \"Allocated array of \" << size << \" integers\" << std::endl;\n    }\n    \n    // Destructor releases resource\n    ~SmartArray() {\n        delete[] data;\n        std::cout << \"Freed array memory\" << std::endl;\n    }\n    \n    void set(int index, int value) {\n        if (index >= 0 && index < size) {\n            data[index] = value;\n        }\n    }\n    \n    int get(int index) {\n        if (index >= 0 && index < size) {\n            return data[index];\n        }\n        return -1;\n    }\n};\n\nint main() {\n    {\n        SmartArray arr(5);  // Memory allocated\n        arr.set(0, 10);\n        arr.set(1, 20);\n        std::cout << \"arr[0] = \" << arr.get(0) << std::endl;\n    }  // Memory automatically freed by destructor!\n    \n    std::cout << \"Array is gone, memory safely freed.\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Allocated array of 5 integers\narr[0] = 10\nFreed array memory\nArray is gone, memory safely freed."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "When is a destructor called?",
+          "options": [
+            "When the program starts",
+            "When the object goes out of scope or is deleted",
+            "When new is called",
+            "Only when explicitly called"
+          ],
+          "correctAnswer": "When the object goes out of scope or is deleted",
+          "explanation": "Destructors are called automatically when an object goes out of scope (local variables) or when delete is called (heap objects). This is the core of RAII."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Why must const members and references be initialized in the member initializer list?",
+          "options": [
+            "Because they are faster",
+            "Because they cannot be assigned after declaration",
+            "Because the compiler requires it for optimization",
+            "Because they are static"
+          ],
+          "correctAnswer": "Because they cannot be assigned after declaration",
+          "explanation": "const variables and references must be initialized at creation and cannot be assigned later. The member initializer list initializes them before the constructor body runs."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What does RAII stand for?",
+          "correctAnswer": "Resource Acquisition Is Initialization",
+          "explanation": "RAII means resources (memory, files, locks) are acquired in the constructor and released in the destructor, ensuring automatic cleanup."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 24: Inheritance",
+      "badge": "OOP",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Building on Existing Classes"
+        },
+        {
+          "type": "paragraph",
+          "value": "**Inheritance** allows a new class (derived/child) to acquire the properties and methods of an existing class (base/parent). This promotes code reuse and establishes an **is-a** relationship (e.g., a Dog is an Animal). C++ supports single inheritance, multiple inheritance, and multi-level inheritance."
+        },
+        {
+          "type": "image",
+          "src": "https://example.com/image.png",
+          "alt": "Class hierarchy showing Animal as base class with Dog and Cat as derived classes",
+          "caption": "Derived classes inherit attributes and methods from their base class"
+        },
+        {
+          "type": "comment",
+          "value": "IMAGE TYPE: Class Hierarchy Diagram — Top box 'Animal' with methods eat(), sleep(). Arrows pointing down to 'Dog' (adds bark()) and 'Cat' (adds meow()). Show inherited methods in lighter color, new methods in bold. Use UML-style inheritance arrows (hollow triangle)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Basic Inheritance Syntax"
+        },
+        {
+          "type": "paragraph",
+          "value": "Use `class Derived : access Base` to inherit. The access specifier (public, protected, private) controls how base class members are visible in the derived class. `public` inheritance is most common — it preserves the access levels of base members."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n#include <string>\n\n// Base class\nclass Animal {\nprotected:\n    std::string name;\n    int age;\n\npublic:\n    Animal(std::string n, int a) : name(n), age(a) {}\n    \n    void eat() {\n        std::cout << name << \" is eating.\" << std::endl;\n    }\n    \n    void sleep() {\n        std::cout << name << \" is sleeping.\" << std::endl;\n    }\n    \n    void displayInfo() {\n        std::cout << \"Name: \" << name << \", Age: \" << age << std::endl;\n    }\n};\n\n// Derived class\nclass Dog : public Animal {\nprivate:\n    std::string breed;\n\npublic:\n    Dog(std::string n, int a, std::string b) \n        : Animal(n, a), breed(b) {}\n    \n    void bark() {\n        std::cout << name << \" says: Woof! Woof!\" << std::endl;\n    }\n    \n    void displayDogInfo() {\n        displayInfo();\n        std::cout << \"Breed: \" << breed << std::endl;\n    }\n};\n\nint main() {\n    Dog myDog(\"Buddy\", 3, \"Golden Retriever\");\n    \n    // Inherited methods\n    myDog.eat();\n    myDog.sleep();\n    \n    // Derived class method\n    myDog.bark();\n    \n    myDog.displayDogInfo();\n    \n    return 0;\n}",
+          "output": "Buddy is eating.\nBuddy is sleeping.\nBuddy says: Woof! Woof!\nName: Buddy, Age: 3\nBreed: Golden Retriever"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Access Specifiers in Inheritance"
+        },
+        {
+          "type": "paragraph",
+          "value": "**public inheritance:** public stays public, protected stays protected.\n**protected inheritance:** public becomes protected, protected stays protected.\n**private inheritance:** public and protected both become private.\n\nUse public inheritance for is-a relationships. Protected and private inheritance are rare and used for implementation details."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nclass Base {\npublic:\n    int publicVar = 1;\nprotected:\n    int protectedVar = 2;\nprivate:\n    int privateVar = 3;  // Never accessible in derived class\n};\n\nclass PublicDerived : public Base {\npublic:\n    void show() {\n        std::cout << \"publicVar: \" << publicVar << std::endl;      // OK\n        std::cout << \"protectedVar: \" << protectedVar << std::endl; // OK\n        // privateVar;  // ERROR: not accessible\n    }\n};\n\nclass ProtectedDerived : protected Base {\npublic:\n    void show() {\n        std::cout << \"publicVar (now protected): \" << publicVar << std::endl;\n    }\n};\n\nint main() {\n    PublicDerived pub;\n    pub.show();\n    std::cout << \"From main: \" << pub.publicVar << std::endl;  // OK\n    \n    ProtectedDerived prot;\n    prot.show();\n    // prot.publicVar;  // ERROR: now protected!\n    \n    return 0;\n}",
+          "output": "publicVar: 1\nprotectedVar: 2\nFrom main: 1\npublicVar (now protected): 1"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Constructor Order in Inheritance"
+        },
+        {
+          "type": "paragraph",
+          "value": "When a derived object is created, the **base constructor runs first**, then the derived constructor. When destroyed, the **derived destructor runs first**, then the base destructor. This ensures the base is fully constructed before the derived part uses it."
+        },
+        {
+          "type": "code",
+          "language": "cpp",
+          "value": "#include <iostream>\n\nclass Base {\npublic:\n    Base() { std::cout << \"Base constructor\" << std::endl; }\n    ~Base() { std::cout << \"Base destructor\" << std::endl; }\n};\n\nclass Derived : public Base {\npublic:\n    Derived() { std::cout << \"Derived constructor\" << std::endl; }\n    ~Derived() { std::cout << \"Derived destructor\" << std::endl; }\n};\n\nint main() {\n    std::cout << \"Creating object...\" << std::endl;\n    {\n        Derived d;\n    }\n    std::cout << \"Object destroyed.\" << std::endl;\n    \n    return 0;\n}",
+          "output": "Creating object...\nBase constructor\nDerived constructor\nDerived destructor\nBase destructor\nObject destroyed."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "In public inheritance, what happens to public members of the base class?",
+          "options": [
+            "They become private",
+            "They become protected",
+            "They remain public",
+            "They are removed"
+          ],
+          "correctAnswer": "They remain public",
+          "explanation": "With public inheritance, public members of the base class remain public in the derived class. Protected stays protected. Private is never accessible."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What is the constructor execution order for a derived class object?",
+          "options": [
+            "Derived first, then Base",
+            "Base first, then Derived",
+            "Both run simultaneously",
+            "Only Derived constructor runs"
+          ],
+          "correctAnswer": "Base first, then Derived",
+          "explanation": "The base class constructor always runs before the derived class constructor. This ensures the base part is fully initialized before the derived constructor uses it."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "Which inheritance access specifier is used for is-a relationships?",
+          "correctAnswer": "public",
+          "explanation": "Public inheritance is used for is-a relationships (a Dog is an Animal). It preserves the access levels of base class members in the derived class."
+        }
+      ]
     }
   ]
 }
