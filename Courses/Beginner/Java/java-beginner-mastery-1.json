@@ -1276,6 +1276,457 @@
                     "explanation": "@Override tells the compiler to verify the method actually overrides a parent method. It catches signature mismatches at compile time."
                 }
             ]
+        },
+    {
+      "partTitle": "Part 16: File I/O and NIO",
+      "badge": "I/O",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Reading and Writing Files"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java provides robust APIs for file operations. The java.io package offers classic stream-based I/O, while java.nio (New I/O) provides more efficient, buffer-oriented, and non-blocking operations. Modern Java favors NIO.2 (java.nio.file) introduced in Java 7."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Classic File I/O (java.io)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.io.*;\n\npublic class ClassicIO {\n    public static void main(String[] args) {\n        String filename = \"data.txt\";\n        \n        // Writing with FileWriter\n        try (FileWriter writer = new FileWriter(filename)) {\n            writer.write(\"Hello, File I/O!\\n\");\n            writer.write(\"Line 2\\n\");\n            writer.write(\"Line 3\\n\");\n        } catch (IOException e) {\n            System.out.println(\"Write error: \" + e.getMessage());\n        }\n        \n        // Reading with BufferedReader\n        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {\n            String line;\n            while ((line = reader.readLine()) != null) {\n                System.out.println(\"Read: \" + line);\n            }\n        } catch (IOException e) {\n            System.out.println(\"Read error: \" + e.getMessage());\n        }\n    }\n}",
+          "output": "Read: Hello, File I/O!\nRead: Line 2\nRead: Line 3"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Modern NIO.2 (java.nio.file)"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.nio.file.*;\nimport java.util.List;\n\npublic class ModernNIO {\n    public static void main(String[] args) throws Exception {\n        Path path = Paths.get(\"modern.txt\");\n        \n        // Write all lines at once\n        List<String> lines = List.of(\n            \"First line\",\n            \"Second line\",\n            \"Third line\"\n        );\n        Files.write(path, lines);\n        \n        // Read all lines at once\n        List<String> readLines = Files.readAllLines(path);\n        readLines.forEach(System.out::println);\n        \n        // Check file properties\n        System.out.println(\"\\nExists: \" + Files.exists(path));\n        System.out.println(\"Size: \" + Files.size(path) + \" bytes\");\n        System.out.println(\"Is file: \" + Files.isRegularFile(path));\n        System.out.println(\"Last modified: \" + Files.getLastModifiedTime(path));\n        \n        // Copy and move\n        Path copy = Paths.get(\"modern_copy.txt\");\n        Files.copy(path, copy, StandardCopyOption.REPLACE_EXISTING);\n        \n        // Delete\n        Files.deleteIfExists(copy);\n    }\n}",
+          "output": "First line\nSecond line\nThird line\n\nExists: true\nSize: 32 bytes\nIs file: true\nLast modified: 2024-01-15T10:30:00Z"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Walking Directory Trees"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.nio.file.*;\n\npublic class DirectoryWalk {\n    public static void main(String[] args) throws Exception {\n        Path start = Paths.get(\".\");\n        \n        // List immediate contents\n        System.out.println(\"=== Directory Listing ===\");\n        try (DirectoryStream<Path> stream = Files.newDirectoryStream(start)) {\n            for (Path entry : stream) {\n                System.out.println((Files.isDirectory(entry) ? \"[DIR]  \" : \"[FILE] \") + entry.getFileName());\n            }\n        }\n        \n        // Walk entire tree (recursive)\n        System.out.println(\"\\n=== All Java Files ===\");\n        Files.walk(start, 2)\n             .filter(p -> p.toString().endsWith(\".java\"))\n             .forEach(System.out::println);\n    }\n}",
+          "output": "=== Directory Listing ===\n[DIR]  src\n[FILE] pom.xml\n[DIR]  target\n[FILE] README.md\n\n=== All Java Files ===\n./src/main/java/Main.java\n./src/main/java/Utils.java"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Serialization"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.io.*;\n\npublic class SerializationDemo {\n    public static void main(String[] args) throws Exception {\n        String file = \"user.ser\";\n        \n        User user = new User(\"Alice\", 25, \"secret123\");\n        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {\n            oos.writeObject(user);\n            System.out.println(\"Serialized: \" + user);\n        }\n        \n        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {\n            User restored = (User) ois.readObject();\n            System.out.println(\"Deserialized: \" + restored);\n        }\n    }\n}\n\nclass User implements Serializable {\n    private static final long serialVersionUID = 1L;\n    private String name;\n    private int age;\n    private transient String password;\n    \n    public User(String name, int age, String password) {\n        this.name = name;\n        this.age = age;\n        this.password = password;\n    }\n    \n    @Override\n    public String toString() {\n        return \"User{name='\" + name + \"', age=\" + age + \", password='\" + password + \"'}\";\n    }\n}",
+          "output": "Serialized: User{name='Alice', age=25, password='secret123'}\nDeserialized: User{name='Alice', age=25, password='null'}"
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which class is used for object serialization in Java?",
+          "options": [
+            "FileWriter",
+            "ObjectOutputStream",
+            "BufferedWriter",
+            "PrintStream"
+          ],
+          "correctAnswer": "ObjectOutputStream",
+          "explanation": "ObjectOutputStream serializes objects to a stream. The object must implement Serializable. ObjectInputStream is used for deserialization."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the transient keyword do?",
+          "options": [
+            "Makes a variable thread-safe",
+            "Prevents a field from being serialized",
+            "Makes a variable static",
+            "Marks a variable as final"
+          ],
+          "correctAnswer": "Prevents a field from being serialized",
+          "explanation": "transient fields are skipped during serialization. Useful for sensitive data (passwords) or computed/cached values that don't need to persist."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What NIO.2 class represents a file or directory path?",
+          "correctAnswer": "Path",
+          "explanation": "Path (java.nio.file.Path) replaces the old File class. Paths.get() creates Path instances. Files class provides static methods for operations."
         }
+      ]
+    },
+    {
+      "partTitle": "Part 17: Lambdas and Functional Interfaces",
+      "badge": "Functional",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Functional Programming in Java"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java 8 introduced lambda expressions, bringing functional programming to Java. A lambda is an anonymous function that can be passed around as data. Functional interfaces (interfaces with exactly one abstract method) are the foundation of lambdas."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Lambda Syntax"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.function.*;\n\npublic class LambdaDemo {\n    public static void main(String[] args) {\n        Predicate<String> isLong = (String s) -> { return s.length() > 5; };\n        Predicate<String> isEmpty = s -> s.isEmpty();\n        BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;\n        Runnable sayHello = () -> System.out.println(\"Hello!\");\n        Comparator<String> byLength = (s1, s2) -> {\n            return Integer.compare(s1.length(), s2.length());\n        };\n        \n        List<String> names = Arrays.asList(\"Alice\", \"Bob\", \"Charlie\", \"Dave\");\n        names.sort(byLength);\n        System.out.println(\"Sorted: \" + names);\n        names.stream().filter(s -> s.length() > 3).forEach(System.out::println);\n        sayHello.run();\n        System.out.println(\"2 + 3 = \" + add.apply(2, 3));\n    }\n}",
+          "output": "Sorted: [Bob, Dave, Alice, Charlie]\nAlice\nCharlie\nDave\nHello!\n2 + 3 = 5"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Built-in Functional Interfaces"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.function.*;\n\npublic class FunctionalInterfaces {\n    public static void main(String[] args) {\n        Predicate<Integer> isEven = n -> n % 2 == 0;\n        System.out.println(\"Is 4 even? \" + isEven.test(4));\n        \n        Function<String, Integer> length = s -> s.length();\n        System.out.println(\"Length: \" + length.apply(\"Hello\"));\n        \n        Consumer<String> printer = s -> System.out.println(\"Printing: \" + s);\n        printer.accept(\"Test\");\n        \n        Supplier<Double> random = () -> Math.random();\n        System.out.println(\"Random: \" + random.get());\n        \n        UnaryOperator<Integer> square = n -> n * n;\n        System.out.println(\"Square: \" + square.apply(5));\n        \n        BinaryOperator<Integer> max = (a, b) -> a > b ? a : b;\n        System.out.println(\"Max: \" + max.apply(10, 20));\n        \n        Function<Integer, String> toStr = n -> \"Number: \" + n;\n        Function<String, Integer> toLen = s -> s.length();\n        Function<Integer, Integer> composed = toStr.andThen(toLen);\n        System.out.println(\"Composed: \" + composed.apply(42));\n    }\n}",
+          "output": "Is 4 even? true\nLength: 5\nPrinting: Test\nRandom: 0.734...\nSquare: 25\nMax: 20\nComposed: 10"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Method References"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\n\npublic class MethodReference {\n    public static void main(String[] args) {\n        List<String> names = Arrays.asList(\"alice\", \"bob\", \"charlie\");\n        names.stream().map(String::toUpperCase).forEach(System.out::println);\n        names.sort(String::compareToIgnoreCase);\n        \n        Supplier<List<String>> listFactory = ArrayList::new;\n        Function<String, Integer> parseInt = Integer::parseInt;\n        System.out.println(\"Parsed: \" + parseInt.apply(\"42\"));\n        \n        String prefix = \"Mr. \";\n        Function<String, String> addPrefix = prefix::concat;\n        System.out.println(addPrefix.apply(\"Smith\"));\n    }\n}",
+          "output": "ALICE\nBOB\nCHARLIE\nParsed: 42\nMr. Smith"
+        },
+        {
+          "type": "paragraph",
+          "value": "Method references are shorthand for lambdas when the lambda just calls an existing method. Types: Static (Integer::parseInt), Instance arbitrary (String::toUpperCase), Instance bound (myString::startsWith), Constructor (ArrayList::new)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "How many abstract methods can a functional interface have?",
+          "options": [
+            "Any number",
+            "Exactly one",
+            "At most two",
+            "Zero"
+          ],
+          "correctAnswer": "Exactly one",
+          "explanation": "A functional interface has exactly one abstract method. It can have default/static methods. @FunctionalInterface enforces this at compile time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does Function<String, Integer> represent?",
+          "options": [
+            "Takes Integer, returns String",
+            "Takes String, returns Integer",
+            "Takes both, returns boolean",
+            "Takes nothing, returns String"
+          ],
+          "correctAnswer": "Takes String, returns Integer",
+          "explanation": "Function<T, R> takes type T and returns type R. Function<String, Integer> takes a String input and returns an Integer result."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What syntax creates a lambda with no parameters?",
+          "correctAnswer": "() ->",
+          "explanation": "() -> expression creates a lambda with no parameters. Used for Runnable, Supplier, and other no-argument functional interfaces."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 18: Streams API",
+      "badge": "Streams",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Processing Collections Declaratively"
+        },
+        {
+          "type": "paragraph",
+          "value": "The Streams API (Java 8+) allows you to process collections in a functional, declarative style. Streams support map-filter-reduce operations, lazy evaluation, and can run in parallel. A stream pipeline consists of a source, intermediate operations (lazy), and a terminal operation (eager)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating and Using Streams"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class StreamBasics {\n    public static void main(String[] args) {\n        List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);\n        \n        List<Integer> evenSquares = numbers.stream()\n            .filter(n -> n % 2 == 0)\n            .map(n -> n * n)\n            .collect(Collectors.toList());\n        System.out.println(\"Even squares: \" + evenSquares);\n        \n        int sum = numbers.stream().reduce(0, (a, b) -> a + b);\n        System.out.println(\"Sum: \" + sum);\n        \n        numbers.stream().filter(n -> n > 5).forEach(n -> System.out.print(n + \" \"));\n        \n        long count = numbers.stream().filter(n -> n % 2 == 0).count();\n        System.out.println(\"\\nEven count: \" + count);\n        \n        Optional<Integer> first = numbers.stream().filter(n -> n > 5).findFirst();\n        first.ifPresent(n -> System.out.println(\"First > 5: \" + n));\n    }\n}",
+          "output": "Even squares: [4, 16, 36, 64, 100]\nSum: 55\n6 7 8 9 10 \nEven count: 5\nFirst > 5: 6"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Advanced Stream Operations"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class AdvancedStreams {\n    public static void main(String[] args) {\n        List<String> words = Arrays.asList(\"apple\", \"banana\", \"apricot\", \"blueberry\", \"avocado\", \"cherry\");\n        \n        Map<Character, List<String>> byFirstLetter = words.stream()\n            .collect(Collectors.groupingBy(s -> s.charAt(0)));\n        System.out.println(\"Grouped: \" + byFirstLetter);\n        \n        Map<Boolean, List<String>> partitioned = words.stream()\n            .collect(Collectors.partitioningBy(s -> s.length() > 6));\n        System.out.println(\"Partitioned: \" + partitioned);\n        \n        List<List<Integer>> nested = Arrays.asList(\n            Arrays.asList(1, 2, 3),\n            Arrays.asList(4, 5, 6),\n            Arrays.asList(7, 8, 9)\n        );\n        List<Integer> flat = nested.stream().flatMap(List::stream).collect(Collectors.toList());\n        System.out.println(\"Flattened: \" + flat);\n        \n        List<Integer> duplicates = Arrays.asList(3, 1, 4, 1, 5, 9, 2, 6, 5);\n        List<Integer> uniqueSorted = duplicates.stream()\n            .distinct().sorted(Comparator.reverseOrder()).collect(Collectors.toList());\n        System.out.println(\"Unique sorted desc: \" + uniqueSorted);\n        \n        IntSummaryStatistics stats = duplicates.stream().mapToInt(Integer::intValue).summaryStatistics();\n        System.out.println(\"Stats: \" + stats);\n        \n        String joined = words.stream().filter(s -> s.startsWith(\"a\")).collect(Collectors.joining(\", \"));\n        System.out.println(\"Joined: \" + joined);\n    }\n}",
+          "output": "Grouped: {a=[apple, apricot, avocado], b=[banana, blueberry], c=[cherry]}\nPartitioned: {false=[apple, banana, cherry], true=[apricot, blueberry, avocado]}\nFlattened: [1, 2, 3, 4, 5, 6, 7, 8, 9]\nUnique sorted desc: [9, 6, 5, 4, 3, 2, 1]\nStats: IntSummaryStatistics{count=9, sum=36, min=1, average=4.000000, max=9}\nJoined: apple, apricot, avocado"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Parallel Streams"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class ParallelStreams {\n    public static void main(String[] args) {\n        List<Integer> numbers = new ArrayList<>();\n        for (int i = 1; i <= 1_000_000; i++) numbers.add(i);\n        \n        long start = System.currentTimeMillis();\n        long sumSeq = numbers.stream().mapToLong(n -> n * n).sum();\n        long seqTime = System.currentTimeMillis() - start;\n        \n        start = System.currentTimeMillis();\n        long sumPar = numbers.parallelStream().mapToLong(n -> n * n).sum();\n        long parTime = System.currentTimeMillis() - start;\n        \n        System.out.println(\"Sequential: \" + seqTime + \"ms, result: \" + sumSeq);\n        System.out.println(\"Parallel: \" + parTime + \"ms, result: \" + sumPar);\n    }\n}",
+          "output": "Sequential: 45ms, result: 333333833333500000\nParallel: 12ms, result: 333333833333500000"
+        },
+        {
+          "type": "paragraph",
+          "value": "Key stream characteristics: Lazy evaluation (intermediate ops don't execute until terminal), Single-use (stream can only be consumed once), Non-mutating (doesn't modify source collection), Optional (terminal ops return Optional for empty streams safely)."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which operation is a terminal operation?",
+          "options": [
+            "filter",
+            "map",
+            "collect",
+            "sorted"
+          ],
+          "correctAnswer": "collect",
+          "explanation": "collect is terminal — it triggers execution and produces a result. filter, map, and sorted are intermediate (lazy) operations."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does flatMap do?",
+          "options": [
+            "Filters null values",
+            "Flattens nested streams into a single stream",
+            "Maps and sorts simultaneously",
+            "Creates parallel streams"
+          ],
+          "correctAnswer": "Flattens nested streams into a single stream",
+          "explanation": "flatMap takes a function that returns a stream for each element, then flattens all those streams into one. Essential for nested collections."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What method converts a List to a parallel stream?",
+          "correctAnswer": "parallelStream",
+          "explanation": "collection.parallelStream() creates a parallel stream that splits work across multiple CPU cores. Use for large datasets with independent operations."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 19: Multithreading and Concurrency",
+      "badge": "Concurrency",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Writing Concurrent Programs"
+        },
+        {
+          "type": "paragraph",
+          "value": "Java has built-in support for multithreading at the language level. Threads allow programs to perform multiple tasks simultaneously, improving performance on multi-core systems. However, concurrency introduces challenges like race conditions, deadlocks, and memory visibility issues."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Creating Threads"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class ThreadCreation {\n    public static void main(String[] args) {\n        Thread thread1 = new MyThread();\n        thread1.start();\n        \n        Thread thread2 = new Thread(new MyRunnable());\n        thread2.start();\n        \n        Thread thread3 = new Thread(() -> {\n            for (int i = 0; i < 3; i++) {\n                System.out.println(\"Lambda thread: \" + i);\n                try { Thread.sleep(100); } catch (InterruptedException e) {}\n            }\n        });\n        thread3.start();\n        \n        java.util.concurrent.ExecutorService executor = \n            java.util.concurrent.Executors.newFixedThreadPool(2);\n        executor.submit(() -> System.out.println(\"Pool thread executing\"));\n        executor.shutdown();\n        \n        System.out.println(\"Main thread continues...\");\n    }\n}\n\nclass MyThread extends Thread {\n    @Override\n    public void run() {\n        System.out.println(\"Extended thread: \" + Thread.currentThread().getName());\n    }\n}\n\nclass MyRunnable implements Runnable {\n    @Override\n    public void run() {\n        System.out.println(\"Runnable thread: \" + Thread.currentThread().getName());\n    }\n}",
+          "output": "Main thread continues...\nExtended thread: Thread-0\nRunnable thread: Thread-1\nLambda thread: 0\nPool thread executing\nLambda thread: 1\nLambda thread: 2"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Synchronization and Thread Safety"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "public class Synchronization {\n    public static void main(String[] args) throws InterruptedException {\n        Counter counter = new Counter();\n        Thread[] threads = new Thread[1000];\n        for (int i = 0; i < 1000; i++) {\n            threads[i] = new Thread(counter::increment);\n            threads[i].start();\n        }\n        for (Thread t : threads) t.join();\n        System.out.println(\"Expected: 1000, Actual: \" + counter.getCount());\n        \n        java.util.concurrent.atomic.AtomicInteger atomicCount = \n            new java.util.concurrent.atomic.AtomicInteger(0);\n        for (int i = 0; i < 1000; i++) {\n            new Thread(atomicCount::incrementAndGet).start();\n        }\n        Thread.sleep(1000);\n        System.out.println(\"Atomic count: \" + atomicCount.get());\n    }\n}\n\nclass Counter {\n    private int count = 0;\n    public synchronized void increment() { count++; }\n    public int getCount() { return count; }\n}",
+          "output": "Expected: 1000, Actual: 1000\nAtomic count: 1000"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Modern Concurrency Utilities"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.concurrent.*;\nimport java.util.*;\n\npublic class ConcurrencyUtils {\n    public static void main(String[] args) throws Exception {\n        ExecutorService executor = Executors.newFixedThreadPool(3);\n        \n        Future<Integer> future1 = executor.submit(() -> heavyComputation(5));\n        Future<Integer> future2 = executor.submit(() -> heavyComputation(10));\n        System.out.println(\"Future1: \" + future1.get());\n        System.out.println(\"Future2: \" + future2.get());\n        \n        CompletableFuture.supplyAsync(() -> fetchUser(1))\n            .thenApply(user -> \"Hello, \" + user)\n            .thenAccept(System.out::println)\n            .join();\n        \n        ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();\n        map.put(\"key\", 1);\n        map.computeIfPresent(\"key\", (k, v) -> v + 1);\n        System.out.println(\"Map: \" + map.get(\"key\"));\n        \n        CountDownLatch latch = new CountDownLatch(3);\n        for (int i = 1; i <= 3; i++) {\n            final int id = i;\n            new Thread(() -> {\n                System.out.println(\"Worker \" + id + \" done\");\n                latch.countDown();\n            }).start();\n        }\n        latch.await();\n        System.out.println(\"All workers finished!\");\n        executor.shutdown();\n    }\n    static int heavyComputation(int n) {\n        try { Thread.sleep(100); } catch (InterruptedException e) {}\n        return n * n;\n    }\n    static String fetchUser(int id) { return \"User\" + id; }\n}",
+          "output": "Future1: 25\nFuture2: 100\nHello, User1\nMap: 2\nWorker 1 done\nWorker 2 done\nWorker 3 done\nAll workers finished!"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Thread Lifecycle"
+        },
+        {
+          "type": "paragraph",
+          "value": "States: NEW (created, not started), RUNNABLE (ready or running), BLOCKED (waiting for monitor lock), WAITING (indefinitely waiting), TIMED_WAITING (waiting with timeout), TERMINATED (completed). Use volatile for visibility and synchronized/locks for atomicity."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What does the synchronized keyword prevent?",
+          "options": [
+            "Memory leaks",
+            "Race conditions",
+            "Infinite loops",
+            "Compilation errors"
+          ],
+          "correctAnswer": "Race conditions",
+          "explanation": "synchronized ensures only one thread accesses a critical section at a time, preventing race conditions where multiple threads modify shared data simultaneously."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which is preferred over creating new Thread objects directly?",
+          "options": [
+            "Extending Thread",
+            "ExecutorService",
+            "Runnable interface",
+            "Thread.sleep()"
+          ],
+          "correctAnswer": "ExecutorService",
+          "explanation": "ExecutorService manages a pool of reusable threads, reducing overhead. It provides better resource management, task submission, and graceful shutdown."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What keyword ensures a variable's changes are visible to all threads?",
+          "correctAnswer": "volatile",
+          "explanation": "volatile prevents thread-local caching of a variable, ensuring writes are immediately visible to other threads. It does NOT provide atomicity — use Atomic classes or synchronized for compound operations."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Capstone Project — CLI Task Manager",
+      "badge": "Project",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Build a Complete Java Application"
+        },
+        {
+          "type": "paragraph",
+          "value": "This capstone project brings together everything you have learned: OOP principles, collections, file I/O, exception handling, lambdas, and streams. You will build a command-line task manager that persists tasks to a file."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Project Structure"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Task.java\nimport java.time.LocalDateTime;\nimport java.io.Serializable;\n\npublic class Task implements Serializable {\n    private static final long serialVersionUID = 1L;\n    \n    public enum Priority { LOW, MEDIUM, HIGH }\n    public enum Status { PENDING, IN_PROGRESS, COMPLETED }\n    \n    private final int id;\n    private String title;\n    private String description;\n    private Priority priority;\n    private Status status;\n    private final LocalDateTime createdAt;\n    private LocalDateTime completedAt;\n    \n    public Task(int id, String title, String description, Priority priority) {\n        this.id = id;\n        this.title = title;\n        this.description = description;\n        this.priority = priority;\n        this.status = Status.PENDING;\n        this.createdAt = LocalDateTime.now();\n    }\n    \n    public void complete() {\n        this.status = Status.COMPLETED;\n        this.completedAt = LocalDateTime.now();\n    }\n    \n    public int getId() { return id; }\n    public String getTitle() { return title; }\n    public Priority getPriority() { return priority; }\n    public Status getStatus() { return status; }\n    public LocalDateTime getCreatedAt() { return createdAt; }\n    \n    @Override\n    public String toString() {\n        return String.format(\"[%d] %s | %s | %s | Created: %s\",\n            id, title, priority, status, createdAt);\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "TaskService — Business Logic"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\nimport java.io.*;\nimport java.nio.file.*;\n\npublic class TaskService {\n    private final List<Task> tasks = new ArrayList<>();\n    private int nextId = 1;\n    private final Path storagePath = Paths.get(\"tasks.ser\");\n    \n    public Task addTask(String title, String description, Task.Priority priority) {\n        Task task = new Task(nextId++, title, description, priority);\n        tasks.add(task);\n        saveTasks();\n        return task;\n    }\n    \n    public boolean completeTask(int id) {\n        return tasks.stream()\n            .filter(t -> t.getId() == id && t.getStatus() != Task.Status.COMPLETED)\n            .findFirst()\n            .map(t -> { t.complete(); saveTasks(); return true; })\n            .orElse(false);\n    }\n    \n    public boolean deleteTask(int id) {\n        boolean removed = tasks.removeIf(t -> t.getId() == id);\n        if (removed) saveTasks();\n        return removed;\n    }\n    \n    public List<Task> getAllTasks() { return new ArrayList<>(tasks); }\n    \n    public List<Task> getTasksByPriority(Task.Priority priority) {\n        return tasks.stream()\n            .filter(t -> t.getPriority() == priority)\n            .sorted(Comparator.comparing(Task::getCreatedAt).reversed())\n            .collect(Collectors.toList());\n    }\n    \n    public Map<Task.Status, Long> getTaskStatistics() {\n        return tasks.stream()\n            .collect(Collectors.groupingBy(Task::getStatus, Collectors.counting()));\n    }\n    \n    @SuppressWarnings(\"unchecked\")\n    public void loadTasks() {\n        if (!Files.exists(storagePath)) return;\n        try (ObjectInputStream ois = new ObjectInputStream(\n                new FileInputStream(storagePath.toFile()))) {\n            List<Task> loaded = (List<Task>) ois.readObject();\n            tasks.clear();\n            tasks.addAll(loaded);\n            nextId = tasks.stream().mapToInt(Task::getId).max().orElse(0) + 1;\n        } catch (Exception e) {\n            System.err.println(\"Failed to load: \" + e.getMessage());\n        }\n    }\n    \n    private void saveTasks() {\n        try (ObjectOutputStream oos = new ObjectOutputStream(\n                new FileOutputStream(storagePath.toFile()))) {\n            oos.writeObject(tasks);\n        } catch (IOException e) {\n            System.err.println(\"Failed to save: \" + e.getMessage());\n        }\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "TaskManager — CLI Interface"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\n\npublic class TaskManager {\n    private final TaskService service = new TaskService();\n    private final Scanner scanner = new Scanner(System.in);\n    \n    public TaskManager() { service.loadTasks(); }\n    \n    public void run() {\n        System.out.println(\"=== Java Task Manager ===\");\n        while (true) {\n            printMenu();\n            String choice = scanner.nextLine().trim();\n            switch (choice) {\n                case \"1\" -> addTask();\n                case \"2\" -> listTasks();\n                case \"3\" -> completeTask();\n                case \"4\" -> deleteTask();\n                case \"5\" -> showStats();\n                case \"6\" -> filterByPriority();\n                case \"0\" -> { System.out.println(\"Goodbye!\"); return; }\n                default -> System.out.println(\"Invalid choice\");\n            }\n        }\n    }\n    \n    private void printMenu() {\n        System.out.println(\"\\n1. Add Task  2. List  3. Complete  4. Delete  5. Stats  6. Filter  0. Exit\");\n        System.out.print(\"Choice: \");\n    }\n    \n    private void addTask() {\n        System.out.print(\"Title: \");\n        String title = scanner.nextLine();\n        System.out.print(\"Description: \");\n        String desc = scanner.nextLine();\n        System.out.print(\"Priority (LOW/MEDIUM/HIGH): \");\n        Task.Priority p = Task.Priority.valueOf(scanner.nextLine().toUpperCase());\n        System.out.println(\"Created: \" + service.addTask(title, desc, p));\n    }\n    \n    private void listTasks() {\n        List<Task> tasks = service.getAllTasks();\n        if (tasks.isEmpty()) { System.out.println(\"No tasks\"); return; }\n        tasks.forEach(System.out::println);\n    }\n    \n    private void completeTask() {\n        System.out.print(\"Task ID: \");\n        System.out.println(service.completeTask(Integer.parseInt(scanner.nextLine())) ? \"Done!\" : \"Not found\");\n    }\n    \n    private void deleteTask() {\n        System.out.print(\"Task ID: \");\n        System.out.println(service.deleteTask(Integer.parseInt(scanner.nextLine())) ? \"Deleted!\" : \"Not found\");\n    }\n    \n    private void showStats() {\n        service.getTaskStatistics().forEach((s, c) -> System.out.println(s + \": \" + c));\n    }\n    \n    private void filterByPriority() {\n        System.out.print(\"Priority: \");\n        Task.Priority p = Task.Priority.valueOf(scanner.nextLine().toUpperCase());\n        service.getTasksByPriority(p).forEach(System.out::println);\n    }\n    \n    public static void main(String[] args) { new TaskManager().run(); }\n}",
+          "output": "=== Java Task Manager ===\n\n1. Add Task  2. List  3. Complete  4. Delete  5. Stats  6. Filter  0. Exit\nChoice: 1\nTitle: Learn Java\nDescription: Complete the mastery course\nPriority (LOW/MEDIUM/HIGH): HIGH\nCreated: [1] Learn Java | HIGH | PENDING | Created: 2024-01-15T10:30:00"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Concepts Applied"
+        },
+        {
+          "type": "paragraph",
+          "value": "This project demonstrates: OOP (Task class with encapsulation, enums for type safety), Collections (ArrayList for storage, HashMap for statistics), Streams (filtering, sorting, grouping operations), File I/O (Serialization for persistent storage), Exception Handling (try-with-resources, graceful error recovery), Lambdas (Stream operations, forEach, method references), Generics (Type-safe collections and serialization)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Extension Ideas"
+        },
+        {
+          "type": "paragraph",
+          "value": "Take your project further: Add due dates with java.time and sort by urgency, Export tasks to CSV/JSON, Add categories/tags and filter by multiple criteria, Implement a GUI with JavaFX or Swing, Add unit tests with JUnit, Convert to a web API using Spring Boot, Use a real database (SQLite, H2) instead of serialization."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What interface does an object need to implement for serialization?",
+          "options": [
+            "Serializable",
+            "Externalizable",
+            "Cloneable",
+            "Comparable"
+          ],
+          "correctAnswer": "Serializable",
+          "explanation": "Serializable is a marker interface (no methods) that tells the JVM this object can be serialized. ObjectOutputStream requires it."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which collection method was used to remove tasks by condition?",
+          "options": [
+            "filter",
+            "removeIf",
+            "delete",
+            "exclude"
+          ],
+          "correctAnswer": "removeIf",
+          "explanation": "List.removeIf(Predicate) removes all elements matching the condition. It's a mutable operation, unlike Stream.filter() which creates a new stream."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Java 8+ API was used for filtering and sorting tasks?",
+          "correctAnswer": "Stream",
+          "explanation": "The Stream API provides declarative operations like filter, map, sorted, and collect. It enables functional-style processing of collections without modifying the source."
+        }
+      ]
+    }
   ]
 }
