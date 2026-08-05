@@ -856,6 +856,426 @@
                     "explanation": "class MyClass implements MyInterface { ... }. extends is for classes; implements is for interfaces. A class can do both: extends Parent implements Interface1, Interface2."
                 }
             ]
+        },
+    {
+            "partTitle": "Part 11: Exception Handling",
+            "badge": "Error Handling",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Handling Errors Gracefully"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Exceptions are events that disrupt the normal flow of program execution. Java uses a structured exception handling mechanism with try, catch, finally, throw, and throws. Exceptions are objects that extend the Throwable class hierarchy."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Exception Hierarchy"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Throwable is the root class. It has two direct subclasses:\n• Error: Serious problems you shouldn't catch (OutOfMemoryError, StackOverflowError)\n• Exception: Conditions your program should catch\n  - RuntimeException (unchecked): NullPointerException, ArrayIndexOutOfBoundsException\n  - Other exceptions (checked): IOException, SQLException"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "try-catch-finally"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class ExceptionDemo {\n    public static void main(String[] args) {\n        try {\n            int result = 10 / 0;\n            System.out.println(\"Result: \" + result);\n        } catch (ArithmeticException e) {\n            System.out.println(\"Cannot divide by zero: \" + e.getMessage());\n        }\n        \n        // Multiple catch blocks\n        try {\n            String text = null;\n            System.out.println(text.length());\n        } catch (NullPointerException e) {\n            System.out.println(\"Null reference!\");\n        } catch (Exception e) {\n            System.out.println(\"Other error: \" + e);\n        } finally {\n            System.out.println(\"This always runs\");\n        }\n        \n        // Multi-catch (Java 7+)\n        try {\n            // Some risky operation\n        } catch (NullPointerException | IllegalArgumentException e) {\n            System.out.println(\"Multiple exceptions caught\");\n        }\n    }\n}",
+                    "output": "Cannot divide by zero: / by zero\nNull reference!\nThis always runs"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Checked vs Unchecked Exceptions"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.io.*;\n\npublic class CheckedExceptionDemo {\n    // Checked exception: must declare or handle\n    public static void readFile(String path) throws FileNotFoundException {\n        FileReader file = new FileReader(path);  // Checked: IOException hierarchy\n    }\n    \n    // Using try-with-resources (Java 7+)\n    public static void readFileSafe(String path) {\n        try (BufferedReader br = new BufferedReader(new FileReader(path))) {\n            String line;\n            while ((line = br.readLine()) != null) {\n                System.out.println(line);\n            }\n        } catch (IOException e) {\n            System.out.println(\"Error reading file: \" + e.getMessage());\n        }\n        // br is automatically closed!\n    }\n    \n    // Custom exception\n    public static void validateAge(int age) throws InvalidAgeException {\n        if (age < 0 || age > 150) {\n            throw new InvalidAgeException(\"Age must be between 0 and 150\");\n        }\n    }\n    \n    public static void main(String[] args) {\n        try {\n            validateAge(200);\n        } catch (InvalidAgeException e) {\n            System.out.println(\"Validation error: \" + e.getMessage());\n        }\n    }\n}\n\nclass InvalidAgeException extends Exception {\n    public InvalidAgeException(String message) {\n        super(message);\n    }\n}",
+                    "output": "Validation error: Age must be between 0 and 150"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "try-with-resources"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class TryWithResources {\n    public static void main(String[] args) {\n        // AutoCloseable resources are closed automatically\n        try (Resource res = new Resource()) {\n            res.doWork();\n        } catch (Exception e) {\n            System.out.println(\"Error: \" + e);\n        }\n        // res.close() called automatically, even if exception occurs\n    }\n}\n\nclass Resource implements AutoCloseable {\n    public void doWork() {\n        System.out.println(\"Working...\");\n    }\n    \n    @Override\n    public void close() {\n        System.out.println(\"Resource closed\");\n    }\n}",
+                    "output": "Working...\nResource closed"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What block ALWAYS executes, whether an exception occurs or not?",
+                    "options": [
+                        "catch",
+                        "finally",
+                        "try",
+                        "throw"
+                    ],
+                    "correctAnswer": "finally",
+                    "explanation": "The finally block executes under all circumstances — success, exception, or even return statements. It's used for cleanup like closing resources."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which exceptions must be declared or handled?",
+                    "options": [
+                        "RuntimeException",
+                        "Checked exceptions",
+                        "Error",
+                        "All exceptions"
+                    ],
+                    "correctAnswer": "Checked exceptions",
+                    "explanation": "Checked exceptions (non-RuntimeException subclasses of Exception) must be either caught or declared with throws. RuntimeException and Error are unchecked."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What keyword is used to declare that a method may throw an exception?",
+                    "correctAnswer": "throws",
+                    "explanation": "throws in the method signature declares checked exceptions that might be thrown. throw is used to actually throw an exception object."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 12: Java Collections — List",
+            "badge": "Collections",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "The List Interface"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "The Collections Framework provides unified architectures for representing and manipulating collections. List is an ordered collection that allows duplicate elements. ArrayList and LinkedList are the two main implementations."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "ArrayList"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.ArrayList;\nimport java.util.List;\n\npublic class ArrayListDemo {\n    public static void main(String[] args) {\n        // Create ArrayList\n        List<String> fruits = new ArrayList<>();\n        \n        // Add elements\n        fruits.add(\"Apple\");\n        fruits.add(\"Banana\");\n        fruits.add(\"Cherry\");\n        fruits.add(\"Apple\");  // Duplicates allowed\n        \n        // Access by index\n        System.out.println(\"First: \" + fruits.get(0));\n        System.out.println(\"Size: \" + fruits.size());\n        \n        // Iterate\n        System.out.println(\"\\nFor loop:\");\n        for (int i = 0; i < fruits.size(); i++) {\n            System.out.println(fruits.get(i));\n        }\n        \n        // Enhanced for loop\n        System.out.println(\"\\nEnhanced for:\");\n        for (String fruit : fruits) {\n            System.out.println(fruit);\n        }\n        \n        // Check and search\n        System.out.println(\"\\nContains Apple: \" + fruits.contains(\"Apple\"));\n        System.out.println(\"Index of Banana: \" + fruits.indexOf(\"Banana\"));\n        \n        // Remove\n        fruits.remove(\"Banana\");\n        fruits.remove(0);\n        System.out.println(\"\\nAfter removal: \" + fruits);\n    }\n}",
+                    "output": "First: Apple\nSize: 4\n\nFor loop:\nApple\nBanana\nCherry\nApple\n\nEnhanced for:\nApple\nBanana\nCherry\nApple\n\nContains Apple: true\nIndex of Banana: 1\n\nAfter removal: [Cherry, Apple]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "LinkedList"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.LinkedList;\nimport java.util.List;\n\npublic class LinkedListDemo {\n    public static void main(String[] args) {\n        LinkedList<String> list = new LinkedList<>();\n        \n        // Efficient operations at both ends\n        list.addFirst(\"First\");\n        list.addLast(\"Last\");\n        list.add(\"Middle\");\n        \n        System.out.println(\"List: \" + list);\n        System.out.println(\"First: \" + list.getFirst());\n        System.out.println(\"Last: \" + list.getLast());\n        \n        // Queue operations\n        list.offer(\"Offered\");  // Add to tail\n        System.out.println(\"Poll: \" + list.poll());  // Remove from head\n        System.out.println(\"After poll: \" + list);\n        \n        // Stack operations\n        list.push(\"Pushed\");  // Add to head\n        System.out.println(\"Pop: \" + list.pop());  // Remove from head\n    }\n}",
+                    "output": "List: [First, Middle, Last]\nFirst: First\nLast: Last\nPoll: First\nAfter poll: [Middle, Last, Offered]\nPop: Pushed"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "When to Use Which"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "| Operation | ArrayList | LinkedList |\n|-----------|-----------|------------|\n| Random access (get) | O(1) — Fast | O(n) — Slow |\n| Add/remove at end | O(1) amortized | O(1) |\n| Add/remove at middle | O(n) | O(n) (but faster in practice for small lists) |\n| Add/remove at beginning | O(n) | O(1) |\n| Memory overhead | Low | High (pointers) |\n\nUse ArrayList for most cases. Use LinkedList only when you frequently add/remove at the beginning or need queue/stack behavior."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which List implementation provides O(1) random access?",
+                    "options": [
+                        "LinkedList",
+                        "ArrayList",
+                        "Both",
+                        "Neither"
+                    ],
+                    "correctAnswer": "ArrayList",
+                    "explanation": "ArrayList uses a backing array, so get(index) is O(1). LinkedList must traverse from the head, making it O(n)."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Does List allow duplicate elements?",
+                    "options": [
+                        "No",
+                        "Yes",
+                        "Only in ArrayList",
+                        "Only in LinkedList"
+                    ],
+                    "correctAnswer": "Yes",
+                    "explanation": "List implementations (ArrayList, LinkedList) allow duplicate elements and maintain insertion order. Use Set if you need uniqueness."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What diamond operator syntax creates a typed ArrayList in Java 7+?",
+                    "correctAnswer": "<>",
+                    "explanation": "The diamond operator <> allows type inference: List<String> list = new ArrayList<>(); The compiler infers the type from the left side."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 13: Java Collections — Set and Map",
+            "badge": "Collections",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Sets and Maps"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Set is a collection that cannot contain duplicates. Map stores key-value pairs with unique keys. These are fundamental data structures for many algorithms and real-world applications."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "HashSet and TreeSet"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.*;\n\npublic class SetDemo {\n    public static void main(String[] args) {\n        // HashSet: unordered, O(1) operations\n        Set<String> hashSet = new HashSet<>();\n        hashSet.add(\"Banana\");\n        hashSet.add(\"Apple\");\n        hashSet.add(\"Cherry\");\n        hashSet.add(\"Apple\");  // Duplicate, ignored\n        System.out.println(\"HashSet: \" + hashSet);\n        \n        // TreeSet: sorted, O(log n) operations\n        Set<String> treeSet = new TreeSet<>();\n        treeSet.add(\"Banana\");\n        treeSet.add(\"Apple\");\n        treeSet.add(\"Cherry\");\n        System.out.println(\"TreeSet: \" + treeSet);\n        \n        // Set operations\n        Set<Integer> set1 = new HashSet<>(Arrays.asList(1, 2, 3, 4));\n        Set<Integer> set2 = new HashSet<>(Arrays.asList(3, 4, 5, 6));\n        \n        Set<Integer> union = new HashSet<>(set1);\n        union.addAll(set2);\n        System.out.println(\"Union: \" + union);\n        \n        Set<Integer> intersection = new HashSet<>(set1);\n        intersection.retainAll(set2);\n        System.out.println(\"Intersection: \" + intersection);\n    }\n}",
+                    "output": "HashSet: [Banana, Apple, Cherry]\nTreeSet: [Apple, Banana, Cherry]\nUnion: [1, 2, 3, 4, 5, 6]\nIntersection: [3, 4]"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "HashMap and TreeMap"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.*;\n\npublic class MapDemo {\n    public static void main(String[] args) {\n        // HashMap: unordered, O(1) operations\n        Map<String, Integer> scores = new HashMap<>();\n        scores.put(\"Alice\", 95);\n        scores.put(\"Bob\", 87);\n        scores.put(\"Charlie\", 92);\n        \n        // Access\n        System.out.println(\"Alice's score: \" + scores.get(\"Alice\"));\n        System.out.println(\"Contains Dave: \" + scores.containsKey(\"Dave\"));\n        \n        // Iterate over entries\n        for (Map.Entry<String, Integer> entry : scores.entrySet()) {\n            System.out.println(entry.getKey() + \" => \" + entry.getValue());\n        }\n        \n        // Iterate over keys\n        for (String name : scores.keySet()) {\n            System.out.println(\"Key: \" + name);\n        }\n        \n        // Default value\n        int daveScore = scores.getOrDefault(\"Dave\", 0);\n        System.out.println(\"Dave's score (default): \" + daveScore);\n        \n        // Compute if absent\n        scores.computeIfAbsent(\"Dave\", k -> 70);\n        System.out.println(\"After compute: \" + scores);\n        \n        // TreeMap: sorted by key\n        Map<String, Integer> sortedScores = new TreeMap<>(scores);\n        System.out.println(\"Sorted: \" + sortedScores);\n    }\n}",
+                    "output": "Alice's score: 95\nContains Dave: false\nAlice => 95\nBob => 87\nCharlie => 92\nKey: Alice\nKey: Bob\nKey: Charlie\nDave's score (default): 0\nAfter compute: {Alice=95, Bob=87, Charlie=92, Dave=70}\nSorted: {Alice=95, Bob=87, Charlie=92, Dave=70}"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "equals() and hashCode() Contract"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.*;\n\npublic class HashCodeDemo {\n    public static void main(String[] args) {\n        Set<Person> people = new HashSet<>();\n        people.add(new Person(\"Alice\", 25));\n        people.add(new Person(\"Alice\", 25));  // Same content\n        \n        System.out.println(\"Set size: \" + people.size());\n    }\n}\n\nclass Person {\n    private String name;\n    private int age;\n    \n    public Person(String name, int age) {\n        this.name = name;\n        this.age = age;\n    }\n    \n    @Override\n    public boolean equals(Object o) {\n        if (this == o) return true;\n        if (o == null || getClass() != o.getClass()) return false;\n        Person person = (Person) o;\n        return age == person.age && Objects.equals(name, person.name);\n    }\n    \n    @Override\n    public int hashCode() {\n        return Objects.hash(name, age);\n    }\n}",
+                    "output": "Set size: 1"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "If two objects are equal (equals returns true), they MUST have the same hashCode. If hashCode differs, HashSet/HashMap will treat them as different even if equals says they're the same. Always override both together."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which collection does NOT allow duplicate elements?",
+                    "options": [
+                        "List",
+                        "Set",
+                        "Map",
+                        "Queue"
+                    ],
+                    "correctAnswer": "Set",
+                    "explanation": "Set implementations (HashSet, TreeSet) reject duplicate elements. List allows duplicates. Map allows duplicate values but not duplicate keys."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What happens if equals() returns true but hashCode() differs?",
+                    "options": [
+                        "Nothing",
+                        "HashSet/HashMap may treat them as different",
+                        "Compile error",
+                        "Automatic correction"
+                    ],
+                    "correctAnswer": "HashSet/HashMap may treat them as different",
+                    "explanation": "The hashCode contract requires equal objects to have equal hash codes. Violating this breaks hash-based collections."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What Map method returns a default value if the key is not found?",
+                    "correctAnswer": "getOrDefault",
+                    "explanation": "map.getOrDefault(key, defaultValue) returns the value for the key, or the default if the key doesn't exist. No null checking needed."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 14: Generics",
+            "badge": "Generics",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Type-Safe Collections and Methods"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Generics enable types (classes and interfaces) to be parameters when defining classes, interfaces, and methods. They provide compile-time type safety and eliminate the need for explicit casting."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generic Classes"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class Box<T> {\n    private T content;\n    \n    public void set(T content) {\n        this.content = content;\n    }\n    \n    public T get() {\n        return content;\n    }\n    \n    public static void main(String[] args) {\n        // Box of Integer\n        Box<Integer> intBox = new Box<>();\n        intBox.set(42);\n        int value = intBox.get();  // No cast needed!\n        System.out.println(\"Integer: \" + value);\n        \n        // Box of String\n        Box<String> strBox = new Box<>();\n        strBox.set(\"Hello\");\n        String text = strBox.get();\n        System.out.println(\"String: \" + text);\n        \n        // Without generics (raw type) — unsafe!\n        Box rawBox = new Box();\n        rawBox.set(\"text\");\n        // Integer num = (Integer) rawBox.get();  // Runtime error!\n    }\n}",
+                    "output": "Integer: 42\nString: Hello"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Generic Methods and Bounded Types"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.*;\n\npublic class GenericMethods {\n    // Generic method\n    public static <T> void printArray(T[] array) {\n        for (T element : array) {\n            System.out.println(element);\n        }\n    }\n    \n    // Bounded type parameter\n    public static <T extends Comparable<T>> T findMax(T[] array) {\n        T max = array[0];\n        for (T element : array) {\n            if (element.compareTo(max) > 0) {\n                max = element;\n            }\n        }\n        return max;\n    }\n    \n    // Multiple bounds\n    public static <T extends Number & Comparable<T>> T findMaxNumber(List<T> list) {\n        T max = list.get(0);\n        for (T num : list) {\n            if (num.compareTo(max) > 0) {\n                max = num;\n            }\n        }\n        return max;\n    }\n    \n    public static void main(String[] args) {\n        Integer[] numbers = {3, 1, 4, 1, 5, 9};\n        System.out.println(\"Max: \" + findMax(numbers));\n        \n        String[] words = {\"cherry\", \"apple\", \"banana\"};\n        System.out.println(\"Max: \" + findMax(words));\n        \n        List<Double> doubles = Arrays.asList(3.14, 2.71, 1.41);\n        System.out.println(\"Max double: \" + findMaxNumber(doubles));\n    }\n}",
+                    "output": "Max: 9\nMax: cherry\nMax double: 3.14"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Wildcards"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.util.*;\n\npublic class WildcardDemo {\n    // Unbounded wildcard: any type\n    public static void printList(List<?> list) {\n        for (Object elem : list) {\n            System.out.println(elem);\n        }\n    }\n    \n    // Upper bounded: Number or its subclasses\n    public static double sumOfList(List<? extends Number> list) {\n        double sum = 0;\n        for (Number num : list) {\n            sum += num.doubleValue();\n        }\n        return sum;\n    }\n    \n    // Lower bounded: Integer or its superclasses\n    public static void addNumbers(List<? super Integer> list) {\n        list.add(1);\n        list.add(2);\n        list.add(3);\n    }\n    \n    public static void main(String[] args) {\n        List<Integer> ints = Arrays.asList(1, 2, 3);\n        List<Double> doubles = Arrays.asList(1.5, 2.5, 3.5);\n        \n        System.out.println(\"Sum of ints: \" + sumOfList(ints));\n        System.out.println(\"Sum of doubles: \" + sumOfList(doubles));\n        \n        List<Number> numbers = new ArrayList<>();\n        addNumbers(numbers);\n        System.out.println(\"Numbers: \" + numbers);\n    }\n}",
+                    "output": "Sum of ints: 6.0\nSum of doubles: 7.5\nNumbers: [1, 2, 3]"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "PECS principle: Producer Extends, Consumer Super. Use <? extends T> when reading (producing) values. Use <? super T> when writing (consuming) values."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the benefit of generics?",
+                    "options": [
+                        "Faster execution",
+                        "Compile-time type safety without casting",
+                        "Smaller bytecode",
+                        "Automatic memory management"
+                    ],
+                    "correctAnswer": "Compile-time type safety without casting",
+                    "explanation": "Generics catch type errors at compile time and eliminate manual casting. They use type erasure, so there's no runtime overhead."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does <? extends Number> mean?",
+                    "options": [
+                        "Any type that extends Number",
+                        "Only Number itself",
+                        "Any superclass of Number",
+                        "Any type"
+                    ],
+                    "correctAnswer": "Any type that extends Number",
+                    "explanation": "? extends Number is an upper bounded wildcard. It accepts Number or any of its subclasses (Integer, Double, etc.)."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What is the PECS principle mnemonic?",
+                    "correctAnswer": "Producer Extends Consumer Super",
+                    "explanation": "PECS: Use extends when reading (producing) from a collection, super when writing (consuming) to a collection."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 15: Enums and Annotations",
+            "badge": "Advanced Basics",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Special Types and Metadata"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Enums define a fixed set of constants. Annotations provide metadata about code that can be used by the compiler, tools, or at runtime via reflection. Both are powerful features for writing clean, maintainable Java."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Enums"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class EnumDemo {\n    public static void main(String[] args) {\n        Day today = Day.WEDNESDAY;\n        System.out.println(\"Today: \" + today);\n        System.out.println(\"Ordinal: \" + today.ordinal());\n        \n        // Enum in switch\n        switch (today) {\n            case MONDAY -> System.out.println(\"Start of week\");\n            case FRIDAY -> System.out.println(\"Almost weekend\");\n            case SATURDAY, SUNDAY -> System.out.println(\"Weekend!\");\n            default -> System.out.println(\"Midweek\");\n        }\n        \n        // Enum with fields and methods\n        Priority p = Priority.HIGH;\n        System.out.println(\"Priority: \" + p + \", Level: \" + p.getLevel());\n        \n        // Iterate all values\n        for (Day d : Day.values()) {\n            System.out.println(d);\n        }\n    }\n}\n\nenum Day {\n    MONDAY, TUESDAY, WEDNESDAY, THURSDAY, FRIDAY, SATURDAY, SUNDAY\n}\n\nenum Priority {\n    LOW(1), MEDIUM(2), HIGH(3), CRITICAL(4);\n    \n    private final int level;\n    \n    Priority(int level) {\n        this.level = level;\n    }\n    \n    public int getLevel() {\n        return level;\n    }\n}",
+                    "output": "Today: WEDNESDAY\nOrdinal: 2\nMidweek\nPriority: HIGH, Level: 3\nMONDAY\nTUESDAY\n..."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Built-in Annotations"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "public class AnnotationDemo {\n    @Override  // Compiler checks this actually overrides\n    public String toString() {\n        return \"AnnotationDemo\";\n    }\n    \n    @Deprecated  // Marks as deprecated, warns on usage\n    public void oldMethod() {\n        System.out.println(\"Don't use me\");\n    }\n    \n    @SuppressWarnings(\"unchecked\")  // Suppresses compiler warnings\n    public void rawTypeUsage() {\n        java.util.List list = new java.util.ArrayList();\n        list.add(\"item\");\n    }\n    \n    // FunctionalInterface ensures interface has exactly one abstract method\n    @FunctionalInterface\n    interface Calculator {\n        int calculate(int a, int b);\n    }\n    \n    public static void main(String[] args) {\n        AnnotationDemo demo = new AnnotationDemo();\n        System.out.println(demo.toString());\n    }\n}",
+                    "output": "AnnotationDemo"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Custom Annotations"
+                },
+                {
+                    "type": "code",
+                    "language": "java",
+                    "value": "import java.lang.annotation.*;\n\n// Define custom annotation\n@Retention(RetentionPolicy.RUNTIME)  // Available at runtime\n@Target(ElementType.METHOD)          // Can only be applied to methods\npublic @interface Test {\n    String value() default \"\";\n    int priority() default 0;\n}\n\n// Usage\npublic class TestRunner {\n    @Test(priority = 1)\n    public void testOne() {\n        System.out.println(\"Running test one\");\n    }\n    \n    @Test  // Uses default values\n    public void testTwo() {\n        System.out.println(\"Running test two\");\n    }\n    \n    // Process annotations via reflection\n    public static void main(String[] args) throws Exception {\n        for (java.lang.reflect.Method m : TestRunner.class.getDeclaredMethods()) {\n            if (m.isAnnotationPresent(Test.class)) {\n                Test annotation = m.getAnnotation(Test.class);\n                System.out.println(\"Method: \" + m.getName() + \", Priority: \" + annotation.priority());\n                m.invoke(new TestRunner());\n            }\n        }\n    }\n}",
+                    "output": "Method: testOne, Priority: 1\nRunning test one\nMethod: testTwo, Priority: 0\nRunning test two"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Can enums have fields and methods?",
+                    "options": [
+                        "No, they are just constants",
+                        "Yes, they are full-fledged classes",
+                        "Only in Java 8+",
+                        "Only static methods"
+                    ],
+                    "correctAnswer": "Yes, they are full-fledged classes",
+                    "explanation": "Java enums are classes. They can have fields, constructors, methods, and even implement interfaces. Each constant is an instance."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What does @FunctionalInterface do?",
+                    "options": [
+                        "Makes the interface faster",
+                        "Ensures the interface has exactly one abstract method",
+                        "Marks it as deprecated",
+                        "Enables serialization"
+                    ],
+                    "correctAnswer": "Ensures the interface has exactly one abstract method",
+                    "explanation": "@FunctionalInterface is a compiler check. It ensures the interface is a valid functional interface (single abstract method) and can be used with lambdas."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What annotation marks a method that overrides a parent method?",
+                    "correctAnswer": "@Override",
+                    "explanation": "@Override tells the compiler to verify the method actually overrides a parent method. It catches signature mismatches at compile time."
+                }
+            ]
         }
   ]
 }
