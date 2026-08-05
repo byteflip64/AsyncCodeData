@@ -1830,474 +1830,556 @@
       ]
     },
     {
-      "partTitle": "Part 16: Recursion & Backtracking",
-      "badge": "Techniques",
+      "partTitle": "Part 16: File I/O and NIO",
+      "badge": "I/O",
       "blocks": [
         {
           "type": "heading",
           "level": "h2",
-          "value": "Recursion & Backtracking — Thinking in Self-Similarity"
+          "value": "Reading and Writing Files"
         },
         {
           "type": "paragraph",
-          "value": "Recursion is when a function calls itself to solve smaller instances of the same problem. It's the natural way to think about tree traversals, divide-and-conquer, and problems with self-similar structure. Backtracking is recursion with the ability to undo choices — essential for generating permutations, combinations, and solving constraint satisfaction problems like N-Queens and Sudoku."
-        },
-        {
-          "type": "image",
-          "src": "https://example.com/image.png",
-          "alt": "Visual showing recursion tree for factorial(5) with calls unwinding",
-          "caption": "Recursion tree: each call branches into a smaller subproblem until reaching the base case"
-        },
-        {
-          "type": "comment",
-          "value": "IMAGE TYPE: Diagram — A vertical tree showing factorial(5) → factorial(4) → ... → factorial(1) as downward arrows. Then upward arrows showing return values 1, 2, 6, 24, 120. Use a clean tree layout with base case highlighted in green."
+          "value": "Java provides robust APIs for file operations. The java.io package offers classic stream-based I/O, while java.nio (New I/O) provides more efficient, buffer-oriented, and non-blocking operations. Modern Java favors NIO.2 (java.nio.file) introduced in Java 7."
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "Recursion Fundamentals"
-        },
-        {
-          "type": "paragraph",
-          "value": "Every recursive function needs:\\n1. **Base case** — the simplest instance that returns directly (prevents infinite recursion)\\n2. **Recursive case** — breaks the problem into smaller subproblems and calls itself\\n\\nKey insight: trust that the recursive call works for the smaller problem. You only need to handle one level of logic.\\n\\n**Time complexity** depends on the number of recursive calls. A binary recursion tree with n levels is O(2^n). Divide-and-conquer with halving is O(n log n) or O(log n)."
+          "value": "Classic File I/O (java.io)"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Factorial — classic recursion\nlong long factorial(int n) {\n    if (n <= 1) return 1;  // Base case\n    return n * factorial(n - 1);  // Recursive case\n}\n\n// Fibonacci — tree recursion (inefficient without memoization)\nint fib(int n) {\n    if (n <= 1) return n;\n    return fib(n - 1) + fib(n - 2);\n}\n\n// Memoized Fibonacci — O(n) time\nlong long fibMemo(int n, vector<long long>& dp) {\n    if (n <= 1) return n;\n    if (dp[n] != -1) return dp[n];\n    return dp[n] = fibMemo(n - 1, dp) + fibMemo(n - 2, dp);\n}\n\n// Power using recursion — O(log n)\nlong long power(long long base, int exp) {\n    if (exp == 0) return 1;\n    long long half = power(base, exp / 2);\n    if (exp % 2 == 0) return half * half;\n    return half * half * base;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cout << \"5! = \" << factorial(5) << \"\\n\";\n    \n    vector<long long> dp(51, -1);\n    cout << \"Fib(50) = \" << fibMemo(50, dp) << \"\\n\";\n    \n    cout << \"2^10 = \" << power(2, 10) << \"\\n\";\n    \n    return 0;\n}",
-          "output": "5! = 120\nFib(50) = 12586269025\n2^10 = 1024"
+          "language": "java",
+          "value": "import java.io.*;\n\npublic class ClassicIO {\n    public static void main(String[] args) {\n        String filename = \"data.txt\";\n        \n        // Writing with FileWriter\n        try (FileWriter writer = new FileWriter(filename)) {\n            writer.write(\"Hello, File I/O!\\n\");\n            writer.write(\"Line 2\\n\");\n            writer.write(\"Line 3\\n\");\n        } catch (IOException e) {\n            System.out.println(\"Write error: \" + e.getMessage());\n        }\n        \n        // Reading with BufferedReader\n        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {\n            String line;\n            while ((line = reader.readLine()) != null) {\n                System.out.println(\"Read: \" + line);\n            }\n        } catch (IOException e) {\n            System.out.println(\"Read error: \" + e.getMessage());\n        }\n    }\n}",
+          "output": "Read: Hello, File I/O!\nRead: Line 2\nRead: Line 3"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "Backtracking — The Art of Trial and Undo"
-        },
-        {
-          "type": "paragraph",
-          "value": "Backtracking explores all possible configurations by making a choice, recursively exploring, then undoing the choice (backtracking). It's exhaustive search with pruning — when a partial solution can't possibly lead to a valid complete solution, we abandon that branch early.\\n\\nThe pattern: choose → explore → unchoose. This is implemented by modifying a shared state (like an array or board), recursing, then restoring the state."
+          "value": "Modern NIO.2 (java.nio.file)"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\n// Generate all permutations of a string\nvoid permute(string& s, int l, int r, vector<string>& result) {\n    if (l == r) {\n        result.push_back(s);\n        return;\n    }\n    for (int i = l; i <= r; i++) {\n        swap(s[l], s[i]);           // Choose\n        permute(s, l + 1, r, result); // Explore\n        swap(s[l], s[i]);           // Unchoose (backtrack)\n    }\n}\n\n// Generate all subsets (power set)\nvoid subsets(vector<int>& nums, int index, vector<int>& current, vector<vector<int>>& result) {\n    if (index == nums.size()) {\n        result.push_back(current);\n        return;\n    }\n    // Exclude\n    subsets(nums, index + 1, current, result);\n    // Include\n    current.push_back(nums[index]);\n    subsets(nums, index + 1, current, result);\n    current.pop_back();  // Backtrack\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    string s = \"abc\";\n    vector<string> perms;\n    permute(s, 0, s.size() - 1, perms);\n    cout << \"Permutations: \";\n    for (auto& p : perms) cout << p << \" \";\n    cout << \"\\n\";\n    \n    vector<int> nums = {1, 2, 3};\n    vector<vector<int>> allSubsets;\n    vector<int> current;\n    subsets(nums, 0, current, allSubsets);\n    cout << \"Subsets: \" << allSubsets.size() << \" total\\n\";\n    \n    return 0;\n}",
-          "output": "Permutations: abc acb bac bca cab cba \nSubsets: 8 total"
+          "language": "java",
+          "value": "import java.nio.file.*;\nimport java.util.List;\n\npublic class ModernNIO {\n    public static void main(String[] args) throws Exception {\n        Path path = Paths.get(\"modern.txt\");\n        \n        // Write all lines at once\n        List<String> lines = List.of(\n            \"First line\",\n            \"Second line\",\n            \"Third line\"\n        );\n        Files.write(path, lines);\n        \n        // Read all lines at once\n        List<String> readLines = Files.readAllLines(path);\n        readLines.forEach(System.out::println);\n        \n        // Check file properties\n        System.out.println(\"\\nExists: \" + Files.exists(path));\n        System.out.println(\"Size: \" + Files.size(path) + \" bytes\");\n        System.out.println(\"Is file: \" + Files.isRegularFile(path));\n        System.out.println(\"Last modified: \" + Files.getLastModifiedTime(path));\n        \n        // Copy and move\n        Path copy = Paths.get(\"modern_copy.txt\");\n        Files.copy(path, copy, StandardCopyOption.REPLACE_EXISTING);\n        \n        // Delete\n        Files.deleteIfExists(copy);\n    }\n}",
+          "output": "First line\nSecond line\nThird line\n\nExists: true\nSize: 32 bytes\nIs file: true\nLast modified: 2024-01-15T10:30:00Z"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "CP Example: N-Queens (Classic Backtracking)"
-        },
-        {
-          "type": "paragraph",
-          "value": "Problem: Place N queens on an N×N chessboard such that no two queens attack each other. Use backtracking: place a queen in each row, checking column and diagonal conflicts. If a placement leads to a dead end, backtrack and try the next column."
+          "value": "Walking Directory Trees"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint n;\nvector<vector<string>> solutions;\n\nbool isSafe(vector<string>& board, int row, int col) {\n    // Check column\n    for (int i = 0; i < row; i++)\n        if (board[i][col] == 'Q') return false;\n    // Check upper-left diagonal\n    for (int i = row - 1, j = col - 1; i >= 0 && j >= 0; i--, j--)\n        if (board[i][j] == 'Q') return false;\n    // Check upper-right diagonal\n    for (int i = row - 1, j = col + 1; i >= 0 && j < n; i--, j++)\n        if (board[i][j] == 'Q') return false;\n    return true;\n}\n\nvoid solve(vector<string>& board, int row) {\n    if (row == n) {\n        solutions.push_back(board);\n        return;\n    }\n    for (int col = 0; col < n; col++) {\n        if (isSafe(board, row, col)) {\n            board[row][col] = 'Q';      // Place queen\n            solve(board, row + 1);      // Recurse to next row\n            board[row][col] = '.';      // Backtrack\n        }\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cin >> n;\n    vector<string> board(n, string(n, '.'));\n    solve(board, 0);\n    \n    cout << \"Total solutions: \" << solutions.size() << \"\\n\";\n    for (auto& sol : solutions) {\n        for (auto& row : sol) cout << row << \"\\n\";\n        cout << \"\\n\";\n    }\n    \n    return 0;\n}",
-          "output": "Input: 4\nTotal solutions: 2\n.Q..\n...Q\nQ...\n..Q.\n\n..Q.\nQ...\n...Q\n.Q.."
+          "language": "java",
+          "value": "import java.nio.file.*;\n\npublic class DirectoryWalk {\n    public static void main(String[] args) throws Exception {\n        Path start = Paths.get(\".\");\n        \n        // List immediate contents\n        System.out.println(\"=== Directory Listing ===\");\n        try (DirectoryStream<Path> stream = Files.newDirectoryStream(start)) {\n            for (Path entry : stream) {\n                System.out.println((Files.isDirectory(entry) ? \"[DIR]  \" : \"[FILE] \") + entry.getFileName());\n            }\n        }\n        \n        // Walk entire tree (recursive)\n        System.out.println(\"\\n=== All Java Files ===\");\n        Files.walk(start, 2)\n             .filter(p -> p.toString().endsWith(\".java\"))\n             .forEach(System.out::println);\n    }\n}",
+          "output": "=== Directory Listing ===\n[DIR]  src\n[FILE] pom.xml\n[DIR]  target\n[FILE] README.md\n\n=== All Java Files ===\n./src/main/java/Main.java\n./src/main/java/Utils.java"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "CP Example: Rat in a Maze"
-        },
-        {
-          "type": "paragraph",
-          "value": "Problem: Find all paths from top-left to bottom-right in a maze where 1 represents open path and 0 is a wall. Can only move right or down. Use backtracking: try right, if dead end backtrack and try down. Mark visited cells to avoid cycles."
+          "value": "Serialization"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nint n;\nint maze[10][10];\nbool visited[10][10];\nvector<string> paths;\n\nvoid findPaths(int x, int y, string path) {\n    if (x == n - 1 && y == n - 1) {\n        paths.push_back(path);\n        return;\n    }\n    // Down\n    if (x + 1 < n && maze[x + 1][y] == 1 && !visited[x + 1][y]) {\n        visited[x + 1][y] = true;\n        findPaths(x + 1, y, path + 'D');\n        visited[x + 1][y] = false;\n    }\n    // Right\n    if (y + 1 < n && maze[x][y + 1] == 1 && !visited[x][y + 1]) {\n        visited[x][y + 1] = true;\n        findPaths(x, y + 1, path + 'R');\n        visited[x][y + 1] = false;\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    cin >> n;\n    for (int i = 0; i < n; i++)\n        for (int j = 0; j < n; j++)\n            cin >> maze[i][j];\n    \n    if (maze[0][0] == 1) {\n        visited[0][0] = true;\n        findPaths(0, 0, \"\");\n    }\n    \n    for (auto& p : paths) cout << p << \" \";\n    cout << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Input: 4\n1 0 0 0\n1 1 0 1\n1 1 0 0\n0 1 1 1\nOutput: DDRDRR DRDDRR"
+          "language": "java",
+          "value": "import java.io.*;\n\npublic class SerializationDemo {\n    public static void main(String[] args) throws Exception {\n        String file = \"user.ser\";\n        \n        User user = new User(\"Alice\", 25, \"secret123\");\n        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file))) {\n            oos.writeObject(user);\n            System.out.println(\"Serialized: \" + user);\n        }\n        \n        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {\n            User restored = (User) ois.readObject();\n            System.out.println(\"Deserialized: \" + restored);\n        }\n    }\n}\n\nclass User implements Serializable {\n    private static final long serialVersionUID = 1L;\n    private String name;\n    private int age;\n    private transient String password;\n    \n    public User(String name, int age, String password) {\n        this.name = name;\n        this.age = age;\n        this.password = password;\n    }\n    \n    @Override\n    public String toString() {\n        return \"User{name='\" + name + \"', age=\" + age + \", password='\" + password + \"'}\";\n    }\n}",
+          "output": "Serialized: User{name='Alice', age=25, password='secret123'}\nDeserialized: User{name='Alice', age=25, password='null'}"
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "What is the time complexity of generating all permutations of n elements using backtracking?",
+          "question": "Which class is used for object serialization in Java?",
           "options": [
-            "O(n!)",
-            "O(n^2)",
-            "O(2^n)",
-            "O(n log n)"
+            "FileWriter",
+            "ObjectOutputStream",
+            "BufferedWriter",
+            "PrintStream"
           ],
-          "correctAnswer": "O(n!)",
-          "explanation": "There are n! permutations of n elements. Backtracking generates each exactly once, and each permutation requires O(n) work to build, giving O(n * n!) total time."
+          "correctAnswer": "ObjectOutputStream",
+          "explanation": "ObjectOutputStream serializes objects to a stream. The object must implement Serializable. ObjectInputStream is used for deserialization."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all classes/interfaces from java.nio.file:",
+          "options": [
+            "Path",
+            "Files",
+            "FileWriter",
+            "DirectoryStream",
+            "FileInputStream"
+          ],
+          "correctAnswers": [
+            "Path",
+            "Files",
+            "DirectoryStream"
+          ],
+          "explanation": "Path, Files, and DirectoryStream are NIO.2 classes. FileWriter and FileInputStream belong to the older java.io package."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "What are the two essential components of every recursive function?",
+          "question": "What does the transient keyword do?",
           "options": [
-            "Loop and condition",
-            "Base case and recursive case",
-            "Stack and heap",
-            "Pointer and reference"
+            "Makes a variable thread-safe",
+            "Prevents a field from being serialized",
+            "Makes a variable static",
+            "Marks a variable as final"
           ],
-          "correctAnswer": "Base case and recursive case",
-          "explanation": "Every recursive function must have a base case (stopping condition) and a recursive case (where it calls itself with a smaller subproblem). Without a base case, recursion never terminates."
+          "correctAnswer": "Prevents a field from being serialized",
+          "explanation": "transient fields are skipped during serialization. Useful for sensitive data (passwords) or computed/cached values that don't need to persist."
         },
         {
           "type": "quiz",
           "quizType": "input",
-          "question": "What is the key operation in backtracking that allows exploring different choices?",
-          "correctAnswer": "undo",
-          "explanation": "Backtracking works by making a choice (modifying state), exploring recursively, then undoing that choice (restoring state) to try alternative paths. This 'undo' operation is what distinguishes backtracking from pure recursion."
+          "question": "What NIO.2 class represents a file or directory path?",
+          "correctAnswer": "Path",
+          "explanation": "Path (java.nio.file.Path) replaces the old File class. Paths.get() creates Path instances. Files class provides static methods for operations."
         }
       ]
     },
     {
-      "partTitle": "Part 17: Linked Lists",
-      "badge": "Data Structures",
+      "partTitle": "Part 17: Lambdas and Functional Interfaces",
+      "badge": "Functional",
       "blocks": [
         {
           "type": "heading",
           "level": "h2",
-          "value": "Linked Lists — Dynamic Chain Structures"
+          "value": "Functional Programming in Java"
         },
         {
           "type": "paragraph",
-          "value": "A linked list is a linear collection of nodes where each node contains data and a pointer to the next node. Unlike arrays, linked lists allow O(1) insertion and deletion at known positions, but O(n) access by index. In CP, they're less common than arrays but appear in problems requiring frequent insertions/deletions at arbitrary positions."
-        },
-        {
-          "type": "image",
-          "src": "https://example.com/image.png",
-          "alt": "Visual showing singly linked list nodes connected by pointers",
-          "caption": "Singly linked list: each node stores data and a pointer to the next node"
-        },
-        {
-          "type": "comment",
-          "value": "IMAGE TYPE: Diagram — A horizontal chain of boxes. Each box split into two: left half contains data (e.g., 10, 20, 30), right half contains arrow pointing to next node. Last node points to NULL. Show head pointer at first node. Clean, minimal style."
+          "value": "Java 8 introduced lambda expressions, bringing functional programming to Java. A lambda is an anonymous function that can be passed around as data. Functional interfaces (interfaces with exactly one abstract method) are the foundation of lambdas."
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "Singly Linked List Implementation"
-        },
-        {
-          "type": "paragraph",
-          "value": "A basic node structure contains `data` and `next` pointer. Operations include insertion at head/tail, deletion by value, and traversal. For CP, you often need to implement from scratch since STL doesn't provide a standard linked list optimized for competitive use."
+          "value": "Lambda Syntax"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\n// Insert at head\nvoid insertAtHead(Node*& head, int val) {\n    Node* newNode = new Node(val);\n    newNode->next = head;\n    head = newNode;\n}\n\n// Insert at tail\nvoid insertAtTail(Node*& head, int val) {\n    Node* newNode = new Node(val);\n    if (!head) { head = newNode; return; }\n    Node* temp = head;\n    while (temp->next) temp = temp->next;\n    temp->next = newNode;\n}\n\n// Delete by value\nvoid deleteNode(Node*& head, int val) {\n    if (!head) return;\n    if (head->data == val) {\n        Node* temp = head;\n        head = head->next;\n        delete temp;\n        return;\n    }\n    Node* curr = head;\n    while (curr->next && curr->next->data != val)\n        curr = curr->next;\n    if (curr->next) {\n        Node* temp = curr->next;\n        curr->next = curr->next->next;\n        delete temp;\n    }\n}\n\n// Print list\nvoid printList(Node* head) {\n    while (head) {\n        cout << head->data << \" -> \";\n        head = head->next;\n    }\n    cout << \"NULL\\n\";\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    Node* head = nullptr;\n    insertAtTail(head, 10);\n    insertAtTail(head, 20);\n    insertAtTail(head, 30);\n    insertAtHead(head, 5);\n    \n    cout << \"List: \";\n    printList(head);\n    \n    deleteNode(head, 20);\n    cout << \"After deleting 20: \";\n    printList(head);\n    \n    return 0;\n}",
-          "output": "List: 5 -> 10 -> 20 -> 30 -> NULL\nAfter deleting 20: 5 -> 10 -> 30 -> NULL"
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.function.*;\n\npublic class LambdaDemo {\n    public static void main(String[] args) {\n        Predicate<String> isLong = (String s) -> { return s.length() > 5; };\n        Predicate<String> isEmpty = s -> s.isEmpty();\n        BiFunction<Integer, Integer, Integer> add = (a, b) -> a + b;\n        Runnable sayHello = () -> System.out.println(\"Hello!\");\n        Comparator<String> byLength = (s1, s2) -> {\n            return Integer.compare(s1.length(), s2.length());\n        };\n        \n        List<String> names = Arrays.asList(\"Alice\", \"Bob\", \"Charlie\", \"Dave\");\n        names.sort(byLength);\n        System.out.println(\"Sorted: \" + names);\n        names.stream().filter(s -> s.length() > 3).forEach(System.out::println);\n        sayHello.run();\n        System.out.println(\"2 + 3 = \" + add.apply(2, 3));\n    }\n}",
+          "output": "Sorted: [Bob, Dave, Alice, Charlie]\nAlice\nCharlie\nDave\nHello!\n2 + 3 = 5"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "Fast & Slow Pointers — The Linked List Trick"
-        },
-        {
-          "type": "paragraph",
-          "value": "The fast and slow pointer technique (tortoise and hare) is the most powerful linked list pattern. The slow pointer moves 1 step, fast moves 2 steps.\\n\\n**Applications:**\\n• **Middle of list** — when fast reaches end, slow is at middle\\n• **Cycle detection** — if fast meets slow, there's a cycle (Floyd's algorithm)\\n• **Cycle start** — move one pointer to head, both move 1 step, meeting point is start\\n• **Kth from end** — fast moves k ahead, then both move together"
+          "value": "Built-in Functional Interfaces"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\n// Find middle using fast/slow pointers\nNode* findMiddle(Node* head) {\n    Node *slow = head, *fast = head;\n    while (fast && fast->next) {\n        slow = slow->next;\n        fast = fast->next->next;\n    }\n    return slow;\n}\n\n// Detect cycle (Floyd's algorithm)\nbool hasCycle(Node* head) {\n    Node *slow = head, *fast = head;\n    while (fast && fast->next) {\n        slow = slow->next;\n        fast = fast->next->next;\n        if (slow == fast) return true;\n    }\n    return false;\n}\n\n// Find cycle start\nNode* detectCycleStart(Node* head) {\n    Node *slow = head, *fast = head;\n    while (fast && fast->next) {\n        slow = slow->next;\n        fast = fast->next->next;\n        if (slow == fast) break;\n    }\n    if (!fast || !fast->next) return nullptr;\n    \n    slow = head;\n    while (slow != fast) {\n        slow = slow->next;\n        fast = fast->next;\n    }\n    return slow;\n}\n\n// Kth node from end\nNode* kthFromEnd(Node* head, int k) {\n    Node *fast = head, *slow = head;\n    for (int i = 0; i < k; i++) {\n        if (!fast) return nullptr;\n        fast = fast->next;\n    }\n    while (fast) {\n        fast = fast->next;\n        slow = slow->next;\n    }\n    return slow;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Create list: 1 -> 2 -> 3 -> 4 -> 5\n    Node* head = new Node(1);\n    head->next = new Node(2);\n    head->next->next = new Node(3);\n    head->next->next->next = new Node(4);\n    head->next->next->next->next = new Node(5);\n    \n    Node* mid = findMiddle(head);\n    cout << \"Middle: \" << mid->data << \"\\n\";\n    \n    cout << \"Has cycle: \" << hasCycle(head) << \"\\n\";\n    \n    Node* kth = kthFromEnd(head, 2);\n    cout << \"2nd from end: \" << kth->data << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Middle: 3\nHas cycle: 0\n2nd from end: 4"
+          "language": "java",
+          "value": "import java.util.function.*;\n\npublic class FunctionalInterfaces {\n    public static void main(String[] args) {\n        Predicate<Integer> isEven = n -> n % 2 == 0;\n        System.out.println(\"Is 4 even? \" + isEven.test(4));\n        \n        Function<String, Integer> length = s -> s.length();\n        System.out.println(\"Length: \" + length.apply(\"Hello\"));\n        \n        Consumer<String> printer = s -> System.out.println(\"Printing: \" + s);\n        printer.accept(\"Test\");\n        \n        Supplier<Double> random = () -> Math.random();\n        System.out.println(\"Random: \" + random.get());\n        \n        UnaryOperator<Integer> square = n -> n * n;\n        System.out.println(\"Square: \" + square.apply(5));\n        \n        BinaryOperator<Integer> max = (a, b) -> a > b ? a : b;\n        System.out.println(\"Max: \" + max.apply(10, 20));\n        \n        Function<Integer, String> toStr = n -> \"Number: \" + n;\n        Function<String, Integer> toLen = s -> s.length();\n        Function<Integer, Integer> composed = toStr.andThen(toLen);\n        System.out.println(\"Composed: \" + composed.apply(42));\n    }\n}",
+          "output": "Is 4 even? true\nLength: 5\nPrinting: Test\nRandom: 0.734...\nSquare: 25\nMax: 20\nComposed: 10"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "CP Example: Reverse Linked List"
-        },
-        {
-          "type": "paragraph",
-          "value": "Problem: Reverse a linked list. Use three pointers: prev, curr, next. Iterate through, reversing the next pointer of each node. This is O(n) time and O(1) space — the optimal solution."
+          "value": "Method References"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\nNode* reverseList(Node* head) {\n    Node *prev = nullptr, *curr = head, *next = nullptr;\n    while (curr) {\n        next = curr->next;    // Store next\n        curr->next = prev;    // Reverse link\n        prev = curr;          // Move prev forward\n        curr = next;          // Move curr forward\n    }\n    return prev;  // New head\n}\n\n// Recursive reverse\nNode* reverseRecursive(Node* head) {\n    if (!head || !head->next) return head;\n    Node* rest = reverseRecursive(head->next);\n    head->next->next = head;\n    head->next = nullptr;\n    return rest;\n}\n\nvoid printList(Node* head) {\n    while (head) {\n        cout << head->data << \" -> \";\n        head = head->next;\n    }\n    cout << \"NULL\\n\";\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    Node* head = new Node(1);\n    head->next = new Node(2);\n    head->next->next = new Node(3);\n    head->next->next->next = new Node(4);\n    \n    cout << \"Original: \";\n    printList(head);\n    \n    head = reverseList(head);\n    cout << \"Reversed: \";\n    printList(head);\n    \n    return 0;\n}",
-          "output": "Original: 1 -> 2 -> 3 -> 4 -> NULL\nReversed: 4 -> 3 -> 2 -> 1 -> NULL"
-        },
-        {
-          "type": "heading",
-          "level": "h3",
-          "value": "CP Example: Merge Two Sorted Lists"
+          "language": "java",
+          "value": "import java.util.*;\n\npublic class MethodReference {\n    public static void main(String[] args) {\n        List<String> names = Arrays.asList(\"alice\", \"bob\", \"charlie\");\n        names.stream().map(String::toUpperCase).forEach(System.out::println);\n        names.sort(String::compareToIgnoreCase);\n        \n        Supplier<List<String>> listFactory = ArrayList::new;\n        Function<String, Integer> parseInt = Integer::parseInt;\n        System.out.println(\"Parsed: \" + parseInt.apply(\"42\"));\n        \n        String prefix = \"Mr. \";\n        Function<String, String> addPrefix = prefix::concat;\n        System.out.println(addPrefix.apply(\"Smith\"));\n    }\n}",
+          "output": "ALICE\nBOB\nCHARLIE\nParsed: 42\nMr. Smith"
         },
         {
           "type": "paragraph",
-          "value": "Problem: Merge two sorted linked lists into one sorted list. Use a dummy head to simplify edge cases, then iterate comparing nodes from both lists. This is O(n + m) time and O(1) extra space."
-        },
-        {
-          "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct Node {\n    int data;\n    Node* next;\n    Node(int val) : data(val), next(nullptr) {}\n};\n\nNode* mergeSorted(Node* l1, Node* l2) {\n    Node dummy(0);\n    Node* tail = &dummy;\n    \n    while (l1 && l2) {\n        if (l1->data < l2->data) {\n            tail->next = l1;\n            l1 = l1->next;\n        } else {\n            tail->next = l2;\n            l2 = l2->next;\n        }\n        tail = tail->next;\n    }\n    \n    tail->next = l1 ? l1 : l2;\n    return dummy.next;\n}\n\nvoid printList(Node* head) {\n    while (head) {\n        cout << head->data << \" -> \";\n        head = head->next;\n    }\n    cout << \"NULL\\n\";\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    Node* l1 = new Node(1);\n    l1->next = new Node(3);\n    l1->next->next = new Node(5);\n    \n    Node* l2 = new Node(2);\n    l2->next = new Node(4);\n    l2->next->next = new Node(6);\n    \n    Node* merged = mergeSorted(l1, l2);\n    cout << \"Merged: \";\n    printList(merged);\n    \n    return 0;\n}",
-          "output": "Merged: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> NULL"
+          "value": "Method references are shorthand for lambdas when the lambda just calls an existing method. Types: Static (Integer::parseInt), Instance arbitrary (String::toUpperCase), Instance bound (myString::startsWith), Constructor (ArrayList::new)."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "What is the time complexity of finding the middle of a linked list using fast/slow pointers?",
+          "question": "How many abstract methods can a functional interface have?",
           "options": [
-            "O(n)",
-            "O(n log n)",
-            "O(n^2)",
-            "O(1)"
+            "Any number",
+            "Exactly one",
+            "At most two",
+            "Zero"
           ],
-          "correctAnswer": "O(n)",
-          "explanation": "Fast pointer traverses at most n nodes (moving 2 steps at a time), slow pointer traverses n/2 nodes. Total is O(n) time with O(1) space."
+          "correctAnswer": "Exactly one",
+          "explanation": "A functional interface has exactly one abstract method. It can have default/static methods. @FunctionalInterface enforces this at compile time."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid method reference types in Java:",
+          "options": [
+            "Static: ClassName::method",
+            "Instance arbitrary: ClassName::method",
+            "Instance bound: object::method",
+            "Constructor: ClassName::new",
+            "Lambda: () -> method()"
+          ],
+          "correctAnswers": [
+            "Static: ClassName::method",
+            "Instance arbitrary: ClassName::method",
+            "Instance bound: object::method",
+            "Constructor: ClassName::new"
+          ],
+          "explanation": "The four valid method reference types are: static, instance on arbitrary object, instance on bound object, and constructor. Lambda expressions are an alternative syntax, not a method reference type."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "In Floyd's cycle detection, when do fast and slow pointers meet?",
+          "question": "What does Function<String, Integer> represent?",
           "options": [
-            "At the start of the cycle",
-            "Somewhere in the cycle",
-            "At the tail of the list",
-            "They never meet if there's a cycle"
+            "Takes Integer, returns String",
+            "Takes String, returns Integer",
+            "Takes both, returns boolean",
+            "Takes nothing, returns String"
           ],
-          "correctAnswer": "Somewhere in the cycle",
-          "explanation": "If there's a cycle, fast pointer (moving 2x speed) will eventually catch up to slow pointer inside the cycle. They don't necessarily meet at the cycle start — that's found by a second pass."
+          "correctAnswer": "Takes String, returns Integer",
+          "explanation": "Function<T, R> takes type T and returns type R. Function<String, Integer> takes a String input and returns an Integer result."
         },
         {
           "type": "quiz",
           "quizType": "input",
-          "question": "Which pointer technique finds the middle of a linked list in one pass?",
-          "correctAnswer": "fast and slow pointers",
-          "explanation": "The fast and slow pointer (tortoise and hare) technique moves fast pointer 2 steps and slow pointer 1 step. When fast reaches the end, slow is at the middle."
+          "question": "What syntax creates a lambda with no parameters?",
+          "correctAnswer": "() ->",
+          "explanation": "() -> expression creates a lambda with no parameters. Used for Runnable, Supplier, and other no-argument functional interfaces."
         }
       ]
     },
     {
-      "partTitle": "Part 18: Trees — Binary Trees & Traversals",
-      "badge": "Data Structures",
+      "partTitle": "Part 18: Streams API",
+      "badge": "Streams",
       "blocks": [
         {
           "type": "heading",
           "level": "h2",
-          "value": "Binary Trees — Hierarchical Data Structures"
+          "value": "Processing Collections Declaratively"
         },
         {
           "type": "paragraph",
-          "value": "A binary tree is a hierarchical structure where each node has at most two children (left and right). Trees are fundamental in CP — from expression parsing to segment trees to trie structures. Understanding tree traversals (inorder, preorder, postorder, level-order) is essential for solving tree-based problems."
-        },
-        {
-          "type": "image",
-          "src": "https://example.com/image.png",
-          "alt": "Visual showing a binary tree with root, left subtree, and right subtree labeled",
-          "caption": "Binary tree: each node has at most two children — left and right"
-        },
-        {
-          "type": "comment",
-          "value": "IMAGE TYPE: Diagram — A balanced binary tree with root 10, left child 5 (with children 3, 7), right child 15 (with children 12, 20). Show traversal paths with different colored arrows: inorder (left-root-right), preorder (root-left-right), postorder (left-right-root). Clean tree layout."
+          "value": "The Streams API (Java 8+) allows you to process collections in a functional, declarative style. Streams support map-filter-reduce operations, lazy evaluation, and can run in parallel. A stream pipeline consists of a source, intermediate operations (lazy), and a terminal operation (eager)."
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "Tree Node Structure & Basic Operations"
-        },
-        {
-          "type": "paragraph",
-          "value": "A tree node contains data, left child pointer, and right child pointer. Key properties:\\n• **Height** — longest path from node to leaf (O(n) to compute)\\n• **Depth** — distance from root to node\\n• **Diameter** — longest path between any two nodes\\n• **Size** — total number of nodes in the tree\\n\\nFor CP, trees are often given as arrays (heap-style: left child at 2i+1, right at 2i+2) or as parent-child edge lists."
+          "value": "Creating and Using Streams"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left;\n    TreeNode* right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Height of tree\nint height(TreeNode* root) {\n    if (!root) return -1;\n    return 1 + max(height(root->left), height(root->right));\n}\n\n// Size of tree\nint size(TreeNode* root) {\n    if (!root) return 0;\n    return 1 + size(root->left) + size(root->right);\n}\n\n// Diameter (longest path between any two nodes)\nint diameter(TreeNode* root, int& maxDiam) {\n    if (!root) return -1;\n    int leftH = diameter(root->left, maxDiam);\n    int rightH = diameter(root->right, maxDiam);\n    maxDiam = max(maxDiam, leftH + rightH + 2);\n    return 1 + max(leftH, rightH);\n}\n\nint getDiameter(TreeNode* root) {\n    int maxDiam = 0;\n    diameter(root, maxDiam);\n    return maxDiam;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Build tree:     1\n    //               /   \\\n    //              2     3\n    //             / \\\n    //            4   5\n    TreeNode* root = new TreeNode(1);\n    root->left = new TreeNode(2);\n    root->right = new TreeNode(3);\n    root->left->left = new TreeNode(4);\n    root->left->right = new TreeNode(5);\n    \n    cout << \"Height: \" << height(root) << \"\\n\";\n    cout << \"Size: \" << size(root) << \"\\n\";\n    cout << \"Diameter: \" << getDiameter(root) << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Height: 2\nSize: 5\nDiameter: 3"
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class StreamBasics {\n    public static void main(String[] args) {\n        List<Integer> numbers = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);\n        \n        List<Integer> evenSquares = numbers.stream()\n            .filter(n -> n % 2 == 0)\n            .map(n -> n * n)\n            .collect(Collectors.toList());\n        System.out.println(\"Even squares: \" + evenSquares);\n        \n        int sum = numbers.stream().reduce(0, (a, b) -> a + b);\n        System.out.println(\"Sum: \" + sum);\n        \n        numbers.stream().filter(n -> n > 5).forEach(n -> System.out.print(n + \" \"));\n        \n        long count = numbers.stream().filter(n -> n % 2 == 0).count();\n        System.out.println(\"\\nEven count: \" + count);\n        \n        Optional<Integer> first = numbers.stream().filter(n -> n > 5).findFirst();\n        first.ifPresent(n -> System.out.println(\"First > 5: \" + n));\n    }\n}",
+          "output": "Even squares: [4, 16, 36, 64, 100]\nSum: 55\n6 7 8 9 10 \nEven count: 5\nFirst > 5: 6"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "Tree Traversals — The Four Essential Patterns"
-        },
-        {
-          "type": "paragraph",
-          "value": "**Inorder** (Left → Root → Right): Gives sorted order for BST\\n**Preorder** (Root → Left → Right): Useful for cloning, serialization\\n**Postorder** (Left → Right → Root): Useful for deletion, bottom-up DP\\n**Level-order** (BFS): Processes nodes level by level, useful for shortest path in unweighted tree\\n\\nAll DFS traversals are O(n) time and O(h) space (h = height, due to recursion stack). Level-order uses a queue: O(n) time and O(w) space (w = max width)."
+          "value": "Advanced Stream Operations"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Inorder: Left, Root, Right\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\n// Preorder: Root, Left, Right\nvoid preorder(TreeNode* root) {\n    if (!root) return;\n    cout << root->val << \" \";\n    preorder(root->left);\n    preorder(root->right);\n}\n\n// Postorder: Left, Right, Root\nvoid postorder(TreeNode* root) {\n    if (!root) return;\n    postorder(root->left);\n    postorder(root->right);\n    cout << root->val << \" \";\n}\n\n// Level-order (BFS)\nvoid levelOrder(TreeNode* root) {\n    if (!root) return;\n    queue<TreeNode*> q;\n    q.push(root);\n    while (!q.empty()) {\n        TreeNode* curr = q.front(); q.pop();\n        cout << curr->val << \" \";\n        if (curr->left) q.push(curr->left);\n        if (curr->right) q.push(curr->right);\n    }\n}\n\n// Iterative inorder using stack\nvoid inorderIterative(TreeNode* root) {\n    stack<TreeNode*> st;\n    TreeNode* curr = root;\n    while (curr || !st.empty()) {\n        while (curr) {\n            st.push(curr);\n            curr = curr->left;\n        }\n        curr = st.top(); st.pop();\n        cout << curr->val << \" \";\n        curr = curr->right;\n    }\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(1);\n    root->left = new TreeNode(2);\n    root->right = new TreeNode(3);\n    root->left->left = new TreeNode(4);\n    root->left->right = new TreeNode(5);\n    \n    cout << \"Inorder: \"; inorder(root); cout << \"\\n\";\n    cout << \"Preorder: \"; preorder(root); cout << \"\\n\";\n    cout << \"Postorder: \"; postorder(root); cout << \"\\n\";\n    cout << \"Level-order: \"; levelOrder(root); cout << \"\\n\";\n    cout << \"Iterative inorder: \"; inorderIterative(root); cout << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Inorder: 4 2 5 1 3 \nPreorder: 1 2 4 5 3 \nPostorder: 4 5 2 3 1 \nLevel-order: 1 2 3 4 5 \nIterative inorder: 4 2 5 1 3"
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class AdvancedStreams {\n    public static void main(String[] args) {\n        List<String> words = Arrays.asList(\"apple\", \"banana\", \"apricot\", \"blueberry\", \"avocado\", \"cherry\");\n        \n        Map<Character, List<String>> byFirstLetter = words.stream()\n            .collect(Collectors.groupingBy(s -> s.charAt(0)));\n        System.out.println(\"Grouped: \" + byFirstLetter);\n        \n        Map<Boolean, List<String>> partitioned = words.stream()\n            .collect(Collectors.partitioningBy(s -> s.length() > 6));\n        System.out.println(\"Partitioned: \" + partitioned);\n        \n        List<List<Integer>> nested = Arrays.asList(\n            Arrays.asList(1, 2, 3),\n            Arrays.asList(4, 5, 6),\n            Arrays.asList(7, 8, 9)\n        );\n        List<Integer> flat = nested.stream().flatMap(List::stream).collect(Collectors.toList());\n        System.out.println(\"Flattened: \" + flat);\n        \n        List<Integer> duplicates = Arrays.asList(3, 1, 4, 1, 5, 9, 2, 6, 5);\n        List<Integer> uniqueSorted = duplicates.stream()\n            .distinct().sorted(Comparator.reverseOrder()).collect(Collectors.toList());\n        System.out.println(\"Unique sorted desc: \" + uniqueSorted);\n        \n        IntSummaryStatistics stats = duplicates.stream().mapToInt(Integer::intValue).summaryStatistics();\n        System.out.println(\"Stats: \" + stats);\n        \n        String joined = words.stream().filter(s -> s.startsWith(\"a\")).collect(Collectors.joining(\", \"));\n        System.out.println(\"Joined: \" + joined);\n    }\n}",
+          "output": "Grouped: {a=[apple, apricot, avocado], b=[banana, blueberry], c=[cherry]}\nPartitioned: {false=[apple, banana, cherry], true=[apricot, blueberry, avocado]}\nFlattened: [1, 2, 3, 4, 5, 6, 7, 8, 9]\nUnique sorted desc: [9, 6, 5, 4, 3, 2, 1]\nStats: IntSummaryStatistics{count=9, sum=36, min=1, average=4.000000, max=9}\nJoined: apple, apricot, avocado"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "CP Example: Lowest Common Ancestor (LCA)"
-        },
-        {
-          "type": "paragraph",
-          "value": "Problem: Find the lowest node that has both p and q as descendants. If we find a node where p is in one subtree and q in another (or one equals the current node), that's the LCA. This is a classic tree recursion problem."
+          "value": "Parallel Streams"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nTreeNode* lowestCommonAncestor(TreeNode* root, TreeNode* p, TreeNode* q) {\n    if (!root || root == p || root == q) return root;\n    \n    TreeNode* left = lowestCommonAncestor(root->left, p, q);\n    TreeNode* right = lowestCommonAncestor(root->right, p, q);\n    \n    if (left && right) return root;  // p and q in different subtrees\n    return left ? left : right;       // Both in one subtree\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(3);\n    root->left = new TreeNode(5);\n    root->right = new TreeNode(1);\n    root->left->left = new TreeNode(6);\n    root->left->right = new TreeNode(2);\n    root->right->left = new TreeNode(0);\n    root->right->right = new TreeNode(8);\n    root->left->right->left = new TreeNode(7);\n    root->left->right->right = new TreeNode(4);\n    \n    TreeNode* p = root->left;   // node 5\n    TreeNode* q = root->right;  // node 1\n    \n    TreeNode* lca = lowestCommonAncestor(root, p, q);\n    cout << \"LCA of \" << p->val << \" and \" << q->val << \": \" << lca->val << \"\\n\";\n    \n    return 0;\n}",
-          "output": "LCA of 5 and 1: 3"
-        },
-        {
-          "type": "heading",
-          "level": "h3",
-          "value": "CP Example: Maximum Path Sum in Binary Tree"
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\n\npublic class ParallelStreams {\n    public static void main(String[] args) {\n        List<Integer> numbers = new ArrayList<>();\n        for (int i = 1; i <= 1_000_000; i++) numbers.add(i);\n        \n        long start = System.currentTimeMillis();\n        long sumSeq = numbers.stream().mapToLong(n -> n * n).sum();\n        long seqTime = System.currentTimeMillis() - start;\n        \n        start = System.currentTimeMillis();\n        long sumPar = numbers.parallelStream().mapToLong(n -> n * n).sum();\n        long parTime = System.currentTimeMillis() - start;\n        \n        System.out.println(\"Sequential: \" + seqTime + \"ms, result: \" + sumSeq);\n        System.out.println(\"Parallel: \" + parTime + \"ms, result: \" + sumPar);\n    }\n}",
+          "output": "Sequential: 45ms, result: 333333833333500000\nParallel: 12ms, result: 333333833333500000"
         },
         {
           "type": "paragraph",
-          "value": "Problem: Find the maximum sum of any path between any two nodes in a binary tree. A path must go through at least one node and does not need to go through the root. Use postorder traversal: for each node, compute the max gain from left and right subtrees, update global max with left + node + right, and return node + max(left, right) to parent."
-        },
-        {
-          "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nint maxPathSum(TreeNode* root, int& maxSum) {\n    if (!root) return 0;\n    \n    // Max gain from left/right (ignore negative gains)\n    int leftGain = max(0, maxPathSum(root->left, maxSum));\n    int rightGain = max(0, maxPathSum(root->right, maxSum));\n    \n    // Price of path going through current node\n    int priceNewPath = root->val + leftGain + rightGain;\n    maxSum = max(maxSum, priceNewPath);\n    \n    // Return max gain if continue the same path\n    return root->val + max(leftGain, rightGain);\n}\n\nint getMaxPathSum(TreeNode* root) {\n    int maxSum = INT_MIN;\n    maxPathSum(root, maxSum);\n    return maxSum;\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(-10);\n    root->left = new TreeNode(9);\n    root->right = new TreeNode(20);\n    root->right->left = new TreeNode(15);\n    root->right->right = new TreeNode(7);\n    \n    cout << \"Max path sum: \" << getMaxPathSum(root) << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Max path sum: 42  (path: 15 -> 20 -> 7)"
+          "value": "Key stream characteristics: Lazy evaluation (intermediate ops don't execute until terminal), Single-use (stream can only be consumed once), Non-mutating (doesn't modify source collection), Optional (terminal ops return Optional for empty streams safely)."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "Which traversal gives nodes in sorted order for a Binary Search Tree?",
+          "question": "Which operation is a terminal operation?",
           "options": [
-            "Preorder",
-            "Inorder",
-            "Postorder",
-            "Level-order"
+            "filter",
+            "map",
+            "collect",
+            "sorted"
           ],
-          "correctAnswer": "Inorder",
-          "explanation": "Inorder traversal (Left → Root → Right) visits nodes in ascending order for a BST because all left subtree values are smaller than root, and all right subtree values are larger."
+          "correctAnswer": "collect",
+          "explanation": "collect is terminal — it triggers execution and produces a result. filter, map, and sorted are intermediate (lazy) operations."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all intermediate (lazy) stream operations:",
+          "options": [
+            "filter",
+            "map",
+            "forEach",
+            "sorted",
+            "distinct",
+            "collect",
+            "limit"
+          ],
+          "correctAnswers": [
+            "filter",
+            "map",
+            "sorted",
+            "distinct",
+            "limit"
+          ],
+          "explanation": "Intermediate operations are lazy: filter, map, sorted, distinct, limit, flatMap. Terminal operations trigger execution: forEach, collect, count, reduce, findFirst, anyMatch."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "What is the space complexity of recursive DFS tree traversal?",
+          "question": "What does flatMap do?",
           "options": [
-            "O(1)",
-            "O(n)",
-            "O(h) where h is tree height",
-            "O(n^2)"
+            "Filters null values",
+            "Flattens nested streams into a single stream",
+            "Maps and sorts simultaneously",
+            "Creates parallel streams"
           ],
-          "correctAnswer": "O(h) where h is tree height",
-          "explanation": "Recursive DFS uses the call stack. The maximum stack depth equals the tree height h. For a balanced tree h = O(log n), for a skewed tree h = O(n)."
+          "correctAnswer": "Flattens nested streams into a single stream",
+          "explanation": "flatMap takes a function that returns a stream for each element, then flattens all those streams into one. Essential for nested collections."
         },
         {
           "type": "quiz",
           "quizType": "input",
-          "question": "Which traversal processes the root BEFORE its children?",
-          "correctAnswer": "preorder",
-          "explanation": "Preorder traversal visits Root → Left → Right, so the root is processed before any of its children. This is useful for cloning trees and prefix expression evaluation."
+          "question": "What method converts a List to a parallel stream?",
+          "correctAnswer": "parallelStream",
+          "explanation": "collection.parallelStream() creates a parallel stream that splits work across multiple CPU cores. Use for large datasets with independent operations."
         }
       ]
     },
     {
-      "partTitle": "Part 19: Binary Search Tree (BST)",
-      "badge": "Data Structures",
+      "partTitle": "Part 19: Multithreading and Concurrency",
+      "badge": "Concurrency",
       "blocks": [
         {
           "type": "heading",
           "level": "h2",
-          "value": "Binary Search Tree — Ordered Hierarchical Storage"
+          "value": "Writing Concurrent Programs"
         },
         {
           "type": "paragraph",
-          "value": "A Binary Search Tree (BST) maintains the invariant: for every node, all values in the left subtree are smaller, and all values in the right subtree are larger. This gives O(log n) average-case search, insert, and delete — but O(n) worst case for a skewed tree. Self-balancing variants (AVL, Red-Black) guarantee O(log n) always. In CP, `std::set`/`std::map` use Red-Black trees, but knowing BST operations is essential for custom problems."
-        },
-        {
-          "type": "image",
-          "src": "https://example.com/image.png",
-          "alt": "Visual showing BST with ordering invariant: left < root < right",
-          "caption": "BST invariant: left subtree values < root < right subtree values"
-        },
-        {
-          "type": "comment",
-          "value": "IMAGE TYPE: Diagram — A BST with root 50, left subtree (30, 20, 40), right subtree (70, 60, 80). Show the ordering with inequality labels. Highlight a search path for value 60 (50 → 70 → 60). Use distinct colors for left/right subtrees."
+          "value": "Java has built-in support for multithreading at the language level. Threads allow programs to perform multiple tasks simultaneously, improving performance on multi-core systems. However, concurrency introduces challenges like race conditions, deadlocks, and memory visibility issues."
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "BST Operations — Search, Insert, Delete"
-        },
-        {
-          "type": "paragraph",
-          "value": "**Search**: Compare target with current node, go left if smaller, right if larger. O(h).\\n**Insert**: Search for the position, insert as leaf. O(h).\\n**Delete**: Three cases — leaf (just remove), one child (replace with child), two children (replace with inorder successor/predecessor, then delete that node). O(h).\\n\\nFor balanced BSTs h = O(log n). For degenerate (sorted input) h = O(n)."
+          "value": "Creating Threads"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Search\nTreeNode* search(TreeNode* root, int key) {\n    if (!root || root->val == key) return root;\n    if (key < root->val) return search(root->left, key);\n    return search(root->right, key);\n}\n\n// Insert\nTreeNode* insert(TreeNode* root, int key) {\n    if (!root) return new TreeNode(key);\n    if (key < root->val) root->left = insert(root->left, key);\n    else if (key > root->val) root->right = insert(root->right, key);\n    return root;\n}\n\n// Find minimum (leftmost)\nTreeNode* findMin(TreeNode* root) {\n    while (root->left) root = root->left;\n    return root;\n}\n\n// Delete\nTreeNode* deleteNode(TreeNode* root, int key) {\n    if (!root) return root;\n    \n    if (key < root->val) root->left = deleteNode(root->left, key);\n    else if (key > root->val) root->right = deleteNode(root->right, key);\n    else {\n        // Node found\n        if (!root->left) {\n            TreeNode* temp = root->right;\n            delete root;\n            return temp;\n        }\n        if (!root->right) {\n            TreeNode* temp = root->left;\n            delete root;\n            return temp;\n        }\n        // Two children: replace with inorder successor\n        TreeNode* temp = findMin(root->right);\n        root->val = temp->val;\n        root->right = deleteNode(root->right, temp->val);\n    }\n    return root;\n}\n\n// Inorder traversal (sorted order)\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = nullptr;\n    vector<int> keys = {50, 30, 70, 20, 40, 60, 80};\n    for (int k : keys) root = insert(root, k);\n    \n    cout << \"BST inorder: \"; inorder(root); cout << \"\\n\";\n    \n    // Search\n    cout << \"Search 40: \" << (search(root, 40) ? \"Found\" : \"Not found\") << \"\\n\";\n    \n    // Delete\n    root = deleteNode(root, 30);\n    cout << \"After deleting 30: \"; inorder(root); cout << \"\\n\";\n    \n    return 0;\n}",
-          "output": "BST inorder: 20 30 40 50 60 70 80 \nSearch 40: Found\nAfter deleting 30: 20 40 50 60 70 80"
+          "language": "java",
+          "value": "public class ThreadCreation {\n    public static void main(String[] args) {\n        Thread thread1 = new MyThread();\n        thread1.start();\n        \n        Thread thread2 = new Thread(new MyRunnable());\n        thread2.start();\n        \n        Thread thread3 = new Thread(() -> {\n            for (int i = 0; i < 3; i++) {\n                System.out.println(\"Lambda thread: \" + i);\n                try { Thread.sleep(100); } catch (InterruptedException e) {}\n            }\n        });\n        thread3.start();\n        \n        java.util.concurrent.ExecutorService executor = \n            java.util.concurrent.Executors.newFixedThreadPool(2);\n        executor.submit(() -> System.out.println(\"Pool thread executing\"));\n        executor.shutdown();\n        \n        System.out.println(\"Main thread continues...\");\n    }\n}\n\nclass MyThread extends Thread {\n    @Override\n    public void run() {\n        System.out.println(\"Extended thread: \" + Thread.currentThread().getName());\n    }\n}\n\nclass MyRunnable implements Runnable {\n    @Override\n    public void run() {\n        System.out.println(\"Runnable thread: \" + Thread.currentThread().getName());\n    }\n}",
+          "output": "Main thread continues...\nExtended thread: Thread-0\nRunnable thread: Thread-1\nLambda thread: 0\nPool thread executing\nLambda thread: 1\nLambda thread: 2"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "BST Validation & Construction"
-        },
-        {
-          "type": "paragraph",
-          "value": "**Validate BST**: Inorder traversal should be sorted. Or recursively check that each node is within valid min-max bounds.\\n**Construct from traversal**: Preorder + inorder, or postorder + inorder uniquely defines a tree. Use the root position in inorder to split left/right subtrees.\\n**K-th smallest**: Inorder traversal with a counter, or maintain subtree sizes for O(log n) queries."
+          "value": "Synchronization and Thread Safety"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\n// Validate BST using min/max bounds\nbool isValidBST(TreeNode* root, long long minVal, long long maxVal) {\n    if (!root) return true;\n    if (root->val <= minVal || root->val >= maxVal) return false;\n    return isValidBST(root->left, minVal, root->val) &&\n           isValidBST(root->right, root->val, maxVal);\n}\n\n// Build from preorder and inorder\nTreeNode* buildTree(vector<int>& preorder, int preStart, int preEnd,\n                    vector<int>& inorder, int inStart, int inEnd,\n                    unordered_map<int, int>& inMap) {\n    if (preStart > preEnd || inStart > inEnd) return nullptr;\n    \n    TreeNode* root = new TreeNode(preorder[preStart]);\n    int inRoot = inMap[root->val];\n    int numsLeft = inRoot - inStart;\n    \n    root->left = buildTree(preorder, preStart + 1, preStart + numsLeft,\n                           inorder, inStart, inRoot - 1, inMap);\n    root->right = buildTree(preorder, preStart + numsLeft + 1, preEnd,\n                            inorder, inRoot + 1, inEnd, inMap);\n    return root;\n}\n\n// K-th smallest element\nint kthSmallest(TreeNode* root, int& k) {\n    if (!root) return -1;\n    \n    int left = kthSmallest(root->left, k);\n    if (k == 0) return left;\n    \n    k--;\n    if (k == 0) return root->val;\n    \n    return kthSmallest(root->right, k);\n}\n\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    // Validate\n    TreeNode* root = new TreeNode(2);\n    root->left = new TreeNode(1);\n    root->right = new TreeNode(3);\n    cout << \"Is valid BST: \" << isValidBST(root, LLONG_MIN, LLONG_MAX) << \"\\n\";\n    \n    // Build from traversals\n    vector<int> preorder = {3, 9, 20, 15, 7};\n    vector<int> in = {9, 3, 15, 20, 7};\n    unordered_map<int, int> inMap;\n    for (int i = 0; i < in.size(); i++) inMap[in[i]] = i;\n    TreeNode* built = buildTree(preorder, 0, preorder.size() - 1, in, 0, in.size() - 1, inMap);\n    cout << \"Built tree inorder: \"; inorder(built); cout << \"\\n\";\n    \n    // K-th smallest\n    int k = 3;\n    int kk = k;\n    cout << k << \"-rd smallest: \" << kthSmallest(root, kk) << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Is valid BST: 1\nBuilt tree inorder: 9 3 15 20 7 \n3-rd smallest: 3"
+          "language": "java",
+          "value": "public class Synchronization {\n    public static void main(String[] args) throws InterruptedException {\n        Counter counter = new Counter();\n        Thread[] threads = new Thread[1000];\n        for (int i = 0; i < 1000; i++) {\n            threads[i] = new Thread(counter::increment);\n            threads[i].start();\n        }\n        for (Thread t : threads) t.join();\n        System.out.println(\"Expected: 1000, Actual: \" + counter.getCount());\n        \n        java.util.concurrent.atomic.AtomicInteger atomicCount = \n            new java.util.concurrent.atomic.AtomicInteger(0);\n        for (int i = 0; i < 1000; i++) {\n            new Thread(atomicCount::incrementAndGet).start();\n        }\n        Thread.sleep(1000);\n        System.out.println(\"Atomic count: \" + atomicCount.get());\n    }\n}\n\nclass Counter {\n    private int count = 0;\n    public synchronized void increment() { count++; }\n    public int getCount() { return count; }\n}",
+          "output": "Expected: 1000, Actual: 1000\nAtomic count: 1000"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "CP Example: Convert Sorted Array to Balanced BST"
-        },
-        {
-          "type": "paragraph",
-          "value": "Problem: Given a sorted array, construct a height-balanced BST. The middle element should be the root to ensure balance. Recursively apply to left and right halves. This gives O(n) time and O(log n) space for the recursion stack."
+          "value": "Modern Concurrency Utilities"
         },
         {
           "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nTreeNode* sortedArrayToBST(vector<int>& nums, int left, int right) {\n    if (left > right) return nullptr;\n    int mid = left + (right - left) / 2;\n    TreeNode* root = new TreeNode(nums[mid]);\n    root->left = sortedArrayToBST(nums, left, mid - 1);\n    root->right = sortedArrayToBST(nums, mid + 1, right);\n    return root;\n}\n\nvoid inorder(TreeNode* root) {\n    if (!root) return;\n    inorder(root->left);\n    cout << root->val << \" \";\n    inorder(root->right);\n}\n\nint height(TreeNode* root) {\n    if (!root) return -1;\n    return 1 + max(height(root->left), height(root->right));\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    vector<int> nums = {-10, -3, 0, 5, 9};\n    TreeNode* root = sortedArrayToBST(nums, 0, nums.size() - 1);\n    \n    cout << \"Inorder: \"; inorder(root); cout << \"\\n\";\n    cout << \"Height: \" << height(root) << \" (balanced)\\n\";\n    \n    return 0;\n}",
-          "output": "Inorder: -10 -3 0 5 9 \nHeight: 2 (balanced)"
+          "language": "java",
+          "value": "import java.util.concurrent.*;\nimport java.util.*;\n\npublic class ConcurrencyUtils {\n    public static void main(String[] args) throws Exception {\n        ExecutorService executor = Executors.newFixedThreadPool(3);\n        \n        Future<Integer> future1 = executor.submit(() -> heavyComputation(5));\n        Future<Integer> future2 = executor.submit(() -> heavyComputation(10));\n        System.out.println(\"Future1: \" + future1.get());\n        System.out.println(\"Future2: \" + future2.get());\n        \n        CompletableFuture.supplyAsync(() -> fetchUser(1))\n            .thenApply(user -> \"Hello, \" + user)\n            .thenAccept(System.out::println)\n            .join();\n        \n        ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<>();\n        map.put(\"key\", 1);\n        map.computeIfPresent(\"key\", (k, v) -> v + 1);\n        System.out.println(\"Map: \" + map.get(\"key\"));\n        \n        CountDownLatch latch = new CountDownLatch(3);\n        for (int i = 1; i <= 3; i++) {\n            final int id = i;\n            new Thread(() -> {\n                System.out.println(\"Worker \" + id + \" done\");\n                latch.countDown();\n            }).start();\n        }\n        latch.await();\n        System.out.println(\"All workers finished!\");\n        executor.shutdown();\n    }\n    static int heavyComputation(int n) {\n        try { Thread.sleep(100); } catch (InterruptedException e) {}\n        return n * n;\n    }\n    static String fetchUser(int id) { return \"User\" + id; }\n}",
+          "output": "Future1: 25\nFuture2: 100\nHello, User1\nMap: 2\nWorker 1 done\nWorker 2 done\nWorker 3 done\nAll workers finished!"
         },
         {
           "type": "heading",
           "level": "h3",
-          "value": "CP Example: Range Sum Query in BST"
+          "value": "Thread Lifecycle"
         },
         {
           "type": "paragraph",
-          "value": "Problem: Given a BST and range [low, high], return the sum of all node values in that range. Use BST property to prune: if current node < low, only search right; if > high, only search left. This is much faster than traversing all nodes."
-        },
-        {
-          "type": "code",
-          "language": "cpp",
-          "value": "#include <bits/stdc++.h>\nusing namespace std;\n\nstruct TreeNode {\n    int val;\n    TreeNode* left, *right;\n    TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}\n};\n\nint rangeSumBST(TreeNode* root, int low, int high) {\n    if (!root) return 0;\n    \n    if (root->val < low) return rangeSumBST(root->right, low, high);\n    if (root->val > high) return rangeSumBST(root->left, low, high);\n    \n    // root->val is in range\n    return root->val + \n           rangeSumBST(root->left, low, high) + \n           rangeSumBST(root->right, low, high);\n}\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    \n    TreeNode* root = new TreeNode(10);\n    root->left = new TreeNode(5);\n    root->right = new TreeNode(15);\n    root->left->left = new TreeNode(3);\n    root->left->right = new TreeNode(7);\n    root->right->right = new TreeNode(18);\n    \n    cout << \"Range sum [7, 15]: \" << rangeSumBST(root, 7, 15) << \"\\n\";\n    \n    return 0;\n}",
-          "output": "Range sum [7, 15]: 32  (7 + 10 + 15)"
+          "value": "States: NEW (created, not started), RUNNABLE (ready or running), BLOCKED (waiting for monitor lock), WAITING (indefinitely waiting), TIMED_WAITING (waiting with timeout), TERMINATED (completed). Use volatile for visibility and synchronized/locks for atomicity."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "What is the average-case time complexity of BST search?",
+          "question": "What does the synchronized keyword prevent?",
           "options": [
-            "O(1)",
-            "O(log n)",
-            "O(n)",
-            "O(n log n)"
+            "Memory leaks",
+            "Race conditions",
+            "Infinite loops",
+            "Compilation errors"
           ],
-          "correctAnswer": "O(log n)",
-          "explanation": "In a balanced BST, each comparison eliminates half the remaining nodes, giving O(log n) average case. Worst case is O(n) for a skewed tree."
+          "correctAnswer": "Race conditions",
+          "explanation": "synchronized ensures only one thread accesses a critical section at a time, preventing race conditions where multiple threads modify shared data simultaneously."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all valid ways to create a thread in Java:",
+          "options": [
+            "Extend Thread class",
+            "Implement Runnable interface",
+            "Implement Callable interface",
+            "Use ExecutorService",
+            "Call Thread.run() directly"
+          ],
+          "correctAnswers": [
+            "Extend Thread class",
+            "Implement Runnable interface",
+            "Implement Callable interface",
+            "Use ExecutorService"
+          ],
+          "explanation": "Valid ways: extend Thread, implement Runnable/Callable, or submit to ExecutorService. Calling Thread.run() directly executes in the current thread, NOT creating a new thread — always use start()."
         },
         {
           "type": "quiz",
           "quizType": "mcq",
-          "question": "When deleting a BST node with two children, what replaces it?",
+          "question": "Which is preferred over creating new Thread objects directly?",
           "options": [
-            "The root of the left subtree",
-            "The inorder successor (min of right subtree)",
-            "The parent node",
-            "A new node with average value"
+            "Extending Thread",
+            "ExecutorService",
+            "Runnable interface",
+            "Thread.sleep()"
           ],
-          "correctAnswer": "The inorder successor (min of right subtree)",
-          "explanation": "The inorder successor (smallest node in right subtree) maintains the BST invariant when substituted. Alternatively, the inorder predecessor (largest in left subtree) can also be used."
+          "correctAnswer": "ExecutorService",
+          "explanation": "ExecutorService manages a pool of reusable threads, reducing overhead. It provides better resource management, task submission, and graceful shutdown."
         },
         {
           "type": "quiz",
           "quizType": "input",
-          "question": "Which traversal of a BST produces values in sorted order?",
-          "correctAnswer": "inorder",
-          "explanation": "Inorder traversal (Left → Root → Right) visits nodes in ascending order in a BST because left < root < right by definition."
+          "question": "What keyword ensures a variable's changes are visible to all threads?",
+          "correctAnswer": "volatile",
+          "explanation": "volatile prevents thread-local caching of a variable, ensuring writes are immediately visible to other threads. It does NOT provide atomicity — use Atomic classes or synchronized for compound operations."
+        }
+      ]
+    },
+    {
+      "partTitle": "Part 20: Capstone Project — CLI Task Manager",
+      "badge": "Project",
+      "blocks": [
+        {
+          "type": "heading",
+          "level": "h2",
+          "value": "Build a Complete Java Application"
+        },
+        {
+          "type": "paragraph",
+          "value": "This capstone project brings together everything you have learned: OOP principles, collections, file I/O, exception handling, lambdas, and streams. You will build a command-line task manager that persists tasks to a file."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Project Structure"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "// Task.java\nimport java.time.LocalDateTime;\nimport java.io.Serializable;\n\npublic class Task implements Serializable {\n    private static final long serialVersionUID = 1L;\n    \n    public enum Priority { LOW, MEDIUM, HIGH }\n    public enum Status { PENDING, IN_PROGRESS, COMPLETED }\n    \n    private final int id;\n    private String title;\n    private String description;\n    private Priority priority;\n    private Status status;\n    private final LocalDateTime createdAt;\n    private LocalDateTime completedAt;\n    \n    public Task(int id, String title, String description, Priority priority) {\n        this.id = id;\n        this.title = title;\n        this.description = description;\n        this.priority = priority;\n        this.status = Status.PENDING;\n        this.createdAt = LocalDateTime.now();\n    }\n    \n    public void complete() {\n        this.status = Status.COMPLETED;\n        this.completedAt = LocalDateTime.now();\n    }\n    \n    public int getId() { return id; }\n    public String getTitle() { return title; }\n    public Priority getPriority() { return priority; }\n    public Status getStatus() { return status; }\n    public LocalDateTime getCreatedAt() { return createdAt; }\n    \n    @Override\n    public String toString() {\n        return String.format(\"[%d] %s | %s | %s | Created: %s\",\n            id, title, priority, status, createdAt);\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "TaskService — Business Logic"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\nimport java.util.stream.*;\nimport java.io.*;\nimport java.nio.file.*;\n\npublic class TaskService {\n    private final List<Task> tasks = new ArrayList<>();\n    private int nextId = 1;\n    private final Path storagePath = Paths.get(\"tasks.ser\");\n    \n    public Task addTask(String title, String description, Task.Priority priority) {\n        Task task = new Task(nextId++, title, description, priority);\n        tasks.add(task);\n        saveTasks();\n        return task;\n    }\n    \n    public boolean completeTask(int id) {\n        return tasks.stream()\n            .filter(t -> t.getId() == id && t.getStatus() != Task.Status.COMPLETED)\n            .findFirst()\n            .map(t -> { t.complete(); saveTasks(); return true; })\n            .orElse(false);\n    }\n    \n    public boolean deleteTask(int id) {\n        boolean removed = tasks.removeIf(t -> t.getId() == id);\n        if (removed) saveTasks();\n        return removed;\n    }\n    \n    public List<Task> getAllTasks() { return new ArrayList<>(tasks); }\n    \n    public List<Task> getTasksByPriority(Task.Priority priority) {\n        return tasks.stream()\n            .filter(t -> t.getPriority() == priority)\n            .sorted(Comparator.comparing(Task::getCreatedAt).reversed())\n            .collect(Collectors.toList());\n    }\n    \n    public Map<Task.Status, Long> getTaskStatistics() {\n        return tasks.stream()\n            .collect(Collectors.groupingBy(Task::getStatus, Collectors.counting()));\n    }\n    \n    @SuppressWarnings(\"unchecked\")\n    public void loadTasks() {\n        if (!Files.exists(storagePath)) return;\n        try (ObjectInputStream ois = new ObjectInputStream(\n                new FileInputStream(storagePath.toFile()))) {\n            List<Task> loaded = (List<Task>) ois.readObject();\n            tasks.clear();\n            tasks.addAll(loaded);\n            nextId = tasks.stream().mapToInt(Task::getId).max().orElse(0) + 1;\n        } catch (Exception e) {\n            System.err.println(\"Failed to load: \" + e.getMessage());\n        }\n    }\n    \n    private void saveTasks() {\n        try (ObjectOutputStream oos = new ObjectOutputStream(\n                new FileOutputStream(storagePath.toFile()))) {\n            oos.writeObject(tasks);\n        } catch (IOException e) {\n            System.err.println(\"Failed to save: \" + e.getMessage());\n        }\n    }\n}",
+          "output": ""
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "TaskManager — CLI Interface"
+        },
+        {
+          "type": "code",
+          "language": "java",
+          "value": "import java.util.*;\n\npublic class TaskManager {\n    private final TaskService service = new TaskService();\n    private final Scanner scanner = new Scanner(System.in);\n    \n    public TaskManager() { service.loadTasks(); }\n    \n    public void run() {\n        System.out.println(\"=== Java Task Manager ===\");\n        while (true) {\n            printMenu();\n            String choice = scanner.nextLine().trim();\n            switch (choice) {\n                case \"1\" -> addTask();\n                case \"2\" -> listTasks();\n                case \"3\" -> completeTask();\n                case \"4\" -> deleteTask();\n                case \"5\" -> showStats();\n                case \"6\" -> filterByPriority();\n                case \"0\" -> { System.out.println(\"Goodbye!\"); return; }\n                default -> System.out.println(\"Invalid choice\");\n            }\n        }\n    }\n    \n    private void printMenu() {\n        System.out.println(\"\\n1. Add Task  2. List  3. Complete  4. Delete  5. Stats  6. Filter  0. Exit\");\n        System.out.print(\"Choice: \");\n    }\n    \n    private void addTask() {\n        System.out.print(\"Title: \");\n        String title = scanner.nextLine();\n        System.out.print(\"Description: \");\n        String desc = scanner.nextLine();\n        System.out.print(\"Priority (LOW/MEDIUM/HIGH): \");\n        Task.Priority p = Task.Priority.valueOf(scanner.nextLine().toUpperCase());\n        System.out.println(\"Created: \" + service.addTask(title, desc, p));\n    }\n    \n    private void listTasks() {\n        List<Task> tasks = service.getAllTasks();\n        if (tasks.isEmpty()) { System.out.println(\"No tasks\"); return; }\n        tasks.forEach(System.out::println);\n    }\n    \n    private void completeTask() {\n        System.out.print(\"Task ID: \");\n        System.out.println(service.completeTask(Integer.parseInt(scanner.nextLine())) ? \"Done!\" : \"Not found\");\n    }\n    \n    private void deleteTask() {\n        System.out.print(\"Task ID: \");\n        System.out.println(service.deleteTask(Integer.parseInt(scanner.nextLine())) ? \"Deleted!\" : \"Not found\");\n    }\n    \n    private void showStats() {\n        service.getTaskStatistics().forEach((s, c) -> System.out.println(s + \": \" + c));\n    }\n    \n    private void filterByPriority() {\n        System.out.print(\"Priority: \");\n        Task.Priority p = Task.Priority.valueOf(scanner.nextLine().toUpperCase());\n        service.getTasksByPriority(p).forEach(System.out::println);\n    }\n    \n    public static void main(String[] args) { new TaskManager().run(); }\n}",
+          "output": "=== Java Task Manager ===\n\n1. Add Task  2. List  3. Complete  4. Delete  5. Stats  6. Filter  0. Exit\nChoice: 1\nTitle: Learn Java\nDescription: Complete the mastery course\nPriority (LOW/MEDIUM/HIGH): HIGH\nCreated: [1] Learn Java | HIGH | PENDING | Created: 2024-01-15T10:30:00"
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Concepts Applied"
+        },
+        {
+          "type": "paragraph",
+          "value": "This project demonstrates: OOP (Task class with encapsulation, enums for type safety), Collections (ArrayList for storage, HashMap for statistics), Streams (filtering, sorting, grouping operations), File I/O (Serialization for persistent storage), Exception Handling (try-with-resources, graceful error recovery), Lambdas (Stream operations, forEach, method references), Generics (Type-safe collections and serialization)."
+        },
+        {
+          "type": "heading",
+          "level": "h3",
+          "value": "Extension Ideas"
+        },
+        {
+          "type": "paragraph",
+          "value": "Take your project further: Add due dates with java.time and sort by urgency, Export tasks to CSV/JSON, Add categories/tags and filter by multiple criteria, Implement a GUI with JavaFX or Swing, Add unit tests with JUnit, Convert to a web API using Spring Boot, Use a real database (SQLite, H2) instead of serialization."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "What interface does an object need to implement for serialization?",
+          "options": [
+            "Serializable",
+            "Externalizable",
+            "Cloneable",
+            "Comparable"
+          ],
+          "correctAnswer": "Serializable",
+          "explanation": "Serializable is a marker interface (no methods) that tells the JVM this object can be serialized. ObjectOutputStream requires it."
+        },
+        {
+          "type": "quiz",
+          "quizType": "multi-select",
+          "question": "Select all Java concepts demonstrated in the Task Manager project:",
+          "options": [
+            "OOP / Encapsulation",
+            "Collections (List, Map)",
+            "Streams API",
+            "File I/O / Serialization",
+            "Multithreading",
+            "Lambdas / Method References",
+            "Generics",
+            "Exception Handling"
+          ],
+          "correctAnswers": [
+            "OOP / Encapsulation",
+            "Collections (List, Map)",
+            "Streams API",
+            "File I/O / Serialization",
+            "Lambdas / Method References",
+            "Generics",
+            "Exception Handling"
+          ],
+          "explanation": "The project covers OOP, Collections, Streams, File I/O, Lambdas, Generics, and Exception Handling. Multithreading is NOT used in this particular CLI application."
+        },
+        {
+          "type": "quiz",
+          "quizType": "mcq",
+          "question": "Which collection method was used to remove tasks by condition?",
+          "options": [
+            "filter",
+            "removeIf",
+            "delete",
+            "exclude"
+          ],
+          "correctAnswer": "removeIf",
+          "explanation": "List.removeIf(Predicate) removes all elements matching the condition. It's a mutable operation, unlike Stream.filter() which creates a new stream."
+        },
+        {
+          "type": "quiz",
+          "quizType": "input",
+          "question": "What Java 8+ API was used for filtering and sorting tasks?",
+          "correctAnswer": "Stream",
+          "explanation": "The Stream API provides declarative operations like filter, map, sorted, and collect. It enables functional-style processing of collections without modifying the source."
         }
       ]
     }
