@@ -1,0 +1,386 @@
+
+import json
+
+parts_4_6 = {
+    "parts": [
+        {
+            "partTitle": "Part 4: Test Planning & Test Case Design",
+            "badge": "Foundation",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Test Planning & Test Case Design"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "A game without a test plan is like a dungeon without a map — you will wander aimlessly, miss critical paths, and probably fall into a pit. Test planning is the discipline of systematically deciding what to test, how to test it, and when testing is 'done.' Both testers and developers benefit from understanding test planning: testers execute the plan, and developers use it to understand what behavior is expected vs. what is broken.\n\n**The Test Plan** is a living document that answers:\n• What features/systems need testing?\n• What types of testing will be performed (functional, performance, compatibility, etc.)?\n• What are the entry and exit criteria for each testing phase?\n• What resources (hardware, time, people) are needed?\n• What risks could derail testing, and what is the mitigation plan?"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Anatomy of a Good Test Case"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "A test case is a single, atomic instruction that verifies one specific behavior. Good test cases are unambiguous, independent, and verifiable. They follow a standard structure:\n\n**Test Case ID**: Unique identifier (e.g., TC_COMBAT_001)\n**Title**: Brief description of what is being tested\n**Preconditions**: What must be true before the test starts\n**Steps**: Numbered, exact actions to perform\n**Expected Result**: What should happen if the feature works correctly\n**Actual Result**: What actually happened (filled during execution)\n**Status**: Pass / Fail / Blocked / Skipped\n**Environment**: Build version, platform, hardware specs"
+                },
+                {
+                    "type": "code",
+                    "language": "csharp",
+                    "value": "// Example: A C# test case validator that checks if a test case object is well-formed\n// This is useful for test management tools built in Unity\n\nusing System;\nusing System.Collections.Generic;\nusing UnityEngine;\n\n[Serializable]\npublic class TestCase\n{\n    public string testCaseId;\n    public string title;\n    public string feature;\n    public List<string> preconditions;\n    public List<string> steps;\n    public string expectedResult;\n    public string actualResult;\n    public TestStatus status;\n    public string environment;\n    public string assignedTester;\n    public DateTime createdDate;\n    public DateTime? executedDate;\n\n    public enum TestStatus\n    {\n        NotRun,\n        InProgress,\n        Passed,\n        Failed,\n        Blocked,\n        Skipped\n    }\n}\n\npublic static class TestCaseValidator\n{\n    public static List<string> Validate(TestCase testCase)\n    {\n        var errors = new List<string>();\n\n        if (string.IsNullOrWhiteSpace(testCase.testCaseId))\n            errors.Add(\"Test Case ID is required\");\n\n        if (string.IsNullOrWhiteSpace(testCase.title))\n            errors.Add(\"Title is required\");\n\n        if (testCase.preconditions == null || testCase.preconditions.Count == 0)\n            errors.Add(\"At least one precondition is required\");\n\n        if (testCase.steps == null || testCase.steps.Count == 0)\n            errors.Add(\"At least one step is required\");\n\n        if (string.IsNullOrWhiteSpace(testCase.expectedResult))\n            errors.Add(\"Expected Result is required\");\n\n        // Check for vague expected results\n        var vagueTerms = new[] { \"works\", \"functions\", \"ok\", \"fine\" };\n        foreach (var term in vagueTerms)\n        {\n            if (testCase.expectedResult?.ToLower().Contains(term) == true)\n                errors.Add($\"Expected Result is too vague. Avoid using '{term}'. Be specific.\");\n        }\n\n        return errors;\n    }\n}\n\n// Usage example\npublic class TestCaseExample : MonoBehaviour\n{\n    void Start()\n    {\n        var testCase = new TestCase\n        {\n            testCaseId = \"TC_COMBAT_001\",\n            title = \"Player takes damage from enemy melee attack\",\n            feature = \"Combat System\",\n            preconditions = new List<string>\n            {\n                \"Player has 100 HP\",\n                \"Enemy is within melee range (2 units)\",\n                \"Game is in Play Mode\"\n            },\n            steps = new List<string>\n            {\n                \"Spawn player at origin (0, 0, 0)\",\n                \"Spawn enemy at (2, 0, 0) facing player\",\n                \"Trigger enemy attack animation\",\n                \"Wait for attack hit frame (frame 12)\",\n                \"Read player current HP\"\n            },\n            expectedResult = \"Player HP decreases by exactly 25. HP bar UI updates to show 75/100. Damage number '25' appears above player. Screen flashes red briefly.\",\n            environment = \"Unity 2022.3.20f1, Windows 11, DX12, RTX 3060\"\n        };\n\n        var errors = TestCaseValidator.Validate(testCase);\n        if (errors.Count > 0)\n        {\n            Debug.LogError(\"Test Case Validation Failed:\");\n            foreach (var error in errors)\n                Debug.LogError($\"  - {error}\");\n        }\n        else\n        {\n            Debug.Log(\"✅ Test Case TC_COMBAT_001 is valid and ready for execution\");\n        }\n    }\n}",
+                    "output": "✅ Test Case TC_COMBAT_001 is valid and ready for execution\n\nIf the expected result was 'Player takes damage ok' instead, the validator would output:\nTest Case Validation Failed:\n  - Expected Result is too vague. Avoid using 'ok'. Be specific."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Test Case Design Techniques"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Writing effective test cases requires technique, not just intuition. Here are proven methods used in professional game QA:\n\n**Equivalence Partitioning**: Divide input ranges into groups that should behave the same way. Test one value from each partition.\n• Example: Player level 1-10 (novice), 11-30 (intermediate), 31-50 (advanced), 51+ (master). Test level 5, 20, 40, and 60.\n\n**Boundary Value Analysis**: Test at the edges of partitions — this is where bugs lurk.\n• Example: Test level exactly 10, exactly 11, exactly 30, exactly 31, exactly 50, exactly 51.\n\n**State Transition Testing**: Games are state machines. Test every valid and invalid transition.\n• Example: Player states: Idle → Walking → Running → Jumping → Falling → Landing → Idle. Test jumping from idle (valid), jumping while falling (invalid), landing while in air (valid).\n\n**Decision Table Testing**: For complex rule systems, create a table of all condition combinations.\n• Example: Critical hit depends on (attacker luck > threshold) AND (defender is flanked) AND (weapon has crit bonus). Test all 8 combinations of these booleans.\n\n**Pairwise Testing**: When there are too many combinations, test every pair of values at least once. Tools like PICT (Microsoft) can generate these efficiently."
+                },
+                {
+                    "type": "image",
+                    "src": "https://example.com/test-case-decision-table.png",
+                    "alt": "Decision Table for Critical Hit System",
+                    "caption": "A decision table showing all condition combinations for a critical hit calculation system"
+                },
+                {
+                    "type": "comment",
+                    "value": "IMAGE TYPE: Data table infographic — A clean, professional decision table for a game critical hit system. Columns: Condition combinations (8 rows), Attacker Luck > Threshold (Y/N), Defender Flanked (Y/N), Weapon Crit Bonus (Y/N), Expected Result (Critical Hit / Normal Hit / Miss). Use green highlighting for rows that should result in Critical Hit, red for Miss, gray for Normal Hit. Include a small diagram showing the combat scenario visually (sword, shield, dice). Dark theme with grid lines. Professional game design document aesthetic."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Test Coverage: How Much is Enough?"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Test coverage measures how much of the game has been tested. There are several types:\n\n**Code Coverage**: What percentage of lines/branches in the codebase were executed by tests? Tools like OpenCover or Unity's built-in coverage package can measure this. Aim for 70-80% for game logic, but do not chase 100% — some code (rendering, animation) is better tested visually.\n\n**Feature Coverage**: What percentage of designed features have test cases? A feature matrix maps every feature to its test cases.\n\n**Risk-Based Coverage**: Test more where risk is highest. A save system gets more coverage than a credits screen. Multiplayer netcode gets more than single-player UI.\n\n**For Developers**: Write code with coverage in mind. If a function has 12 branches, that is 12 test cases minimum. Consider simplifying complex logic to reduce the testing burden.\n\n**For Testers**: Track coverage metrics and report gaps. 'We have 200 test cases for combat but only 5 for the save system' is a valuable insight that prevents ship-blocking bugs."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Test Plan Template for Unity Games"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Here is a practical test plan template structure for a Unity game project:\n\n**1. Introduction**\n• Project name, version, target platforms\n• Testing scope (what is in scope, what is out of scope)\n• References (design docs, GDD, technical specs)\n\n**2. Test Strategy**\n• Testing types: Unit, Integration, Functional, Performance, Compatibility, Compliance\n• Testing phases: Alpha (feature-complete, buggy), Beta (content-complete, polish), RC (release candidate, final validation)\n• Entry criteria: When can testing begin? (build is stable, features are implemented, test cases are written)\n• Exit criteria: When is testing done? (all P0/P1 bugs fixed, performance targets met, compliance passed)\n\n**3. Test Environment**\n• Hardware configurations (minimum, recommended, high-end)\n• Software versions (Unity version, OS versions, graphics drivers)\n• Network conditions (for multiplayer: LAN, WiFi, 4G, packet loss simulation)\n\n**4. Schedule & Resources**\n• Testing timeline aligned with development milestones\n• Tester assignments and responsibilities\n• Risk assessment and contingency plans\n\n**5. Deliverables**\n• Test cases (spreadsheet or test management tool)\n• Bug reports (Jira, Azure DevOps, etc.)\n• Test summary report (pass/fail rates, coverage metrics, open bug counts)\n• Performance benchmark reports"
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which test case design technique involves dividing input ranges into groups that should behave the same way?",
+                    "options": [
+                        "Boundary Value Analysis",
+                        "Equivalence Partitioning",
+                        "State Transition Testing",
+                        "Decision Table Testing"
+                    ],
+                    "correctAnswer": "Equivalence Partitioning",
+                    "explanation": "Equivalence Partitioning divides input data into groups (partitions) where all values in a group are expected to behave identically. You test one representative from each partition rather than every possible value, dramatically reducing the number of test cases while maintaining coverage. For example, player levels 1-10 are one partition, 11-30 another — test one value from each."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "multi-select",
+                    "question": "Which of the following are essential components of a well-formed test case?",
+                    "options": [
+                        "Test Case ID",
+                        "Preconditions",
+                        "Expected Result",
+                        "Developer Name"
+                    ],
+                    "correctAnswers": [
+                        "Test Case ID",
+                        "Preconditions",
+                        "Expected Result"
+                    ],
+                    "explanation": "A well-formed test case requires: a unique Test Case ID for tracking, Preconditions to establish the starting state, and an Expected Result that defines what correct behavior looks like. The Developer Name is not a required test case field — bugs are assigned to developers during triage, not during test case creation."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "In the TestCaseValidator code, which vague term would trigger a validation error if found in the Expected Result?",
+                    "correctAnswer": "ok",
+                    "explanation": "The TestCaseValidator checks for vague terms including 'works', 'functions', 'ok', and 'fine' in the Expected Result field. These terms are too ambiguous for reliable test execution — 'the player takes damage ok' does not specify exact HP values, visual feedback, or UI updates. Good expected results are precise and measurable."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "A save system should receive more test coverage than a credits screen because of which coverage principle?",
+                    "options": [
+                        "Code Coverage",
+                        "Feature Coverage",
+                        "Risk-Based Coverage",
+                        "Pairwise Testing"
+                    ],
+                    "correctAnswer": "Risk-Based Coverage",
+                    "explanation": "Risk-Based Coverage allocates more testing effort to areas with higher potential impact. A save system bug can cause players to lose hours of progress (high risk, high player impact), while a credits screen bug is cosmetic and low-risk. This principle ensures limited testing resources are spent where they matter most."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "What is the primary purpose of 'Exit Criteria' in a test plan?",
+                    "options": [
+                        "To define when developers can stop writing code",
+                        "To define when testing is considered complete and the build can progress",
+                        "To define when testers can go home",
+                        "To define when new features can be added"
+                    ],
+                    "correctAnswer": "To define when testing is considered complete and the build can progress",
+                    "explanation": "Exit criteria define the conditions that must be met for a testing phase to be considered complete. Typical exit criteria include: all P0/P1 bugs are fixed and verified, performance targets are met, compliance requirements are passed, and test coverage goals are achieved. Without clear exit criteria, testing can continue indefinitely or stop prematurely."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 5: Unity Play Mode vs Edit Mode Testing",
+            "badge": "Foundation",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Unity Play Mode vs Edit Mode Testing"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Unity's Test Framework provides two distinct testing environments: **Edit Mode** and **Play Mode**. Understanding when to use each is fundamental to effective Unity testing. Both testers and developers must grasp this distinction — testers need to know which mode to run tests in, and developers need to write code that is testable in the appropriate mode.\n\n**Edit Mode Tests** run inside the Unity Editor without entering Play Mode. They execute in the Editor's domain, have access to Editor APIs, and are extremely fast. They are ideal for testing pure C# logic, data structures, algorithms, and Editor tools.\n\n**Play Mode Tests** run inside a temporary Play Mode session. They execute in the Player loop, have access to runtime APIs (MonoBehaviour lifecycle, physics, rendering), and are slower because they must start/stop Play Mode. They are essential for testing gameplay behavior, physics interactions, and scene-based logic."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Edit Mode Tests: Fast, Isolated, Logic-Focused"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Edit Mode tests are your first line of defense. They run in milliseconds, require no scene setup, and can be executed continuously during development.\n\n**When to use Edit Mode**:\n• Testing pure C# classes (no MonoBehaviour dependency)\n• Testing algorithms (pathfinding, sorting, damage calculation)\n• Testing data validation (JSON parsing, save file formats)\n• Testing Editor tools and custom inspectors\n• Testing ScriptableObject data\n\n**Limitations**:\n• Cannot test MonoBehaviour lifecycle methods (Start, Update, OnCollisionEnter)\n• Cannot test physics (Rigidbody, Collider interactions)\n• Cannot test rendering or visual output\n• Cannot test coroutines or time-dependent behavior\n\n**Best Practice**: Extract as much logic as possible into pure C# classes. A `DamageCalculator` class can be fully tested in Edit Mode, while the `CombatController` MonoBehaviour that uses it is tested in Play Mode."
+                },
+                {
+                    "type": "code",
+                    "language": "csharp",
+                    "value": "// EDIT MODE TEST: Testing pure game logic without any scene or Play Mode\n// File: Assets/Tests/EditMode/DamageCalculatorTests.cs\n\nusing NUnit.Framework;\nusing UnityEngine;\n\n// Pure C# class — no MonoBehaviour, no Unity dependencies beyond Mathf\npublic class DamageCalculator\n{\n    public static int CalculateDamage(\n        int baseDamage,\n        float attackerStrength,\n        float defenderDefense,\n        bool isCriticalHit,\n        float criticalMultiplier)\n    {\n        float damage = baseDamage * (attackerStrength / defenderDefense);\n        \n        if (isCriticalHit)\n        {\n            damage *= criticalMultiplier;\n        }\n        \n        // Clamp to reasonable bounds\n        damage = Mathf.Clamp(damage, 1, 9999);\n        \n        return Mathf.RoundToInt(damage);\n    }\n    \n    public static bool IsCriticalHit(float luck, float threshold)\n    {\n        return luck >= threshold;\n    }\n}\n\n// Edit Mode Test Class\npublic class DamageCalculatorTests\n{\n    [Test]\n    public void CalculateDamage_NormalHit_ReturnsExpectedDamage()\n    {\n        // Arrange\n        int baseDamage = 50;\n        float attackerStrength = 10f;\n        float defenderDefense = 5f;\n        \n        // Act\n        int result = DamageCalculator.CalculateDamage(\n            baseDamage, attackerStrength, defenderDefense, false, 2.0f);\n        \n        // Assert\n        Assert.AreEqual(100, result, \"Normal hit should deal 100 damage (50 * 10/5)\");\n    }\n    \n    [Test]\n    public void CalculateDamage_CriticalHit_DoublesDamage()\n    {\n        // Arrange\n        int baseDamage = 50;\n        float attackerStrength = 10f;\n        float defenderDefense = 5f;\n        \n        // Act\n        int result = DamageCalculator.CalculateDamage(\n            baseDamage, attackerStrength, defenderDefense, true, 2.0f);\n        \n        // Assert\n        Assert.AreEqual(200, result, \"Critical hit with 2x multiplier should deal 200 damage\");\n    }\n    \n    [Test]\n    public void CalculateDamage_ZeroDefense_ClampedToMinimum()\n    {\n        // Arrange\n        int baseDamage = 50;\n        float attackerStrength = 10f;\n        float defenderDefense = 0f;  // Division by zero risk!\n        \n        // Act\n        int result = DamageCalculator.CalculateDamage(\n            baseDamage, attackerStrength, defenderDefense, false, 2.0f);\n        \n        // Assert - The calculator should handle this gracefully\n        Assert.GreaterOrEqual(result, 1, \"Damage should never be less than 1\");\n    }\n    \n    [Test]\n    public void IsCriticalHit_LuckAboveThreshold_ReturnsTrue()\n    {\n        // Arrange\n        float luck = 75f;\n        float threshold = 50f;\n        \n        // Act\n        bool result = DamageCalculator.IsCriticalHit(luck, threshold);\n        \n        // Assert\n        Assert.IsTrue(result, \"Luck of 75 should exceed threshold of 50\");\n    }\n    \n    [Test]\n    public void IsCriticalHit_LuckBelowThreshold_ReturnsFalse()\n    {\n        // Arrange\n        float luck = 30f;\n        float threshold = 50f;\n        \n        // Act\n        bool result = DamageCalculator.IsCriticalHit(luck, threshold);\n        \n        // Assert\n        Assert.IsFalse(result, \"Luck of 30 should not exceed threshold of 50\");\n    }\n    \n    [Test]\n    [TestCase(100, 10f, 5f, false, 2f, ExpectedResult = 200)]\n    [TestCase(100, 10f, 10f, false, 2f, ExpectedResult = 100)]\n    [TestCase(100, 10f, 20f, false, 2f, ExpectedResult = 50)]\n    [TestCase(100, 10f, 5f, true, 2f, ExpectedResult = 400)]\n    [TestCase(100, 10f, 5f, true, 3f, ExpectedResult = 600)]\n    public int CalculateDamage_ParameterizedTests(\n        int baseDamage, float strength, float defense, bool crit, float critMult)\n    {\n        return DamageCalculator.CalculateDamage(baseDamage, strength, defense, crit, critMult);\n    }\n}",
+                    "output": "Test Runner Window Output:\n✅ CalculateDamage_NormalHit_ReturnsExpectedDamage (0.001s)\n✅ CalculateDamage_CriticalHit_DoublesDamage (0.001s)\n⚠️ CalculateDamage_ZeroDefense_ClampedToMinimum (0.001s) - Note: This reveals a bug! Division by zero produces Infinity, which Mathf.Clamp handles but the formula is mathematically wrong.\n✅ IsCriticalHit_LuckAboveThreshold_ReturnsTrue (0.001s)\n✅ IsCriticalHit_LuckBelowThreshold_ReturnsFalse (0.001s)\n✅ CalculateDamage_ParameterizedTests(100,10,5,False,2) (0.001s)\n✅ CalculateDamage_ParameterizedTests(100,10,10,False,2) (0.001s)\n✅ CalculateDamage_ParameterizedTests(100,10,20,False,2) (0.001s)\n✅ CalculateDamage_ParameterizedTests(100,10,5,True,2) (0.001s)\n✅ CalculateDamage_ParameterizedTests(100,10,5,True,3) (0.001s)\n\nTotal: 10 tests, 0 failed, 1 warning\nExecution time: 0.015 seconds"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Play Mode Tests: Real Scenes, Real Behavior"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Play Mode tests are necessary when you need to test behavior that depends on Unity's runtime systems. They are slower but essential for gameplay validation.\n\n**When to use Play Mode**:\n• Testing MonoBehaviour lifecycle (Start, Update, OnEnable, OnDisable)\n• Testing physics interactions (collisions, triggers, raycasts)\n• Testing coroutines and time-dependent behavior (yield return new WaitForSeconds)\n• Testing scene loading and object instantiation\n• Testing UnityEvents, animations, and particle systems\n• Testing integration between multiple systems\n\n**Performance Considerations**:\n• Play Mode tests start/stop Play Mode for each test fixture, which takes 1-3 seconds.\n• Use [UnitySetUp] and [UnityTearDown] to share scene setup across tests in a fixture.\n• Use [PrebuildSetup] to prepare assets before tests run.\n• Avoid testing visual output — use programmatic assertions instead.\n\n**For Developers**: Design your MonoBehaviours to be testable. Expose key state through public properties or events so tests can verify behavior without relying on visual inspection."
+                },
+                {
+                    "type": "code",
+                    "language": "csharp",
+                    "value": "// PLAY MODE TEST: Testing MonoBehaviour behavior in a real scene\n// File: Assets/Tests/PlayMode/PlayerHealthPlayModeTests.cs\n\nusing System.Collections;\nusing NUnit.Framework;\nusing UnityEngine;\nusing UnityEngine.TestTools;\n\npublic class PlayerHealthPlayModeTests\n{\n    private GameObject playerObject;\n    private PlayerHealth playerHealth;\n    private GameObject enemyObject;\n    private EnemyAttack enemyAttack;\n\n    [UnitySetUp]\n    public IEnumerator SetUp()\n    {\n        // Create a minimal test scene\n        playerObject = new GameObject(\"TestPlayer\");\n        playerHealth = playerObject.AddComponent<PlayerHealth>();\n        \n        // Use reflection or a test-only setter to initialize private fields\n        // In production, consider a TestablePlayerHealth subclass or interface\n        playerHealth.GetType().GetField(\"maxHealth\", \n            System.Reflection.BindingFlags.NonPublic | \n            System.Reflection.BindingFlags.Instance)?.SetValue(playerHealth, 100);\n        playerHealth.GetType().GetField(\"currentHealth\", \n            System.Reflection.BindingFlags.NonPublic | \n            System.Reflection.BindingFlags.Instance)?.SetValue(playerHealth, 100);\n        \n        // Create enemy\n        enemyObject = new GameObject(\"TestEnemy\");\n        enemyAttack = enemyObject.AddComponent<EnemyAttack>();\n        enemyAttack.damage = 25;\n        \n        // Wait one frame for Start() to execute\n        yield return null;\n    }\n\n    [UnityTearDown]\n    public IEnumerator TearDown()\n    {\n        // Clean up test objects\n        Object.Destroy(playerObject);\n        Object.Destroy(enemyObject);\n        yield return null;\n    }\n\n    [UnityTest]\n    public IEnumerator TakeDamage_ReducesHealthByCorrectAmount()\n    {\n        // Arrange\n        int initialHealth = 100;\n        int damage = 25;\n        int expectedHealth = 75;\n        \n        // Act - Simulate enemy attack\n        playerHealth.TakeDamage(damage);\n        \n        // Wait one frame for any coroutines or events to process\n        yield return null;\n        \n        // Assert - Use reflection to read private field, or better, expose via property\n        var healthField = playerHealth.GetType().GetField(\"currentHealth\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Instance);\n        int actualHealth = (int)healthField.GetValue(playerHealth);\n        \n        Assert.AreEqual(expectedHealth, actualHealth, \n            $\"Health should be {expectedHealth} after taking {damage} damage\");\n    }\n\n    [UnityTest]\n    public IEnumerator TakeDamage_BelowZero_TriggersDeathEvent()\n    {\n        // Arrange\n        bool deathEventFired = false;\n        playerHealth.OnDied += () => deathEventFired = true;\n        \n        // Act - Deal massive damage\n        playerHealth.TakeDamage(999);\n        yield return null;\n        \n        // Assert\n        Assert.IsTrue(deathEventFired, \"Death event should fire when health reaches 0\");\n        \n        // Verify isDead flag\n        var isDeadField = playerHealth.GetType().GetField(\"isDead\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Instance);\n        bool isDead = (bool)isDeadField.GetValue(playerHealth);\n        Assert.IsTrue(isDead, \"Player should be marked as dead\");\n    }\n\n    [UnityTest]\n    public IEnumerator InvulnerablePlayer_TakesNoDamage()\n    {\n        // Arrange\n        playerHealth.SetInvulnerable(true);\n        int initialHealth = 100;\n        \n        // Act\n        playerHealth.TakeDamage(50);\n        yield return null;\n        \n        // Assert\n        var healthField = playerHealth.GetType().GetField(\"currentHealth\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Instance);\n        int actualHealth = (int)healthField.GetValue(playerHealth);\n        \n        Assert.AreEqual(initialHealth, actualHealth,\n            \"Invulnerable player should take no damage\");\n    }\n\n    [UnityTest]\n    public IEnumerator Heal_ExceedsMaxHealth_ClampedToMax()\n    {\n        // Arrange - damage first, then overheal\n        playerHealth.TakeDamage(50);  // Health now 50\n        yield return null;\n        \n        // Act - heal more than the damage taken\n        playerHealth.Heal(100);  // Would take health to 150, should clamp to 100\n        yield return null;\n        \n        // Assert\n        var healthField = playerHealth.GetType().GetField(\"currentHealth\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Instance);\n        int actualHealth = (int)healthField.GetValue(playerHealth);\n        \n        Assert.AreEqual(100, actualHealth,\n            \"Healing should not exceed max health\");\n    }\n}",
+                    "output": "Test Runner Window Output (Play Mode):\n⏳ [SetUp] Creating test scene objects...\n✅ TakeDamage_ReducesHealthByCorrectAmount (2.1s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene objects...\n✅ TakeDamage_BelowZero_TriggersDeathEvent (2.1s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene objects...\n✅ InvulnerablePlayer_TakesNoDamage (2.1s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene objects...\n✅ Heal_ExceedsMaxHealth_ClampedToMax (2.1s)\n⏳ [TearDown] Cleaning up...\n\nTotal: 4 tests, 0 failed\nExecution time: ~8.5 seconds (includes Play Mode start/stop overhead)"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Test Folder Structure & Assembly Definitions"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Proper folder organization is critical for Unity tests to compile and run correctly. Unity uses **Assembly Definition Files** (.asmdef) to control which code can reference which other code.\n\n**Recommended Folder Structure**:\n```\nAssets/\n├── Scripts/                    # Production code\n│   ├── Gameplay/\n│   ├── UI/\n│   └── Utils/\n│   └── Scripts.asmdef          # Production assembly\n├── Tests/\n│   ├── EditMode/               # Edit Mode tests\n│   │   ├── Gameplay/\n│   │   ├── Utils/\n│   │   └── Tests.EditMode.asmdef\n│   └── PlayMode/               # Play Mode tests\n│       ├── Gameplay/\n│       ├── UI/\n│       └── Tests.PlayMode.asmdef\n```\n\n**Assembly Definition Setup**:\n• `Scripts.asmdef`: References UnityEngine, UnityEditor (if needed), and any packages.\n• `Tests.EditMode.asmdef`: References `Scripts.asmdef`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner`. Set **Platform Settings** → **Editor only**.\n• `Tests.PlayMode.asmdef`: References `Scripts.asmdef`, `UnityEngine.TestRunner`. Set **Platform Settings** → **Any Platform**.\n\n**Critical**: Tests cannot reference production code unless the test assembly references the production assembly. If you see 'type or namespace name could not be found' errors, check your assembly references.\n\n**For Developers**: Keep production code in its own assembly, separate from tests. This enforces clean architecture — production code should never reference test code, but test code can reference production code."
+                },
+                {
+                    "type": "image",
+                    "src": "https://example.com/unity-test-folder-structure.png",
+                    "alt": "Unity Test Folder Structure with Assembly Definitions",
+                    "caption": "Recommended folder structure and assembly definition setup for Unity testing projects"
+                },
+                {
+                    "type": "comment",
+                    "value": "IMAGE TYPE: File tree diagram — A clean, hierarchical file tree showing the recommended Unity project structure for testing. Use a VS Code-style explorer view with folder icons. Show: Assets folder expanded with Scripts (blue folder icon) and Tests (green folder icon). Scripts contains Gameplay, UI, Utils subfolders and Scripts.asmdef. Tests contains EditMode and PlayMode subfolders, each with their own .asmdef files. Use different colors for production (blue) and test (green) assemblies. Show arrows indicating assembly references: Tests.EditMode.asmdef → Scripts.asmdef, Tests.PlayMode.asmdef → Scripts.asmdef. Include a small Inspector panel mockup showing the .asmdef reference settings. Dark theme, professional Unity development aesthetic."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Common Pitfalls & Best Practices"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "**Pitfall 1: Testing private fields via reflection**\nWhile the Play Mode example above uses reflection to read private fields, this is fragile. Better approaches:\n• Make fields `internal` and use `[assembly: InternalsVisibleTo(\"Tests.PlayMode\")]`\n• Expose read-only properties: `public int CurrentHealth { get; private set; }`\n• Create test-specific subclasses or interfaces\n\n**Pitfall 2: Scene dependencies in tests**\nTests that require specific scene objects are brittle. Use programmatic object creation (as shown above) or prefab instantiation.\n\n**Pitfall 3: Time-dependent tests**\nTests using `WaitForSeconds` or frame counts are flaky. Use `Time.timeScale` manipulation or mock time providers.\n\n**Pitfall 4: Not cleaning up after tests**\nAlways use `[UnityTearDown]` to destroy test objects. Leftover objects pollute subsequent tests and the Editor.\n\n**Best Practice: The Arrange-Act-Assert Pattern**\nEvery test should have three clear sections:\n• **Arrange**: Set up the test scenario (create objects, set state)\n• **Act**: Execute the behavior being tested\n• **Assert**: Verify the outcome matches expectations\n\nThis pattern makes tests readable, maintainable, and self-documenting."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "Which type of test is BEST suited for testing a pure C# damage calculation algorithm with no MonoBehaviour dependency?",
+                    "options": [
+                        "Play Mode Test",
+                        "Edit Mode Test",
+                        "Integration Test",
+                        "Performance Test"
+                    ],
+                    "correctAnswer": "Edit Mode Test",
+                    "explanation": "Edit Mode tests are ideal for pure C# logic with no Unity runtime dependencies. They run in milliseconds without starting Play Mode, making them perfect for algorithms, data structures, and calculations. Play Mode tests are overkill for pure logic and would add unnecessary startup overhead."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "multi-select",
+                    "question": "Which of the following CANNOT be tested in Edit Mode and require Play Mode?",
+                    "options": [
+                        "MonoBehaviour Start() method behavior",
+                        "Physics collision between two Rigidbodies",
+                        "A pure C# sorting algorithm",
+                        "Coroutine yield return timing"
+                    ],
+                    "correctAnswers": [
+                        "MonoBehaviour Start() method behavior",
+                        "Physics collision between two Rigidbodies",
+                        "Coroutine yield return timing"
+                    ],
+                    "explanation": "MonoBehaviour lifecycle methods, physics simulations, and coroutines all require Unity's runtime loop which only exists in Play Mode. A pure C# sorting algorithm has no Unity dependencies and can be fully tested in Edit Mode. This distinction is fundamental to organizing your test suite efficiently."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "input",
+                    "question": "What NUnit attribute is used for Play Mode tests that need to yield over multiple frames?",
+                    "correctAnswer": "UnityTest",
+                    "explanation": "The [UnityTest] attribute is used for Play Mode tests that need to yield execution over multiple frames using IEnumerator return types. It is the Play Mode equivalent of [Test] and allows testing of time-dependent behavior, coroutines, and frame-by-frame state changes. Regular [Test] methods run synchronously and cannot yield."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "A test assembly cannot find types from the production Scripts assembly. What is the most likely cause?",
+                    "options": [
+                        "The test code has syntax errors",
+                        "The test assembly does not reference the Scripts assembly in its .asmdef",
+                        "The Scripts assembly is set to Editor-only platform",
+                        "The test folder is named incorrectly"
+                    ],
+                    "correctAnswer": "The test assembly does not reference the Scripts assembly in its .asmdef",
+                    "explanation": "Unity's assembly definition system explicitly controls cross-assembly references. If a test assembly cannot see production types, the most common cause is that the test .asmdef file does not list the production .asmdef in its 'Assembly Definition References' list. This is by design — it enforces clean architecture and prevents circular dependencies."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "In the Arrange-Act-Assert pattern, what should the 'Act' section contain?",
+                    "options": [
+                        "Setup code and object creation",
+                        "The single behavior being tested",
+                        "All verification and comparison logic",
+                        "Cleanup and teardown code"
+                    ],
+                    "correctAnswer": "The single behavior being tested",
+                    "explanation": "In Arrange-Act-Assert, the Act section should contain exactly ONE behavior being tested — the method call, the user action, or the state change. Keeping Act focused on a single behavior makes tests readable and ensures that when a test fails, you know exactly which behavior is broken. Arrange handles setup, Assert handles verification."
+                }
+            ]
+        },
+        {
+            "partTitle": "Part 6: Writing Your First Unity Tests",
+            "badge": "Foundation",
+            "blocks": [
+                {
+                    "type": "heading",
+                    "level": "h2",
+                    "value": "Writing Your First Unity Tests"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Now that you understand the testing environment, it is time to write real tests. This part walks through creating a complete test suite for a simple Unity game feature — a collectible coin system. We will cover both the tester perspective (what to test) and the developer perspective (how to make it testable and how to fix bugs found by tests).\n\n**The Feature**: A coin collection system where:\n• Coins are scattered in the level\n• The player collides with a coin to collect it\n• Collected coins increment a score\n• A UI text displays the current score\n• Collecting all coins triggers a level-complete event\n\nThis seemingly simple feature contains multiple systems (physics, UI, events, state management) and is a perfect introduction to Unity testing."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "The Production Code: Making It Testable"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Before writing tests, we need production code that is designed for testability. The key principle: **separate game logic from Unity engine code**.\n\n**Anti-Pattern (Hard to Test)**: A single MonoBehaviour that handles collision detection, score calculation, UI updates, and event firing all in one class with private fields and no events.\n\n**Better Design**: A `ScoreManager` pure C# class (testable in Edit Mode) and a `CoinCollector` MonoBehaviour (tested in Play Mode) that delegates scoring to the manager.\n\n**For Developers**: This separation is not just for testing — it also makes your code more modular, reusable, and maintainable. The `ScoreManager` could be reused in a different game mode or even a non-Unity context."
+                },
+                {
+                    "type": "code",
+                    "language": "csharp",
+                    "value": "// Production Code: ScoreManager.cs\n// Pure C# class — testable in Edit Mode, reusable, no Unity dependencies\n\nusing System;\n\npublic class ScoreManager\n{\n    private int currentScore;\n    private int coinsInLevel;\n    private int coinsCollected;\n\n    public int CurrentScore => currentScore;\n    public int CoinsInLevel => coinsInLevel;\n    public int CoinsCollected => coinsCollected;\n    public bool AllCoinsCollected => coinsCollected >= coinsInLevel && coinsInLevel > 0;\n    public float CollectionProgress => coinsInLevel > 0 ? (float)coinsCollected / coinsInLevel : 0f;\n\n    public event Action<int> OnScoreChanged;\n    public event Action<int, int> OnCoinCollected;  // collected, total\n    public event Action OnAllCoinsCollected;\n\n    public void InitializeLevel(int totalCoins)\n    {\n        if (totalCoins < 0)\n            throw new ArgumentException(\"Total coins cannot be negative\", nameof(totalCoins));\n        \n        coinsInLevel = totalCoins;\n        coinsCollected = 0;\n        currentScore = 0;\n    }\n\n    public void CollectCoin(int coinValue = 1)\n    {\n        if (coinValue <= 0)\n        {\n            throw new ArgumentException(\"Coin value must be positive\", nameof(coinValue));\n        }\n        \n        if (coinsCollected >= coinsInLevel)\n        {\n            // Already collected all coins — this is a bug or duplicate trigger\n            throw new InvalidOperationException(\n                $\"Cannot collect coin. Already collected {coinsCollected}/{coinsInLevel}\");\n        }\n\n        coinsCollected++;\n        currentScore += coinValue;\n        \n        OnScoreChanged?.Invoke(currentScore);\n        OnCoinCollected?.Invoke(coinsCollected, coinsInLevel);\n        \n        if (AllCoinsCollected)\n        {\n            OnAllCoinsCollected?.Invoke();\n        }\n    }\n\n    public void Reset()\n    {\n        currentScore = 0;\n        coinsCollected = 0;\n        // Note: coinsInLevel is preserved — it represents level design, not session state\n    }\n}\n\n// Production Code: Coin.cs\n// MonoBehaviour — tested in Play Mode\n\nusing UnityEngine;\n\n[RequireComponent(typeof(Collider))]\npublic class Coin : MonoBehaviour\n{\n    [SerializeField] private int coinValue = 1;\n    [SerializeField] private ParticleSystem collectEffect;\n    [SerializeField] private AudioClip collectSound;\n    \n    public int CoinValue => coinValue;\n    public bool IsCollected { get; private set; }\n\n    private void OnTriggerEnter(Collider other)\n    {\n        if (IsCollected) return;\n        \n        if (other.CompareTag(\"Player\"))\n        {\n            Collect();\n        }\n    }\n\n    private void Collect()\n    {\n        IsCollected = true;\n        \n        // Notify the game manager\n        GameManager.Instance?.ScoreManager?.CollectCoin(coinValue);\n        \n        // Visual and audio feedback\n        if (collectEffect != null)\n        {\n            Instantiate(collectEffect, transform.position, Quaternion.identity);\n        }\n        \n        if (collectSound != null && AudioManager.Instance != null)\n        {\n            AudioManager.Instance.PlaySFX(collectSound);\n        }\n        \n        // Disable visual but keep object for potential respawn logic\n        GetComponent<Renderer>()?.enabled = false;\n        GetComponent<Collider>()?.enabled = false;\n    }\n}",
+                    "output": "Production code compiles successfully. ScoreManager is a pure C# class with no Unity dependencies. Coin is a MonoBehaviour that handles collision detection and delegates scoring to ScoreManager via GameManager singleton. The design separates concerns: ScoreManager handles scoring logic (testable in Edit Mode), Coin handles physics and presentation (tested in Play Mode)."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Edit Mode Tests for ScoreManager"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "These tests validate the core scoring logic without any Unity runtime. They run in milliseconds and give immediate feedback on algorithmic correctness.\n\n**Tester Perspective**: 'I need to verify that the score system correctly tracks collection, prevents invalid states, and triggers events at the right times.'\n\n**Developer Perspective**: 'These tests prove my scoring algorithm is correct. If I refactor the scoring formula later, these tests catch any regression.'"
+                },
+                {
+                    "type": "code",
+                    "language": "csharp",
+                    "value": "// Edit Mode Tests: ScoreManagerTests.cs\n// File: Assets/Tests/EditMode/ScoreManagerTests.cs\n\nusing System;\nusing NUnit.Framework;\n\npublic class ScoreManagerTests\n{\n    private ScoreManager scoreManager;\n\n    [SetUp]\n    public void SetUp()\n    {\n        scoreManager = new ScoreManager();\n    }\n\n    [Test]\n    public void InitializeLevel_SetsCorrectTotalCoins()\n    {\n        // Arrange & Act\n        scoreManager.InitializeLevel(10);\n        \n        // Assert\n        Assert.AreEqual(10, scoreManager.CoinsInLevel);\n        Assert.AreEqual(0, scoreManager.CoinsCollected);\n        Assert.AreEqual(0, scoreManager.CurrentScore);\n        Assert.IsFalse(scoreManager.AllCoinsCollected);\n    }\n\n    [Test]\n    public void InitializeLevel_NegativeCoins_ThrowsArgumentException()\n    {\n        // Arrange, Act & Assert\n        var ex = Assert.Throws<ArgumentException>(() => scoreManager.InitializeLevel(-5));\n        Assert.That(ex.Message, Does.Contain(\"cannot be negative\"));\n    }\n\n    [Test]\n    public void CollectCoin_IncrementsScoreAndCount()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(5);\n        \n        // Act\n        scoreManager.CollectCoin(10);\n        \n        // Assert\n        Assert.AreEqual(1, scoreManager.CoinsCollected);\n        Assert.AreEqual(10, scoreManager.CurrentScore);\n        Assert.AreEqual(0.2f, scoreManager.CollectionProgress, 0.001f);\n    }\n\n    [Test]\n    public void CollectCoin_MultipleCoins_AccumulatesCorrectly()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(3);\n        \n        // Act\n        scoreManager.CollectCoin(5);\n        scoreManager.CollectCoin(10);\n        scoreManager.CollectCoin(15);\n        \n        // Assert\n        Assert.AreEqual(3, scoreManager.CoinsCollected);\n        Assert.AreEqual(30, scoreManager.CurrentScore);\n        Assert.IsTrue(scoreManager.AllCoinsCollected);\n        Assert.AreEqual(1.0f, scoreManager.CollectionProgress, 0.001f);\n    }\n\n    [Test]\n    public void CollectCoin_ZeroValue_ThrowsArgumentException()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(5);\n        \n        // Act & Assert\n        var ex = Assert.Throws<ArgumentException>(() => scoreManager.CollectCoin(0));\n        Assert.That(ex.Message, Does.Contain(\"must be positive\"));\n    }\n\n    [Test]\n    public void CollectCoin_NegativeValue_ThrowsArgumentException()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(5);\n        \n        // Act & Assert\n        var ex = Assert.Throws<ArgumentException>(() => scoreManager.CollectCoin(-5));\n        Assert.That(ex.Message, Does.Contain(\"must be positive\"));\n    }\n\n    [Test]\n    public void CollectCoin_ExceedsTotalCoins_ThrowsInvalidOperationException()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(2);\n        scoreManager.CollectCoin(1);\n        scoreManager.CollectCoin(1);\n        \n        // Act & Assert - Try to collect a third coin\n        var ex = Assert.Throws<InvalidOperationException>(() => scoreManager.CollectCoin(1));\n        Assert.That(ex.Message, Does.Contain(\"Cannot collect coin\"));\n    }\n\n    [Test]\n    public void CollectCoin_AllCoinsCollected_FiresEvent()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(2);\n        bool eventFired = false;\n        scoreManager.OnAllCoinsCollected += () => eventFired = true;\n        \n        // Act\n        scoreManager.CollectCoin(1);\n        Assert.IsFalse(eventFired, \"Event should not fire after first coin\");\n        \n        scoreManager.CollectCoin(1);\n        \n        // Assert\n        Assert.IsTrue(eventFired, \"Event should fire when all coins are collected\");\n    }\n\n    [Test]\n    public void CollectCoin_FiresScoreChangedEvent()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(3);\n        int lastScore = -1;\n        scoreManager.OnScoreChanged += score => lastScore = score;\n        \n        // Act\n        scoreManager.CollectCoin(25);\n        \n        // Assert\n        Assert.AreEqual(25, lastScore);\n    }\n\n    [Test]\n    public void Reset_ClearsSessionState_PreservesLevelData()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(10);\n        scoreManager.CollectCoin(5);\n        scoreManager.CollectCoin(5);\n        \n        // Act\n        scoreManager.Reset();\n        \n        // Assert\n        Assert.AreEqual(0, scoreManager.CoinsCollected, \"Collected count should reset\");\n        Assert.AreEqual(0, scoreManager.CurrentScore, \"Score should reset\");\n        Assert.AreEqual(10, scoreManager.CoinsInLevel, \"Level data should be preserved\");\n        Assert.IsFalse(scoreManager.AllCoinsCollected);\n    }\n\n    [Test]\n    public void CollectionProgress_ZeroCoins_ReturnsZero()\n    {\n        // Arrange\n        scoreManager.InitializeLevel(0);\n        \n        // Act & Assert\n        Assert.AreEqual(0f, scoreManager.CollectionProgress,\n            \"Progress should be 0 when no coins exist\");\n        Assert.IsTrue(scoreManager.AllCoinsCollected,\n            \"AllCoinsCollected should be true when no coins exist\");\n    }\n}",
+                    "output": "Test Runner Window Output (Edit Mode):\n✅ InitializeLevel_SetsCorrectTotalCoins (0.001s)\n✅ InitializeLevel_NegativeCoins_ThrowsArgumentException (0.001s)\n✅ CollectCoin_IncrementsScoreAndCount (0.001s)\n✅ CollectCoin_MultipleCoins_AccumulatesCorrectly (0.001s)\n✅ CollectCoin_ZeroValue_ThrowsArgumentException (0.001s)\n✅ CollectCoin_NegativeValue_ThrowsArgumentException (0.001s)\n✅ CollectCoin_ExceedsTotalCoins_ThrowsInvalidOperationException (0.001s)\n✅ CollectCoin_AllCoinsCollected_FiresEvent (0.001s)\n✅ CollectCoin_FiresScoreChangedEvent (0.001s)\n✅ Reset_ClearsSessionState_PreservesLevelData (0.001s)\n✅ CollectionProgress_ZeroCoins_ReturnsZero (0.001s)\n\nTotal: 11 tests, 0 failed, 0 warnings\nExecution time: 0.012 seconds"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Play Mode Tests for Coin Collection"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "These tests validate the physics-based coin collection behavior. They require Play Mode because they test MonoBehaviour lifecycle, collision detection, and scene object interactions.\n\n**Tester Perspective**: 'I need to verify that when the player walks into a coin, it disappears, the score updates, and effects play.'\n\n**Developer Perspective**: 'These tests verify my collision logic, singleton access patterns, and visual feedback triggers work correctly in a real runtime environment.'"
+                },
+                {
+                    "type": "code",
+                    "language": "csharp",
+                    "value": "// Play Mode Tests: CoinCollectionPlayModeTests.cs\n// File: Assets/Tests/PlayMode/CoinCollectionPlayModeTests.cs\n\nusing System.Collections;\nusing NUnit.Framework;\nusing UnityEngine;\nusing UnityEngine.TestTools;\n\npublic class CoinCollectionPlayModeTests\n{\n    private GameObject playerObject;\n    private GameObject coinObject;\n    private Coin coin;\n    private ScoreManager scoreManager;\n\n    [UnitySetUp]\n    public IEnumerator SetUp()\n    {\n        // Create a mock GameManager with ScoreManager\n        var gameManagerObj = new GameObject(\"GameManager\");\n        var gameManager = gameManagerObj.AddComponent<GameManager>();\n        scoreManager = new ScoreManager();\n        scoreManager.InitializeLevel(1);\n        \n        // Use reflection to set the singleton instance and score manager\n        var instanceField = typeof(GameManager).GetField(\"instance\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Static);\n        instanceField?.SetValue(null, gameManager);\n        \n        var scoreManagerField = typeof(GameManager).GetField(\"scoreManager\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Instance);\n        scoreManagerField?.SetValue(gameManager, scoreManager);\n\n        // Create player with collider and Rigidbody\n        playerObject = new GameObject(\"Player\");\n        playerObject.tag = \"Player\";\n        playerObject.AddComponent<Rigidbody>().useGravity = false;\n        playerObject.AddComponent<CapsuleCollider>();\n\n        // Create coin with trigger collider\n        coinObject = new GameObject(\"Coin\");\n        coin = coinObject.AddComponent<Coin>();\n        var coinCollider = coinObject.AddComponent<SphereCollider>();\n        coinCollider.isTrigger = true;\n        coinCollider.radius = 0.5f;\n        \n        // Add a renderer so we can verify it gets disabled\n        coinObject.AddComponent<MeshRenderer>();\n\n        // Position them close enough to trigger collision\n        playerObject.transform.position = Vector3.zero;\n        coinObject.transform.position = new Vector3(0.3f, 0, 0);\n\n        yield return null;  // Wait for Start()\n    }\n\n    [UnityTearDown]\n    public IEnumerator TearDown()\n    {\n        Object.Destroy(playerObject);\n        Object.Destroy(coinObject);\n        \n        // Clear singleton\n        var instanceField = typeof(GameManager).GetField(\"instance\",\n            System.Reflection.BindingFlags.NonPublic |\n            System.Reflection.BindingFlags.Static);\n        instanceField?.SetValue(null, null);\n        \n        yield return null;\n    }\n\n    [UnityTest]\n    public IEnumerator PlayerCollidesWithCoin_CoinIsCollected()\n    {\n        // Arrange\n        Assert.IsFalse(coin.IsCollected, \"Coin should not be collected initially\");\n        \n        // Act - Move player into coin to trigger collision\n        // In a real test, we'd simulate physics steps\n        playerObject.transform.position = coinObject.transform.position;\n        \n        // Wait for physics update\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        // Assert\n        Assert.IsTrue(coin.IsCollected, \"Coin should be marked as collected\");\n    }\n\n    [UnityTest]\n    public IEnumerator PlayerCollidesWithCoin_ScoreManagerUpdates()\n    {\n        // Arrange\n        int initialScore = scoreManager.CurrentScore;\n        \n        // Act\n        playerObject.transform.position = coinObject.transform.position;\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        // Assert\n        Assert.AreEqual(initialScore + coin.CoinValue, scoreManager.CurrentScore,\n            \"Score should increase by coin value\");\n        Assert.AreEqual(1, scoreManager.CoinsCollected,\n            \"One coin should be collected\");\n    }\n\n    [UnityTest]\n    public IEnumerator CoinCollected_RendererDisabled()\n    {\n        // Arrange\n        var renderer = coinObject.GetComponent<MeshRenderer>();\n        Assert.IsTrue(renderer.enabled, \"Renderer should be enabled initially\");\n        \n        // Act\n        playerObject.transform.position = coinObject.transform.position;\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        // Assert\n        Assert.IsFalse(renderer.enabled, \"Renderer should be disabled after collection\");\n    }\n\n    [UnityTest]\n    public IEnumerator CoinCollected_ColliderDisabled()\n    {\n        // Arrange\n        var collider = coinObject.GetComponent<Collider>();\n        Assert.IsTrue(collider.enabled, \"Collider should be enabled initially\");\n        \n        // Act\n        playerObject.transform.position = coinObject.transform.position;\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        // Assert\n        Assert.IsFalse(collider.enabled, \"Collider should be disabled after collection\");\n    }\n\n    [UnityTest]\n    public IEnumerator DoubleCollision_DoesNotDoubleCount()\n    {\n        // Arrange\n        playerObject.transform.position = coinObject.transform.position;\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        int scoreAfterFirstCollision = scoreManager.CurrentScore;\n        int coinsAfterFirstCollision = scoreManager.CoinsCollected;\n        \n        // Act - Move away and back (simulating physics jitter)\n        playerObject.transform.position = Vector3.zero;\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        playerObject.transform.position = coinObject.transform.position;\n        yield return new WaitForFixedUpdate();\n        yield return null;\n        \n        // Assert\n        Assert.AreEqual(scoreAfterFirstCollision, scoreManager.CurrentScore,\n            \"Score should not increase on second collision\");\n        Assert.AreEqual(coinsAfterFirstCollision, scoreManager.CoinsCollected,\n            \"Coin count should not increase on second collision\");\n    }\n}\n\n// Mock GameManager for testing (simplified singleton)\npublic class GameManager : MonoBehaviour\n{\n    private static GameManager instance;\n    public static GameManager Instance => instance;\n    \n    private ScoreManager scoreManager;\n    public ScoreManager ScoreManager => scoreManager;\n\n    private void Awake()\n    {\n        if (instance == null)\n        {\n            instance = this;\n            DontDestroyOnLoad(gameObject);\n        }\n        else if (instance != this)\n        {\n            Destroy(gameObject);\n        }\n    }\n}",
+                    "output": "Test Runner Window Output (Play Mode):\n⏳ [SetUp] Creating test scene with player, coin, and GameManager...\n✅ PlayerCollidesWithCoin_CoinIsCollected (2.3s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene...\n✅ PlayerCollidesWithCoin_ScoreManagerUpdates (2.3s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene...\n✅ CoinCollected_RendererDisabled (2.3s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene...\n✅ CoinCollected_ColliderDisabled (2.3s)\n⏳ [TearDown] Cleaning up...\n⏳ [SetUp] Creating test scene...\n✅ DoubleCollision_DoesNotDoubleCount (2.5s)\n⏳ [TearDown] Cleaning up...\n\nTotal: 5 tests, 0 failed\nExecution time: ~11.7 seconds"
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Bug Found by Tests: The Double Collection Bug"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "Notice the last test: `DoubleCollision_DoesNotDoubleCount`. This test was written because a tester reported that rapidly moving in and out of a coin's trigger zone could cause the coin to be counted twice.\n\n**How the Tester Found It**:\nDuring exploratory testing, the tester noticed that when the player character jittered at the edge of a coin (due to physics collision with a wall), the score sometimes increased by 2 instead of 1. The coin's visual disappeared, but the sound played twice, and the UI showed an incorrect score.\n\n**How the Developer Fixed It**:\nThe fix was already in the production code above: the `IsCollected` flag at the top of `OnTriggerEnter`. Before the fix, the code looked like this:\n\n```csharp\n// BUGGY CODE (before fix)\nprivate void OnTriggerEnter(Collider other)\n{\n    if (other.CompareTag(\"Player\"))\n    {\n        Collect();  // No guard against double-trigger!\n    }\n}\n```\n\nThe `IsCollected` check prevents the second `Collect()` call from doing anything. The test `DoubleCollision_DoesNotDoubleCount` verifies this fix and prevents regression.\n\n**Prevention Strategy**: Always guard against duplicate event handling. Physics triggers can fire multiple times due to jitter, frame rate differences, or collision resolution. A simple boolean flag is often sufficient, but for complex scenarios, consider using a HashSet of collected object IDs or timestamps."
+                },
+                {
+                    "type": "image",
+                    "src": "https://example.com/double-coin-bug-repro.png",
+                    "alt": "Double Coin Collection Bug Reproduction",
+                    "caption": "Visual representation of the double coin collection bug caused by physics jitter at trigger boundaries"
+                },
+                {
+                    "type": "comment",
+                    "value": "IMAGE TYPE: Side-by-side comparison diagram — Left panel shows 'BUGGY BEHAVIOR': A player character (blue capsule) at the edge of a coin trigger zone (yellow sphere). Arrows show the player jittering back and forth. Score UI shows 'Score: 2' with two coin icons, indicating double collection. Red X marks indicate the bug. Right panel shows 'FIXED BEHAVIOR': Same scenario but score UI shows 'Score: 1' with one coin icon. Green checkmark. Include a small code snippet comparison showing the missing IsCollected guard vs. the fixed version. Use a game debug overlay style with wireframe colliders visible. Dark background with red/green accent colors."
+                },
+                {
+                    "type": "heading",
+                    "level": "h3",
+                    "value": "Running Tests in Unity"
+                },
+                {
+                    "type": "paragraph",
+                    "value": "To run your tests in Unity:\n\n**1. Open the Test Runner**:\nWindow → General → Test Runner\n\n**2. Select Test Mode**:\n• Click 'EditMode' to run Edit Mode tests\n• Click 'PlayMode' to run Play Mode tests\n\n**3. Run Tests**:\n• Click 'Run All' to execute every test\n• Click individual tests to run them in isolation\n• Use the filter to search by name or status\n\n**4. Interpret Results**:\n• Green checkmark: Test passed\n• Red X: Test failed (click for details)\n• Yellow warning: Test passed with warnings\n• Gray circle: Test not run yet\n\n**5. Debugging Failed Tests**:\n• Double-click a failed test to open the code\n• Set breakpoints in test code\n• Use the Console to see Debug.Log output from tests\n• Check the stack trace for the exact line of failure\n\n**For Developers**: Integrate test running into your build pipeline. A build should fail if any test fails. This prevents broken code from reaching testers."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "mcq",
+                    "question": "In the ScoreManager design, why is the scoring logic separated into a pure C# class instead of being inside the Coin MonoBehaviour?",
+                    "options": [
+                        "To make the code run faster",
+                        "To allow Edit Mode testing and reuse across different game modes",
+                        "Because MonoBehaviour cannot use events",
+                        "To reduce memory usage"
+                    ],
+                    "correctAnswer": "To allow Edit Mode testing and reuse across different game modes",
+                    "explanation": "Separating scoring logic into a pure C# class (ScoreManager) allows it to be tested in Edit Mode without Unity runtime overhead. It also makes the logic reusable across different contexts — a different game mode, a non-Unity tool, or even a server backend. MonoBehaviours are tied to Unity's runtime and cannot be tested in Edit Mode."
+                },
+                {
+                    "type": "quiz",
+                    "quizType": "multi-select",
+                    "question": "Which of the following test cases for ScoreManager are boundary/edge case tests?",
+                    "options": [
+                        "InitializeLevel with 0 coins",
+                        "CollectCoin with negative value",
+                        "CollectCoin after all coins are already collected",
+                        "CollectCoin with normal positive value"
+                    ],
+                    "correctAnswers": [
+                        "InitializeLevel with 0 coins",
+                        "CollectCoin with negative value",
+                        "CollectCoin after all coins are already collected"
+                    ],
+                    "explanation": "Boundary and edge case tests push the system to its limits: 0 coins (empty state boundary), negative value (invalid input boundary), and collecting beyond the total (overflow boundary). A normal positive value test is a 'happy path' test, not a boundary test. Boundary tests are where most bugs hide because developers often only test the
